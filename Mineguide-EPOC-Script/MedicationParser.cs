@@ -2,29 +2,30 @@
 using CsvHelper.TypeConversion;
 using CsvHelper;
 using System.Globalization;
+using System.Text;
+using System;
 
 namespace Mineguide_EPOC_Script
 {
     public static class MedicationParser
     {
-        private static MedicationContent ReadMedication()
+        public static void ParseMedication()
         {
-            return ReadMedication(
-                "es-ES", 
-                "C:\\Users\\pjval\\OneDrive\\Prácticas 2024\\Mineguide-EPOC\\Bronquiolitis actualizado\\medicamentosUTF-8.csv"
-                );
+            var result = ReadMedication();
+
+            var parsedMedicationContent = ExtractMedications(result);
+
+            WriteMedication(parsedMedicationContent);
         }
-        
+
         /// <summary>
         /// Este método se encarga de leer el archivo csv y devolver un objeto 'MedicationContent'
         /// que contiene los headers, las rows y el index de la columna 'T' renombrada a 'Medication'
         /// </summary>
-        /// <param name="cultureName"></param>
-        /// <param name="filepath"></param>
         /// <returns>result</returns>
-        private static MedicationContent ReadMedication(string cultureName, string filepath)
+        private static MedicationContent ReadMedication()
         {
-            var config = new CsvConfiguration(new CultureInfo(cultureName));
+            var config = new CsvConfiguration(new CultureInfo(Configuration.CultureName));
 
             string[]? headerArray = null;
             List<string[]> rowsList = [];
@@ -32,7 +33,7 @@ namespace Mineguide_EPOC_Script
 
             try
             {
-                using var reader = new StreamReader(filepath);
+                using var reader = new StreamReader(Configuration.InputFile);
                 using var csv = new CsvReader(reader, config);
                 if (csv.Read())
                 {
@@ -99,7 +100,6 @@ namespace Mineguide_EPOC_Script
         /// <exception cref="Exception"></exception>
         private static int GetTColumnIndex(string[] headerArray)
         {
-            // Cambio de nombre de columna de medicamentos de 'T' a 'Medication'
             // Guardado del índice donde se encuentran los medicamentos 'T'
             for (int i = 0; i < headerArray.Length; i++)
             {
@@ -110,15 +110,6 @@ namespace Mineguide_EPOC_Script
             }
 
             throw new Exception("No se ha encontrado la columna solicitada.");
-        }
-
-        public static void ParseMedication()
-        {
-            var result = ReadMedication();
-
-            var rowsWithMedicationsList = ExtractMedications(result);
-
-            WriteMedication(rowsWithMedicationsList);
         }
 
         private static MedicationContent ExtractMedications(MedicationContent originalContent)
@@ -138,12 +129,6 @@ namespace Mineguide_EPOC_Script
                 newRows.Add(newRow);
             }
 
-            Console.WriteLine(string.Join(",", newHeaders));
-            foreach (var row in newRows)
-            {
-                Console.WriteLine(string.Join(",", row));
-            }
-
             return new MedicationContent()
             {
                 Headers = newHeaders,
@@ -154,7 +139,32 @@ namespace Mineguide_EPOC_Script
 
         private static void WriteMedication(MedicationContent content)
         {
-            
+            var config = new CsvConfiguration(new CultureInfo(Configuration.CultureName));
+            using var writer = new StreamWriter(Configuration.OutputFile, false, Encoding.UTF8);
+            using var csv = new CsvWriter(writer, config);
+
+            foreach (var header in content.Headers)
+            {
+                csv.WriteField(header);
+            }
+
+            csv.NextRecord();
+
+            // Code for console display of the result, OPTIONAL
+            foreach (var row in content.Rows)
+            {
+                foreach (var field in row)
+                {
+                    csv.WriteField(field);
+                }
+                csv.NextRecord();
+            }
+
+            Console.WriteLine(string.Join(",", content.Headers));
+            foreach (var row in content.Rows)
+            {
+                Console.WriteLine(string.Join(",", row));
+            }
         }
 
         private static T[] ArrayCopyAndAdd<T>(T[] sourceArray, T elementToAdd)
@@ -170,11 +180,19 @@ namespace Mineguide_EPOC_Script
             return destinationArray;
         }
 
+        // TODO Delete static key word and instantiate this class in the main method.
+        private static class Configuration
+        {
+            public static string CultureName = "es-ES";
+            public static string InputFile = "C:\\Users\\pjval\\OneDrive\\Prácticas 2024\\Mineguide-EPOC\\Bronquiolitis actualizado\\medicamentosUTF-8.csv";
+            public static string OutputFile = "C:\\Users\\pjval\\OneDrive\\Prácticas 2024\\Mineguide-EPOC\\Bronquiolitis actualizado\\medicamentosFinal.csv";
+        }
+
         private class MedicationContent
         {
-            public string[] Headers { get; set; }
-            public List<string[]> Rows { get; set; }
-            public int TColumnIndex { get; set; }
+            public required string[] Headers { get; init; }
+            public required List<string[]> Rows { get; init; }
+            public int TColumnIndex { get; init; }
         }
     }
 }
