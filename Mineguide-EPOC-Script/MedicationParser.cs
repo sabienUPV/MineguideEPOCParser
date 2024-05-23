@@ -7,7 +7,7 @@ namespace Mineguide_EPOC_Script
 {
     public static class MedicationParser
     {
-        private static MedicationReadResult ReadMedication()
+        private static MedicationContent ReadMedication()
         {
             return ReadMedication(
                 "es-ES", 
@@ -16,13 +16,13 @@ namespace Mineguide_EPOC_Script
         }
         
         /// <summary>
-        /// Este método se encarga de leer el archivo csv y devolver un objeto 'MedicationReadResult'
+        /// Este método se encarga de leer el archivo csv y devolver un objeto 'MedicationContent'
         /// que contiene los headers, las rows y el index de la columna 'T' renombrada a 'Medication'
         /// </summary>
         /// <param name="cultureName"></param>
         /// <param name="filepath"></param>
         /// <returns>result</returns>
-        private static MedicationReadResult ReadMedication(string cultureName, string filepath)
+        private static MedicationContent ReadMedication(string cultureName, string filepath)
         {
             var config = new CsvConfiguration(new CultureInfo(cultureName));
 
@@ -40,6 +40,11 @@ namespace Mineguide_EPOC_Script
                     headerArray = csv.HeaderRecord;
 
                     tColumnIndex = GetTColumnIndex(headerArray);
+
+                    if (tColumnIndex < 0)
+                    {
+                        throw new InvalidOperationException("T was not found");
+                    }
 
                     while (csv.Read())
                     {
@@ -70,7 +75,12 @@ namespace Mineguide_EPOC_Script
                 throw;
             }
 
-            var result = new MedicationReadResult()
+            if (headerArray == null)
+            {
+                throw new InvalidOperationException("Header array is null");
+            }
+
+            var result = new MedicationContent()
             {
                 Headers = headerArray,
                 Rows = rowsList,
@@ -95,7 +105,6 @@ namespace Mineguide_EPOC_Script
             {
                 if (headerArray[i].Equals("T", StringComparison.OrdinalIgnoreCase))
                 {
-                    headerArray[i] = "Medication";
                     return i;
                 }
             }
@@ -107,59 +116,64 @@ namespace Mineguide_EPOC_Script
         {
             var result = ReadMedication();
 
-            if (result.Headers == null || result.Rows == null)
-            {
-                Console.WriteLine("Los headers o las filas son null");
-                return;
-            }
+            var rowsWithMedicationsList = ExtractMedications(result);
 
-            if (result.TColumnIndex <= 0)
-            {
-                Console.WriteLine("El índice de T no es valido");
-                return;
-            }
-
-            var rowsWithMedicationsList = ExtractMedications(result.Rows, result.TColumnIndex);
-
-            WriteMedication(result.Headers, rowsWithMedicationsList);
+            WriteMedication(rowsWithMedicationsList);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="rows"></param>
-        /// <param name="tIndex"></param>
-        /// <returns>result</returns>
-        private static List<string[]> ExtractMedications(ICollection<string[]> rows, int tIndex)
+        private static MedicationContent ExtractMedications(MedicationContent originalContent)
         {
-            var result = new List<string[]>();
+            // Add new header to the array
+            string[]? newHeaders = ArrayCopyAndAdd(originalContent.Headers, "Medication");
+            var newRows = new List<string[]>();
 
-            foreach (var row in rows)
+            foreach (var row in originalContent.Rows)
             {
                 // Recoge la columna que contiene los medicamentos
-                var t = row[tIndex];
+                var t = row[originalContent.TColumnIndex];
                 var medications = ApiClient.CallToApi(t);
 
-                var newRow = new string[row.Length];
-                Array.Copy(row, newRow, row.Length);
+                var newRow = ArrayCopyAndAdd(row, medications);
 
-                newRow[tIndex] = medications;
-
-                result.Add(newRow);
+                newRows.Add(newRow);
             }
 
-            return result;
+            Console.WriteLine(string.Join(",", newHeaders));
+            foreach (var row in newRows)
+            {
+                Console.WriteLine(string.Join(",", row));
+            }
+
+            return new MedicationContent()
+            {
+                Headers = newHeaders,
+                Rows = newRows,
+                TColumnIndex = originalContent.TColumnIndex
+            };
         }
 
-        private static void WriteMedication(string[] header, List<string[]> rows)
+        private static void WriteMedication(MedicationContent content)
         {
             
         }
 
-        private class MedicationReadResult
+        private static T[] ArrayCopyAndAdd<T>(T[] sourceArray, T elementToAdd)
         {
-            public string[]? Headers { get; set; }
-            public List<string[]>? Rows { get; set; }
+            // Create a new array with one more element at the end,
+            // and copy the original array to it
+            var destinationArray = new T[sourceArray.Length + 1];
+            Array.Copy(sourceArray, destinationArray, sourceArray.Length);
+
+            // Add element at the end of the array
+            destinationArray[^1] = elementToAdd;
+
+            return destinationArray;
+        }
+
+        private class MedicationContent
+        {
+            public string[] Headers { get; set; }
+            public List<string[]> Rows { get; set; }
             public int TColumnIndex { get; set; }
         }
     }
