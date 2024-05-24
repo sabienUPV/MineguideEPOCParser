@@ -3,7 +3,6 @@ using CsvHelper.TypeConversion;
 using CsvHelper;
 using System.Globalization;
 using System.Text;
-using System;
 
 namespace Mineguide_EPOC_Script
 {
@@ -44,7 +43,7 @@ namespace Mineguide_EPOC_Script
 
                     if (tColumnIndex < 0)
                     {
-                        throw new InvalidOperationException("T was not found");
+                        throw new InvalidOperationException("T column was not found");
                     }
 
                     while (csv.Read())
@@ -125,7 +124,6 @@ namespace Mineguide_EPOC_Script
                 var medications = ApiClient.CallToApi(t);
 
                 var newRow = ArrayCopyAndAdd(row, medications);
-
                 newRows.Add(newRow);
             }
 
@@ -150,7 +148,8 @@ namespace Mineguide_EPOC_Script
 
             csv.NextRecord();
 
-            // Code for console display of the result, OPTIONAL
+            // Code for console display of the result to check if
+            // the data is written correctly
             foreach (var row in content.Rows)
             {
                 foreach (var field in row)
@@ -165,6 +164,20 @@ namespace Mineguide_EPOC_Script
             {
                 Console.WriteLine(string.Join(",", row));
             }
+        }
+
+        // Overload of ArrayCopyAndAdd
+        private static string[] ArrayCopyAndAdd<T>(T[] sourceArray, Task<string[]> elementToAdd)
+        {
+            // Create a new array with one more element at the end,
+            // and copy the original array to it
+            var destinationArray = new string[sourceArray.Length + 1];
+            Array.Copy(sourceArray, destinationArray, sourceArray.Length);
+
+            // Add element at the end of the array
+            destinationArray[^1] = elementToAdd.ToString();
+
+            return destinationArray;
         }
 
         private static T[] ArrayCopyAndAdd<T>(T[] sourceArray, T elementToAdd)

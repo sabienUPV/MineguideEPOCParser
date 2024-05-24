@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="32.0.3" />
+    <PackageReference Include="OllamaSharp" Version="1.1.9" />
   </ItemGroup>
 
 </Project>
