@@ -1,9 +1,12 @@
 ﻿using Mineguide_EPOC_Script;
 
-class Program
+namespace Mineguide_EPOC_Script
 {
-    public static void Main(string[] args)
+    public static class Program
     {
-        MedicationParser.ParseMedication();
+        public static async Task Main(string[] args)
+        {
+            await MedicationParser.ParseMedication();
+        }
     }
 }

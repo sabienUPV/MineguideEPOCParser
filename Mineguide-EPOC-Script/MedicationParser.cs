@@ -8,11 +8,11 @@ namespace Mineguide_EPOC_Script
 {
     public static class MedicationParser
     {
-        public static void ParseMedication()
+        public static async Task ParseMedication()
         {
             var result = ReadMedication();
 
-            var parsedMedicationContent = ExtractMedications(result);
+            var parsedMedicationContent = await ExtractMedications(result);
 
             WriteMedication(parsedMedicationContent);
         }
@@ -111,7 +111,7 @@ namespace Mineguide_EPOC_Script
             throw new Exception("No se ha encontrado la columna solicitada.");
         }
 
-        private static MedicationContent ExtractMedications(MedicationContent originalContent)
+        private static async Task<MedicationContent> ExtractMedications(MedicationContent originalContent)
         {
             // Add new header to the array
             string[]? newHeaders = ArrayCopyAndAdd(originalContent.Headers, "Medication");
@@ -121,7 +121,7 @@ namespace Mineguide_EPOC_Script
             {
                 // Recoge la columna que contiene los medicamentos
                 var t = row[originalContent.TColumnIndex];
-                var medications = ApiClient.CallToApi(t);
+                var medications = await ApiClient.CallToApi(t);
 
                 var newRow = ArrayCopyAndAdd(row, medications);
                 newRows.Add(newRow);
@@ -164,20 +164,6 @@ namespace Mineguide_EPOC_Script
             {
                 Console.WriteLine(string.Join(",", row));
             }
-        }
-
-        // Overload of ArrayCopyAndAdd
-        private static string[] ArrayCopyAndAdd<T>(T[] sourceArray, Task<string[]> elementToAdd)
-        {
-            // Create a new array with one more element at the end,
-            // and copy the original array to it
-            var destinationArray = new string[sourceArray.Length + 1];
-            Array.Copy(sourceArray, destinationArray, sourceArray.Length);
-
-            // Add element at the end of the array
-            destinationArray[^1] = elementToAdd.ToString();
-
-            return destinationArray;
         }
 
         private static T[] ArrayCopyAndAdd<T>(T[] sourceArray, T elementToAdd)
