@@ -13,12 +13,7 @@ namespace Mineguide_EPOC_Script
                 SelectedModel = "llama3"
             };
 
-            var request = new GenerateCompletionRequest()
-            {
-                Prompt = t,
-            };
-
-            var result = await ollama.GetCompletion(request);
+            var result = await ollama.GetCompletion(t, null!);
 
             Console.WriteLine(result);
 
