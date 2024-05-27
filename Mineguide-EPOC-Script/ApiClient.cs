@@ -1,4 +1,5 @@
 ﻿using OllamaSharp;
+using OllamaSharp.Models;
 
 namespace Mineguide_EPOC_Script
 {
@@ -12,16 +13,16 @@ namespace Mineguide_EPOC_Script
                 SelectedModel = "llama3"
             };
 
-            string med = "";
-
-            ConversationContext? context = null;
-            context = await ollama.StreamCompletion(t, context, stream =>
+            var request = new GenerateCompletionRequest()
             {
-                Console.WriteLine(stream.Response);
-            });
+                Prompt = t,
+            };
 
-            string medications = "";
-            /* EXAMPLE */ return medications;
+            var result = await ollama.GetCompletion(request);
+
+            Console.WriteLine(result);
+
+            return result.Response;
         }
     }
 }
