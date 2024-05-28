@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 
 namespace Mineguide_EPOC_Script
@@ -32,13 +33,16 @@ namespace Mineguide_EPOC_Script
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
 
-            var responseBody = await response.Content.ReadAsStringAsync();
-            
-            var apiResponse = JsonSerializer.Deserialize<ApiResponse>(responseBody);
-            
-            Console.WriteLine(apiResponse.response);
+            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>();
 
-            return apiResponse.response;
+            if (apiResponse == null)
+			{
+                throw new InvalidOperationException("Error: API response is null");
+			}
+            
+            Console.WriteLine(apiResponse.Response);
+
+            return apiResponse.Response;
         }
 
         private class RequestConfig
@@ -50,7 +54,7 @@ namespace Mineguide_EPOC_Script
 
         private class ApiResponse
         {
-            public required string response { get; init; }
+            public required string Response { get; init; }
         }
     }
 }
