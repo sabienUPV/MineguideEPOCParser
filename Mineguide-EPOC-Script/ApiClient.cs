@@ -5,11 +5,13 @@ namespace Mineguide_EPOC_Script
 {
 	public static class ApiClient
     {
-        public static async Task<string> CallToApi(string t)
+        private const string ApiKey = "32868ebff04b45108ae1637756df5778";
+
+		public static async Task<string> CallToApi(string t)
         {
             var client = new HttpClient();
 
-            var uri = new Uri("https://mineguide-epoc.itaca.upv.es/ollama-api/api/generate");
+            var uri = new Uri("https://mineguide-epoc.itaca.upv.es:11434/api/generate");
 
             var generateRequest = new RequestConfig()
             {
@@ -24,6 +26,8 @@ namespace Mineguide_EPOC_Script
                 RequestUri = uri,
                 Content = new StringContent(JsonSerializer.Serialize(generateRequest), Encoding.UTF8, "application/json")
             };
+
+            request.Headers.Add("X-API-Key", ApiKey);
 
             var response = await client.SendAsync(request);
             response.EnsureSuccessStatusCode();
