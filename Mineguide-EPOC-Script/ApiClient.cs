@@ -1,5 +1,7 @@
-﻿using OllamaSharp;
-using OllamaSharp.Models;
+﻿using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Mineguide_EPOC_Script
 {
@@ -7,17 +9,40 @@ namespace Mineguide_EPOC_Script
     {
         public static async Task<string> CallToApi(string t)
         {
+            var handler = new WinHttpHandler();
+            var client = new HttpClient(handler);
+
             var uri = new Uri("http://mineguide-epoc.itaca.upv.es/ollama-api");
-            var ollama = new OllamaApiClient(uri)
+
+            var generateRequest = new RequestConfig()
             {
-                SelectedModel = "llama3"
+                Prompt = t,
+                Model = "medicamento-parser",
+                Stream = false,
             };
 
-            var result = await ollama.GetCompletion(t, null!);
+            var request = new HttpRequestMessage()
+            {
+                Method = HttpMethod.Post,
+                RequestUri = uri,
+                Content = new StringContent(JsonSerializer.Serialize(generateRequest), Encoding.UTF8, "application/json")
+            };
 
-            Console.WriteLine(result);
+            var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
 
-            return result.Response;
+            var responseBody = await response.Content.ReadAsStringAsync();
+
+            Console.WriteLine(responseBody);
+
+            return responseBody;
+        }
+
+        private class RequestConfig
+        {
+            public required string Prompt { get; set; }
+            public required string Model { get; set; }
+            public required bool Stream { get; set; }
         }
     }
 }
