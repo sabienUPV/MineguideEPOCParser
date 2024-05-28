@@ -9,7 +9,7 @@ namespace Mineguide_EPOC_Script
         {
             var client = new HttpClient();
 
-            var uri = new Uri("https://mineguide-epoc.itaca.upv.es/ollama-api");
+            var uri = new Uri("https://mineguide-epoc.itaca.upv.es/ollama-api/api/generate");
 
             var generateRequest = new RequestConfig()
             {
