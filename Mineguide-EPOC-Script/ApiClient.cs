@@ -33,10 +33,12 @@ namespace Mineguide_EPOC_Script
             response.EnsureSuccessStatusCode();
 
             var responseBody = await response.Content.ReadAsStringAsync();
+            
+            var apiResponse = JsonSerializer.Deserialize<ApiResponse>(responseBody);
+            
+            Console.WriteLine(apiResponse.response);
 
-            Console.WriteLine(responseBody);
-
-            return responseBody;
+            return apiResponse.response;
         }
 
         private class RequestConfig
@@ -44,6 +46,11 @@ namespace Mineguide_EPOC_Script
             public required string Prompt { get; set; }
             public required string Model { get; set; }
             public required bool Stream { get; set; }
+        }
+
+        private class ApiResponse
+        {
+            public required string response { get; init; }
         }
     }
 }
