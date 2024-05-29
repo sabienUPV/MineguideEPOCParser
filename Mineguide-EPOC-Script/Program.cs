@@ -2,18 +2,18 @@
 {
 	public static class Program
     {
-        private static readonly CancellationTokenSource Cts = new();
-
         public static async Task Main(string[] args)
         {
+            using CancellationTokenSource cts = new();
+
             // Desktop folder
             var desktopFolder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
             // TEST JUAN
-            var testConfiguration = JuanConfig();
+            //var testConfiguration = JuanConfig();
 
 			// TEST ALEJANDRO
-			//testConfiguration = AlejandroConfig(desktopFolder);
+			var testConfiguration = AlejandroConfig(desktopFolder);
 
             Console.WriteLine("Application started.");
             Console.WriteLine("Press the ENTER key to cancel...\n");
@@ -26,28 +26,18 @@
                 }
 
                 Console.WriteLine("Cancelling operation...");
-                Cts.Cancel();
+                cts.Cancel();
             });
 
-            var finishedTask = await Task.WhenAny([cancelTask, MedicationParser.ParseMedication(testConfiguration)]);
-
-            if (finishedTask == cancelTask)
+            try
             {
-                try
-                {
-                    await MedicationParser.ParseMedication(testConfiguration);
-                    Console.WriteLine("ParseMedication task completed");
-                }
-                catch (TaskCanceledException)
-                {
-                    Console.WriteLine("ParseMedication task has been cancelled.");
-                }
-                catch (IOException)
-                {
-                    Console.WriteLine("Waiting until the output file is closed");
-                }
-                Cts.Dispose();
-            }
+				await MedicationParser.ParseMedication(testConfiguration, cts.Token);
+				Console.WriteLine("ParseMedication completed");
+			}
+            catch (OperationCanceledException)
+            {
+				Console.WriteLine("ParseMedication has been cancelled.");
+			}
         }
 
         private static MedicationParser.Configuration JuanConfig()

@@ -3,6 +3,7 @@ using CsvHelper.TypeConversion;
 using CsvHelper;
 using System.Globalization;
 using System.Text;
+using System.Runtime.CompilerServices;
 
 namespace Mineguide_EPOC_Script
 {
@@ -15,20 +16,22 @@ namespace Mineguide_EPOC_Script
         /// 
         /// This is lazily evaluated, so it will not read the entire input file into memory.
         /// </summary>
-        public static async Task ParseMedication(Configuration configuration)
+        public static async Task ParseMedication(Configuration configuration, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
 			var csvConfig = new CsvConfiguration(new CultureInfo(configuration.CultureName));
 
             // Read 
 			using var reader = new StreamReader(configuration.InputFile);
 			using var csvReader = new CsvReader(reader, csvConfig);
 
-			var medicationRead = ReadMedication(csvReader);
+			var medicationRead = ReadMedication(csvReader, cancellationToken);
 
 			// Add new header to the array
 			string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, "Medication");
 
-			var newRows = ExtractMedications(medicationRead.Rows, medicationRead.TColumnIndex);
+			var newRows = ExtractMedications(medicationRead.Rows, medicationRead.TColumnIndex, cancellationToken);
 
             // Write
 			await using var writer = new StreamWriter(configuration.OutputFile, false, Encoding.UTF8);
@@ -42,7 +45,7 @@ namespace Mineguide_EPOC_Script
         /// que contiene los headers, las rows y el index de la columna 'T' renombrada a 'Medication'
         /// </summary>
         /// <returns>result</returns>
-        private static MedicationReadContent ReadMedication(CsvReader csv)
+        private static MedicationReadContent ReadMedication(CsvReader csv, CancellationToken cancellationToken = default)
         {
             string[]? headerArray = null;
             IEnumerable<string[]>? rowsEnumerable = null;
@@ -62,7 +65,7 @@ namespace Mineguide_EPOC_Script
                         throw new InvalidOperationException("T column was not found");
                     }
 
-                    rowsEnumerable = ReadMedicationFromCsv(csv);
+                    rowsEnumerable = ReadMedicationFromCsv(csv, cancellationToken);
 				}
             }
             catch (FileNotFoundException)
@@ -78,6 +81,11 @@ namespace Mineguide_EPOC_Script
             catch (TypeConverterException)
             {
                 Console.WriteLine("Hubo un problema convirtiendo los datos del archivo CSV a los tipos de la clase.");
+                throw;
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when the operation is cancelled. Do nothing and retrow the exception.
                 throw;
             }
             catch (Exception ex)
@@ -106,11 +114,12 @@ namespace Mineguide_EPOC_Script
             return result;
         }
 
-		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv)
+		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, CancellationToken cancellationToken = default)
         {
 			while (csv.Read())
             {
 				yield return csv.Parser.Record;
+				cancellationToken.ThrowIfCancellationRequested();
 			}
 		}
 
@@ -135,13 +144,13 @@ namespace Mineguide_EPOC_Script
             throw new Exception("No se ha encontrado la columna solicitada.");
         }
 
-        private static async IAsyncEnumerable<string[]> ExtractMedications(IEnumerable<string[]> rows, int tColumnIndex)
+        private static async IAsyncEnumerable<string[]> ExtractMedications(IEnumerable<string[]> rows, int tColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
 			foreach (var row in rows)
             {
 				// Recoge la columna que contiene los medicamentos
 				var t = row[tColumnIndex];
-				var medications = await ApiClient.CallToApi(t);
+				var medications = await ApiClient.CallToApi(t, cancellationToken);
 
 				var newRow = ArrayCopyAndAdd(row, medications);
                 yield return newRow;

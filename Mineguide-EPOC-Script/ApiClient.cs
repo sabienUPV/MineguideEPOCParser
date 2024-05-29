@@ -9,7 +9,7 @@ namespace Mineguide_EPOC_Script
     {
         private const string ApiKey = "32868ebff04b45108ae1637756df5778";
 
-		public static async Task<string> CallToApi(string t)
+		public static async Task<string> CallToApi(string t, CancellationToken cancellationToken = default)
         {
             var client = new HttpClient();
 
@@ -32,10 +32,15 @@ namespace Mineguide_EPOC_Script
 
             request.Headers.Add("X-API-Key", ApiKey);
 
-            var response = await client.SendAsync(request);
-            response.EnsureSuccessStatusCode();
+            var response = await client.SendAsync(request, cancellationToken);
 
-            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>();
+			cancellationToken.ThrowIfCancellationRequested();
+
+			response.EnsureSuccessStatusCode();
+
+            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>(cancellationToken);
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             if (apiResponse == null)
 			{
