@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Mineguide_EPOC_Script
 {
@@ -18,6 +19,7 @@ namespace Mineguide_EPOC_Script
             {
                 Prompt = t,
                 Model = "medicamento-parser",
+                // Format = "json",
                 Stream = false,
             };
 
@@ -49,6 +51,9 @@ namespace Mineguide_EPOC_Script
         {
             public required string Prompt { get; set; }
             public required string Model { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public string? Format { get; set; }
             public required bool Stream { get; set; }
         }
 

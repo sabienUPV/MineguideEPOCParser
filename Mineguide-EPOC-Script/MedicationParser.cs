@@ -19,6 +19,7 @@ namespace Mineguide_EPOC_Script
         {
 			var csvConfig = new CsvConfiguration(new CultureInfo(configuration.CultureName));
 
+            // Read 
 			using var reader = new StreamReader(configuration.InputFile);
 			using var csvReader = new CsvReader(reader, csvConfig);
 
@@ -29,8 +30,9 @@ namespace Mineguide_EPOC_Script
 
 			var newRows = ExtractMedications(medicationRead.Rows, medicationRead.TColumnIndex);
 
-			using var writer = new StreamWriter(configuration.OutputFile, false, Encoding.UTF8);
-			using var csvWriter = new CsvWriter(writer, csvConfig);
+            // Write
+			await using var writer = new StreamWriter(configuration.OutputFile, false, Encoding.UTF8);
+			await using var csvWriter = new CsvWriter(writer, csvConfig);
 
 			await WriteMedication(csvWriter, newHeaders, newRows);
         }
@@ -107,7 +109,7 @@ namespace Mineguide_EPOC_Script
 		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv)
         {
 			while (csv.Read())
-			{
+            {
 				yield return csv.Parser.Record;
 			}
 		}
@@ -136,7 +138,7 @@ namespace Mineguide_EPOC_Script
         private static async IAsyncEnumerable<string[]> ExtractMedications(IEnumerable<string[]> rows, int tColumnIndex)
         {
 			foreach (var row in rows)
-			{
+            {
 				// Recoge la columna que contiene los medicamentos
 				var t = row[tColumnIndex];
 				var medications = await ApiClient.CallToApi(t);
