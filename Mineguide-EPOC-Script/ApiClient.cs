@@ -18,7 +18,7 @@ namespace Mineguide_EPOC_Script
             var generateRequest = new RequestConfig()
             {
                 Prompt = t,
-                Model = "medicamento-parser",
+                Model = "medicamento-parser-dev",
                 Format = "json",
                 Stream = false,
             };
