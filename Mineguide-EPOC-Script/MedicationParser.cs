@@ -168,8 +168,6 @@ namespace Mineguide_EPOC_Script
 
             List<string[]> newRows = [];
 
-            // Code for console display of the result to check if
-            // the data is written correctly
             await foreach (var row in rows)
             {
                 newRows.Add(row);
@@ -180,7 +178,8 @@ namespace Mineguide_EPOC_Script
                 csv.NextRecord();
             }
 
-            // TEST CODE TO SHOW THE RESULT IN THE CONSOLE
+            // Code for console display of the result to check if
+            // the data is written correctly
             // TODO: Comment or remove this code
             Console.WriteLine(string.Join(",", headers));
             foreach (var row in newRows)

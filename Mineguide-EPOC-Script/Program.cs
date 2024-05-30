@@ -10,10 +10,10 @@
             var desktopFolder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 
             // TEST JUAN
-            //var testConfiguration = JuanConfig();
+            var testConfiguration = JuanConfig();
 
 			// TEST ALEJANDRO
-			var testConfiguration = AlejandroConfig(desktopFolder);
+			// var testConfiguration = AlejandroConfig(desktopFolder);
 
             Console.WriteLine("Application started.");
             Console.WriteLine("Press the ENTER key to cancel...\n");

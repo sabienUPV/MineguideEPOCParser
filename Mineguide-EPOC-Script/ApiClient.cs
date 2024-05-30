@@ -19,7 +19,7 @@ namespace Mineguide_EPOC_Script
             {
                 Prompt = t,
                 Model = "medicamento-parser",
-                // Format = "json",
+                Format = "json",
                 Stream = false,
             };
 
@@ -49,7 +49,13 @@ namespace Mineguide_EPOC_Script
             
             Console.WriteLine(apiResponse.Response);
 
-            return apiResponse.Response;
+            var medicamentosList = JsonSerializer.Deserialize<MedicationsList>(apiResponse.Response);
+
+            var medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
+
+            Console.WriteLine(medicamentosString);
+
+            return medicamentosString;
         }
 
         private class RequestConfig
@@ -65,6 +71,11 @@ namespace Mineguide_EPOC_Script
         private class ApiResponse
         {
             public required string Response { get; init; }
+        }
+
+        private class MedicationsList
+        {
+            public required string[] Medicamentos { get; set; }
         }
     }
 }
