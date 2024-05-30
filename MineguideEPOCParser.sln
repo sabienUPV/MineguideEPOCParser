@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.9.34714.143
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MineguideEPOCParser.Core", "MineguideEPOCParser.Core\MineguideEPOCParser.Core.csproj", "{426A4980-013C-45E8-801C-9395E60D2A05}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MineguideEPOCParser.ConsoleApp", "MineguideEPOCParser.ConsoleApp\MineguideEPOCParser.ConsoleApp.csproj", "{809EFAE2-561C-4F43-95C5-884706328F4D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{426A4980-013C-45E8-801C-9395E60D2A05}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{426A4980-013C-45E8-801C-9395E60D2A05}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{426A4980-013C-45E8-801C-9395E60D2A05}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{426A4980-013C-45E8-801C-9395E60D2A05}.Release|Any CPU.Build.0 = Release|Any CPU
+		{809EFAE2-561C-4F43-95C5-884706328F4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{809EFAE2-561C-4F43-95C5-884706328F4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{809EFAE2-561C-4F43-95C5-884706328F4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{809EFAE2-561C-4F43-95C5-884706328F4D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {72D257C4-A223-4C44-8143-3A450A7706D9}
+	EndGlobalSection
+EndGlobal
