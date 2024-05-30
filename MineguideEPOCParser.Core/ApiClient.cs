@@ -2,6 +2,7 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Polly;
 
 namespace MineguideEPOCParser.Core
 {
@@ -10,10 +11,15 @@ namespace MineguideEPOCParser.Core
 		private const string ApiKey = "32868ebff04b45108ae1637756df5778";
 
 		public static async Task<string> CallToApi(string t, CancellationToken cancellationToken = default)
-		{
-			var client = new HttpClient();
+        {
+            var retryPolicy = Policy.Handle<JsonException>()
+                .WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(2));
 
+			var client = new HttpClient();
+			
 			var uri = new Uri("https://mineguide-epoc.itaca.upv.es:11434/api/generate");
+
+            string medicamentosString = "";
 
 			var generateRequest = new RequestConfig()
 			{
@@ -32,36 +38,39 @@ namespace MineguideEPOCParser.Core
 
 			request.Headers.Add("X-API-Key", ApiKey);
 
-			var response = await client.SendAsync(request, cancellationToken);
+            await retryPolicy.ExecuteAsync(async () =>
+            {
+                var response = await client.SendAsync(request, cancellationToken);
 
-			cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
-			response.EnsureSuccessStatusCode();
+                response.EnsureSuccessStatusCode();
 
-			var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>(cancellationToken);
+                var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>(cancellationToken);
 
-			cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
-			if (apiResponse == null)
-			{
-				throw new InvalidOperationException("Error: API response is null");
-			}
+                if (apiResponse == null)
+                {
+                    throw new InvalidOperationException("Error: API response is null");
+                }
 
-			Console.WriteLine(apiResponse.Response);
+                Console.WriteLine(apiResponse.Response);
 
-			var medicamentosList = JsonSerializer.Deserialize<MedicationsList>(apiResponse.Response);
+                var medicamentosList = JsonSerializer.Deserialize<MedicationsList>(apiResponse.Response);
 
-			cancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
 
-			if (medicamentosList == null)
-			{
-				throw new InvalidOperationException($"Error: API response is in an invalid format. Could not parse medication as JSON.\nRaw response: {apiResponse.Response}");
-			}
+                if (medicamentosList == null)
+                {
+                    throw new InvalidOperationException($"Error: API response is in an invalid format. Could not parse medication as JSON.\nRaw response: {apiResponse.Response}");
+                }
 
-			var medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
+                medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
 
-			Console.WriteLine(medicamentosString);
-
+                Console.WriteLine(medicamentosString);
+            });
+            
 			return medicamentosString;
 		}
 
