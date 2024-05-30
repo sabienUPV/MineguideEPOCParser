@@ -51,6 +51,13 @@ namespace MineguideEPOCParser.Core
 
 			var medicamentosList = JsonSerializer.Deserialize<MedicationsList>(apiResponse.Response);
 
+			cancellationToken.ThrowIfCancellationRequested();
+
+			if (medicamentosList == null)
+			{
+				throw new InvalidOperationException($"Error: API response is in an invalid format. Could not parse medication as JSON.\nRaw response: {apiResponse.Response}");
+			}
+
 			var medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
 
 			Console.WriteLine(medicamentosString);
