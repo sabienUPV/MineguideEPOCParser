@@ -19,8 +19,6 @@ namespace MineguideEPOCParser.Core
 			
 			var uri = new Uri("https://mineguide-epoc.itaca.upv.es:11434/api/generate");
 
-            string medicamentosString = "";
-
 			var generateRequest = new RequestConfig()
 			{
 				Prompt = t,
@@ -38,7 +36,7 @@ namespace MineguideEPOCParser.Core
 
 			request.Headers.Add("X-API-Key", ApiKey);
 
-            await retryPolicy.ExecuteAsync(async () =>
+            return await retryPolicy.ExecuteAsync(async () =>
             {
                 var response = await client.SendAsync(request, cancellationToken);
 
@@ -66,12 +64,12 @@ namespace MineguideEPOCParser.Core
                     throw new InvalidOperationException($"Error: API response is in an invalid format. Could not parse medication as JSON.\nRaw response: {apiResponse.Response}");
                 }
 
-                medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
+                var medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
 
                 Console.WriteLine(medicamentosString);
-            });
-            
-			return medicamentosString;
+
+				return medicamentosString;
+			});
 		}
 
 		private class RequestConfig
