@@ -101,7 +101,7 @@
             <Button Grid.Column="6" x:Name="CancelButton" Content="Cancel" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="CancelButton_Click" />
             
             <!-- Log viewer in expander (not expanded by default) -->
-            <Expander Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" x:Name="LogExpander" Header="View logs" IsExpanded="False">
+            <Expander Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="7" x:Name="LogExpander" Header="View logs" IsExpanded="False">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="auto" />
