@@ -163,15 +163,15 @@ namespace MineguideEPOCParser.GUIApp
 
 		private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)
 		{
-			InputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.OpenFileDialog>() ?? string.Empty;
+			InputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.OpenFileDialog>(InputFileTextBox.Text) ?? string.Empty;
 		}
 
 		private void BrowseOutputFileButton_Click(object sender, RoutedEventArgs e)
 		{
-			OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>() ?? string.Empty;
+			OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medication.csv") ?? string.Empty;
 		}
 
-		private static string? BrowseCsvFile<TFileDialog>()
+		private static string? BrowseCsvFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
 			where TFileDialog : Microsoft.Win32.FileDialog, new()
 		{
 			// Create a new file dialog
@@ -179,6 +179,16 @@ namespace MineguideEPOCParser.GUIApp
 			{
 				Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
 			};
+
+			if (!string.IsNullOrEmpty(currentPath))
+			{
+				dialog.InitialDirectory = System.IO.Path.GetDirectoryName(currentPath);
+				dialog.FileName = System.IO.Path.GetFileName(currentPath);
+			}
+			else if (defaultFileName is not null)
+			{
+				dialog.FileName = defaultFileName;
+			}
 
 			// Show the dialog
 			if (dialog.ShowDialog() == true)
