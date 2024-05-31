@@ -21,7 +21,10 @@ namespace MineguideEPOCParser.Core
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 
-			var csvConfig = new CsvConfiguration(new CultureInfo(configuration.CultureName));
+			var csvConfig = new CsvConfiguration(new CultureInfo(configuration.CultureName))
+			{
+				CountBytes = configuration.Progress is not null,
+			};
 
 			// Read 
 			using var reader = new StreamReader(configuration.InputFile);
@@ -131,7 +134,7 @@ namespace MineguideEPOCParser.Core
 				yield return csv.Parser.Record;
 				progress?.Report(new ProgressValue
 				{
-					Value = (double)sr.BaseStream.Position / sr.BaseStream.Length,
+					Value = (double)csv.Context.Parser.ByteCount / sr.BaseStream.Length,
 					RowsRead = ++rowsRead,
 				});
 				cancellationToken.ThrowIfCancellationRequested();
