@@ -27,7 +27,7 @@ namespace MineguideEPOCParser.Core
 			using var reader = new StreamReader(configuration.InputFile);
 			using var csvReader = new CsvReader(reader, csvConfig);
 
-			var medicationRead = ReadMedication(csvReader, configuration.Logger, cancellationToken);
+			var medicationRead = ReadMedication(csvReader, reader, configuration.Logger, configuration.Progress, cancellationToken);
 
 			// Add new header to the array
 			string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, "Medication");
@@ -38,7 +38,15 @@ namespace MineguideEPOCParser.Core
 			await using var writer = new StreamWriter(configuration.OutputFile, false, Encoding.UTF8);
 			await using var csvWriter = new CsvWriter(writer, csvConfig);
 
-			await WriteMedication(csvWriter, newHeaders, newRows, configuration.Logger);
+			int rowsWritten = await WriteMedication(csvWriter, newHeaders, newRows, configuration.Logger);
+
+			// Report progress and log completion
+			configuration.Progress?.Report(new ProgressValue
+			{
+				Value = 1, // 100%
+				RowsRead = rowsWritten,
+			});
+			configuration.Logger?.Information("Medication parsing completed.");
 		}
 
 		/// <summary>
@@ -46,7 +54,7 @@ namespace MineguideEPOCParser.Core
 		/// que contiene los headers, las rows y el index de la columna 'T' renombrada a 'Medication'
 		/// </summary>
 		/// <returns>result</returns>
-		private static MedicationReadContent ReadMedication(CsvReader csv, ILogger? log = null, CancellationToken cancellationToken = default)
+		private static MedicationReadContent ReadMedication(CsvReader csv, StreamReader sr, ILogger? log = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
 		{
 			string[]? headerArray = null;
 			IEnumerable<string[]>? rowsEnumerable = null;
@@ -66,7 +74,7 @@ namespace MineguideEPOCParser.Core
 						throw new InvalidOperationException("T column was not found");
 					}
 
-					rowsEnumerable = ReadMedicationFromCsv(csv, cancellationToken);
+					rowsEnumerable = ReadMedicationFromCsv(csv, sr, progress, cancellationToken);
 				}
 			}
 			catch (FileNotFoundException ex)
@@ -115,11 +123,17 @@ namespace MineguideEPOCParser.Core
 			return result;
 		}
 
-		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, CancellationToken cancellationToken = default)
+		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, StreamReader sr, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
 		{
+			int rowsRead = 0;
 			while (csv.Read())
 			{
 				yield return csv.Parser.Record;
+				progress?.Report(new ProgressValue
+				{
+					Value = (double)sr.BaseStream.Position / sr.BaseStream.Length,
+					RowsRead = ++rowsRead,
+				});
 				cancellationToken.ThrowIfCancellationRequested();
 			}
 		}
@@ -158,7 +172,7 @@ namespace MineguideEPOCParser.Core
 			}
 		}
 
-		private static async Task WriteMedication(CsvWriter csv, string[] headers, IAsyncEnumerable<string[]> rows, ILogger? log = null)
+		private static async Task<int> WriteMedication(CsvWriter csv, string[] headers, IAsyncEnumerable<string[]> rows, ILogger? log = null)
 		{
 			foreach (var header in headers)
 			{
@@ -169,7 +183,7 @@ namespace MineguideEPOCParser.Core
 
 			csv.NextRecord();
 
-			int rowNumber = 1;
+			int rowsWritten = 0;
 
 			await foreach (var row in rows)
 			{
@@ -177,10 +191,15 @@ namespace MineguideEPOCParser.Core
 				{
 					csv.WriteField(field);
 				}
+
+				var rowNumber = rowsWritten + 1;
 				log?.Debug("Written row {RowNumber}: {Row}", rowNumber, string.Join(",", row));
+				
 				csv.NextRecord();
-				rowNumber++;
+				rowsWritten++;
 			}
+
+			return rowsWritten;
 		}
 
 		private static T[] ArrayCopyAndAdd<T>(T[] sourceArray, T elementToAdd)
@@ -203,6 +222,16 @@ namespace MineguideEPOCParser.Core
 			public required string OutputFile { get; set; }
 
 			public ILogger? Logger { get; set; }
+			public IProgress<ProgressValue>? Progress { get; set; }
+		}
+
+		public readonly struct ProgressValue
+		{
+			/// <summary>
+			/// Progress value between 0 and 1.
+			/// </summary>
+			public double Value { get; init; }
+			public int RowsRead { get; init; }
 		}
 
 		private class MedicationReadContent

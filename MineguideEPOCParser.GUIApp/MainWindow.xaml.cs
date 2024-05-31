@@ -25,10 +25,15 @@ namespace MineguideEPOCParser.GUIApp
 			private set => SetValue(IsParsingProperty, value);
 		}
 
+		// Cancelling
 		private CancellationTokenSource? CancellationTokenSource { get; set; }
 
+		// Logging
 		private ILogger? Logger { get; set; }
 		private LoggingLevelSwitch? LoggingLevelSwitch { get; set; }
+
+		// Progress reporting
+		private Progress<MedicationParser.ProgressValue>? Progress { get; set; }
 
 		public MainWindow()
 		{
@@ -36,9 +41,14 @@ namespace MineguideEPOCParser.GUIApp
 
 			// Create a new logger
 			CreateLogger();
+
+			// Create a new progress object
+			CreateProgress();
 		}
 
-		// Create a new logger that writes to a TextBox
+		/// <summary>
+		/// Create a new logger that writes to a TextBox
+		/// </summary>
 		private void CreateLogger()
 		{
 			LoggingLevelSwitch = new LoggingLevelSwitch
@@ -58,6 +68,27 @@ namespace MineguideEPOCParser.GUIApp
 			return Enum.TryParse<LogEventLevel>(LogLevelComboBox.Text, out var logLevel)
 				? logLevel
 				: LogEventLevel.Information;
+		}
+
+		/// <summary>
+		/// Create a new progress object that updates the progress bar
+		/// </summary>
+		private void CreateProgress()
+		{
+			Progress = new Progress<MedicationParser.ProgressValue>(value =>
+			{
+				// Value is between 0 and 1, so multiply by 100 to get percentage
+				var percentage = value.Value * 100;
+
+				// Update the progress bar
+				ProgressBar.Value = percentage;
+
+				// Update the progress percentage text
+				ProgressPercentageTextBlock.Text = $"{percentage:0.00}%";
+
+				// Update the progress rows read text
+				ProgressRowsReadTextBlock.Text = $"Rows read: {value.RowsRead}";
+			});
 		}
 
 		public void Dispose()
@@ -85,7 +116,8 @@ namespace MineguideEPOCParser.GUIApp
 				CultureName = cultureName,
 				InputFile = inputFile,
 				OutputFile = outputFile,
-				Logger = Logger
+				Logger = Logger,
+				Progress = Progress
 			};
 
 			// Create a new cancellation token source
