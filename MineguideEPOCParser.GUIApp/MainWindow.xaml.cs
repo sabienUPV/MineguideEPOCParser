@@ -104,11 +104,11 @@ namespace MineguideEPOCParser.GUIApp
 			}
 			catch (OperationCanceledException)
 			{
-				MessageBox.Show("Parsing was cancelled.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+				MessageBox.Show($"Parsing was cancelled.\nThe information that was already parsed has been written to the output file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show($"An error occurred while parsing the medication: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+				MessageBox.Show($"An error occurred while parsing the medication:\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
 			}
 			finally
 			{
