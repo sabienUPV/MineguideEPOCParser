@@ -6,64 +6,72 @@
         xmlns:local="clr-namespace:MineguideEPOCParser.GUIApp"
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
-        Title="Mineguide EPOC Parser" Height="450" Width="800">
+        Title="Mineguide EPOC Parser" Height="574" Width="867">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     </Window.Resources>
-    <Grid Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="auto" />
-            <ColumnDefinition Width="10" />
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="10" />
-            <ColumnDefinition Width="auto" />
-        </Grid.ColumnDefinitions>
+    <Grid Margin="10" VerticalAlignment="Center">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="auto" />
-            <RowDefinition Height="10" />
-            <RowDefinition Height="auto" />
+            <RowDefinition Height="20" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Input file -->
-        <Label Grid.Row="0" Grid.Column="0" Content="Input file:" VerticalAlignment="Center" HorizontalAlignment="Right" />
-        <TextBox Grid.Row="0" Grid.Column="2" x:Name="InputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200" />
-        <Button Grid.Row="0" Grid.Column="4" x:Name="BrowseInputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseInputFileButton_Click" />
-        
-        <!-- Output file -->
-        <Label Grid.Row="2" Grid.Column="0" Content="Output file:" VerticalAlignment="Center" HorizontalAlignment="Right" />
-        <TextBox Grid.Row="2" Grid.Column="2" x:Name="OutputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200" />
-        <Button Grid.Row="2" Grid.Column="4" x:Name="BrowseOutputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseOutputFileButton_Click" />
-        
-        <!-- File culture -->
-        <Label Grid.Row="4" Grid.Column="0" Content="File culture:" VerticalAlignment="Center" HorizontalAlignment="Right" />
-        <ComboBox Grid.Row="4" Grid.Column="2" x:Name="FileCultureComboBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
-            <ComboBoxItem Content="es-ES" IsSelected="True" />
-            <ComboBoxItem Content="en-US" />
-            <ComboBoxItem Content="en-GB" />
-            <ComboBoxItem Content="de-DE" />
-            <ComboBoxItem Content="fr-FR" />
-            <ComboBoxItem Content="it-IT" />
-            <ComboBoxItem Content="nl-NL" />
-            <ComboBoxItem Content="pl-PL" />
-            <ComboBoxItem Content="pt-PT" />
-            <ComboBoxItem Content="ru-RU" />
-            <ComboBoxItem Content="tr-TR" />
-            <ComboBoxItem Content="zh-CN" />
-            <ComboBoxItem Content="ja-JP" />
-            <ComboBoxItem Content="ko-KR" />
-        </ComboBox>
+        <Grid Grid.Row="0" HorizontalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
 
-        <!-- Parse button -->
-        <Button Grid.Row="6" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" />
+            <!-- Input file -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Input file:" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <TextBox Grid.Row="0" Grid.Column="2" x:Name="InputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Button Grid.Row="0" Grid.Column="4" x:Name="BrowseInputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseInputFileButton_Click" />
+
+            <!-- Output file -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Output file:" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <TextBox Grid.Row="2" Grid.Column="2" x:Name="OutputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Button Grid.Row="2" Grid.Column="4" x:Name="BrowseOutputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseOutputFileButton_Click" />
+
+            <!-- File culture -->
+            <Label Grid.Row="4" Grid.Column="0" Content="File culture:" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <ComboBox Grid.Row="4" Grid.Column="2" x:Name="FileCultureComboBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
+                <ComboBoxItem Content="es-ES" IsSelected="True" />
+                <ComboBoxItem Content="en-US" />
+                <ComboBoxItem Content="en-GB" />
+                <ComboBoxItem Content="de-DE" />
+                <ComboBoxItem Content="fr-FR" />
+                <ComboBoxItem Content="it-IT" />
+                <ComboBoxItem Content="nl-NL" />
+                <ComboBoxItem Content="pl-PL" />
+                <ComboBoxItem Content="pt-PT" />
+                <ComboBoxItem Content="ru-RU" />
+                <ComboBoxItem Content="tr-TR" />
+                <ComboBoxItem Content="zh-CN" />
+                <ComboBoxItem Content="ja-JP" />
+                <ComboBoxItem Content="ko-KR" />
+            </ComboBox>
+
+            <!-- Parse button -->
+            <Button Grid.Row="6" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" />
+        </Grid>
         
         <!-- Progress bar, cancel button and log viewer -->
-        <Grid Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="5" Visibility="{Binding IsParsing, Converter={StaticResource BoolToVisibilityConverter}}">
+        <Grid Grid.Row="2" Visibility="{Binding IsParsing, Converter={StaticResource BoolToVisibilityConverter}}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="10" />
@@ -117,7 +125,8 @@
                         Foreground="LightGray"
                         FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
                         VerticalScrollBarVisibility="Auto"
-                        MinHeight="100" />
+                        MinHeight="100"
+                        MaxHeight="270" />
                 </Grid>
             </Expander>
         </Grid>
