@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Polly;
+using Serilog;
 
 namespace MineguideEPOCParser.Core
 {
@@ -10,7 +11,7 @@ namespace MineguideEPOCParser.Core
 	{
 		private const string ApiKey = "32868ebff04b45108ae1637756df5778";
 
-		public static async Task<string> CallToApi(string t, CancellationToken cancellationToken = default)
+		public static async Task<string> CallToApi(string t, ILogger? log = null, CancellationToken cancellationToken = default)
         {
             var retryPolicy = Policy.Handle<JsonException>()
                 .WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(2));
@@ -53,7 +54,7 @@ namespace MineguideEPOCParser.Core
                     throw new InvalidOperationException("Error: API response is null");
                 }
 
-                Console.WriteLine(apiResponse.Response);
+                log?.Debug("Raw API Response:\n\n{Response}", apiResponse.Response);
 
                 var medicamentosList = JsonSerializer.Deserialize<MedicationsList>(apiResponse.Response);
 
@@ -66,7 +67,7 @@ namespace MineguideEPOCParser.Core
 
                 var medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
 
-                Console.WriteLine(medicamentosString);
+                log?.Debug("Medication list:\n\n{MedicationList}", medicamentosString);
 
 				return medicamentosString;
 			});

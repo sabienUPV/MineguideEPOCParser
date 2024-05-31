@@ -2,14 +2,22 @@
 
 using MineguideEPOCParser.ConsoleApp;
 using MineguideEPOCParser.Core;
+using Serilog;
 
 using CancellationTokenSource cts = new();
 
+using var log = new LoggerConfiguration()
+	.WriteTo.Console()
+	.CreateLogger();
+
 // TEST JUAN
-var testConfiguration = TestConfigurations.JuanConfig();
+//var testConfiguration = TestConfigurations.JuanConfig();
 
 // TEST ALEJANDRO
-// var testConfiguration = TestConfigurations.AlejandroConfig();
+var testConfiguration = TestConfigurations.AlejandroConfig();
+
+// Add logger to configuration
+testConfiguration.Logger = log;
 
 Console.WriteLine("Application started.");
 Console.WriteLine("Press the ENTER key to cancel...\n");

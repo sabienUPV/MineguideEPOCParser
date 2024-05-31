@@ -12,4 +12,8 @@
     <ProjectReference Include="..\MineguideEPOCParser.Core\MineguideEPOCParser.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Serilog.Sinks.RichTextBox.Wpf" Version="1.1.0" />
+  </ItemGroup>
+
 </Project>

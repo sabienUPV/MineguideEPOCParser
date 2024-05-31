@@ -1,4 +1,7 @@
 ﻿using MineguideEPOCParser.Core;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using System.Windows;
 
 namespace MineguideEPOCParser.GUIApp
@@ -24,14 +27,48 @@ namespace MineguideEPOCParser.GUIApp
 
 		private CancellationTokenSource? CancellationTokenSource { get; set; }
 
+		private ILogger? Logger { get; set; }
+		private LoggingLevelSwitch? LoggingLevelSwitch { get; set; }
+
 		public MainWindow()
 		{
 			InitializeComponent();
+
+			// Create a new logger
+			CreateLogger();
+		}
+
+		// Create a new logger that writes to a TextBox
+		private void CreateLogger()
+		{
+			LoggingLevelSwitch = new LoggingLevelSwitch
+			{
+				// Take the default log level from the control
+				MinimumLevel = GetLogLevelFromComboBox()
+			};
+
+			Logger = new LoggerConfiguration()
+				.MinimumLevel.ControlledBy(LoggingLevelSwitch)
+				.WriteTo.RichTextBox(LogRichTextBox)
+				.CreateLogger();
+		}
+
+		private LogEventLevel GetLogLevelFromComboBox()
+		{
+			return Enum.TryParse<LogEventLevel>(LogLevelComboBox.Text, out var logLevel)
+				? logLevel
+				: LogEventLevel.Information;
 		}
 
 		public void Dispose()
 		{
 			CancellationTokenSource?.Dispose();
+			
+			// Dispose the logger
+			if (Logger is IDisposable disposableLogger)
+			{
+				disposableLogger.Dispose();
+			}
 		}
 
 		private async void ParseButton_Click(object sender, RoutedEventArgs e)
@@ -47,11 +84,15 @@ namespace MineguideEPOCParser.GUIApp
 			{
 				CultureName = cultureName,
 				InputFile = inputFile,
-				OutputFile = outputFile
+				OutputFile = outputFile,
+				Logger = Logger
 			};
 
 			// Create a new cancellation token source
 			CancellationTokenSource = new CancellationTokenSource();
+
+			// Clear the log
+			LogRichTextBox.Document.Blocks.Clear();
 
 			// Parse the medication
 			
@@ -115,6 +156,17 @@ namespace MineguideEPOCParser.GUIApp
 			}
 
 			return null;
+		}
+
+		private void LogLevelComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+		{
+			LogEventLevel logLevel = GetLogLevelFromComboBox();
+			
+			// Update the log level switch
+			if (LoggingLevelSwitch is not null)
+			{
+				LoggingLevelSwitch.MinimumLevel = logLevel;
+			}
 		}
 	}
 }

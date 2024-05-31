@@ -4,6 +4,7 @@ using CsvHelper;
 using System.Globalization;
 using System.Text;
 using System.Runtime.CompilerServices;
+using Serilog;
 
 namespace MineguideEPOCParser.Core
 {
@@ -26,18 +27,18 @@ namespace MineguideEPOCParser.Core
 			using var reader = new StreamReader(configuration.InputFile);
 			using var csvReader = new CsvReader(reader, csvConfig);
 
-			var medicationRead = ReadMedication(csvReader, cancellationToken);
+			var medicationRead = ReadMedication(csvReader, configuration.Logger, cancellationToken);
 
 			// Add new header to the array
 			string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, "Medication");
 
-			var newRows = ExtractMedications(medicationRead.Rows, medicationRead.TColumnIndex, cancellationToken);
+			var newRows = ExtractMedications(medicationRead.Rows, medicationRead.TColumnIndex, configuration.Logger, cancellationToken);
 
 			// Write
 			await using var writer = new StreamWriter(configuration.OutputFile, false, Encoding.UTF8);
 			await using var csvWriter = new CsvWriter(writer, csvConfig);
 
-			await WriteMedication(csvWriter, newHeaders, newRows);
+			await WriteMedication(csvWriter, newHeaders, newRows, configuration.Logger);
 		}
 
 		/// <summary>
@@ -45,7 +46,7 @@ namespace MineguideEPOCParser.Core
 		/// que contiene los headers, las rows y el index de la columna 'T' renombrada a 'Medication'
 		/// </summary>
 		/// <returns>result</returns>
-		private static MedicationReadContent ReadMedication(CsvReader csv, CancellationToken cancellationToken = default)
+		private static MedicationReadContent ReadMedication(CsvReader csv, ILogger? log = null, CancellationToken cancellationToken = default)
 		{
 			string[]? headerArray = null;
 			IEnumerable<string[]>? rowsEnumerable = null;
@@ -68,19 +69,19 @@ namespace MineguideEPOCParser.Core
 					rowsEnumerable = ReadMedicationFromCsv(csv, cancellationToken);
 				}
 			}
-			catch (FileNotFoundException)
+			catch (FileNotFoundException ex)
 			{
-				Console.WriteLine($"El archivo no se encontró.");
+				log?.Error(ex, "El archivo no se encontró.");
 				throw;
 			}
-			catch (HeaderValidationException)
+			catch (HeaderValidationException ex)
 			{
-				Console.WriteLine("Los encabezados del archivo CSV no coinciden con las propiedades de la clase.");
+				log?.Error(ex, "Los encabezados del archivo CSV no coinciden con las propiedades de la clase.");
 				throw;
 			}
-			catch (TypeConverterException)
+			catch (TypeConverterException ex)
 			{
-				Console.WriteLine("Hubo un problema convirtiendo los datos del archivo CSV a los tipos de la clase.");
+				log?.Error(ex, "Hubo un problema convirtiendo los datos del archivo CSV a los tipos de la clase.");
 				throw;
 			}
 			catch (OperationCanceledException)
@@ -90,7 +91,7 @@ namespace MineguideEPOCParser.Core
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"Ocurrió un error inesperado: {ex.Message}");
+				log?.Error(ex, "Ocurrió un error inesperado: {Message}", ex.Message);
 				throw;
 			}
 
@@ -144,47 +145,41 @@ namespace MineguideEPOCParser.Core
 			throw new Exception("No se ha encontrado la columna solicitada.");
 		}
 
-		private static async IAsyncEnumerable<string[]> ExtractMedications(IEnumerable<string[]> rows, int tColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+		private static async IAsyncEnumerable<string[]> ExtractMedications(IEnumerable<string[]> rows, int tColumnIndex, ILogger? logger = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 		{
 			foreach (var row in rows)
 			{
 				// Recoge la columna que contiene los medicamentos
 				var t = row[tColumnIndex];
-				var medications = await ApiClient.CallToApi(t, cancellationToken);
+				var medications = await ApiClient.CallToApi(t, logger, cancellationToken);
 
 				var newRow = ArrayCopyAndAdd(row, medications);
 				yield return newRow;
 			}
 		}
 
-		private static async Task WriteMedication(CsvWriter csv, string[] headers, IAsyncEnumerable<string[]> rows)
+		private static async Task WriteMedication(CsvWriter csv, string[] headers, IAsyncEnumerable<string[]> rows, ILogger? log = null)
 		{
 			foreach (var header in headers)
 			{
 				csv.WriteField(header);
 			}
 
+			log?.Debug("Written headers: {Headers}", string.Join(",", headers));
+
 			csv.NextRecord();
 
-			List<string[]> newRows = [];
+			int rowNumber = 1;
 
 			await foreach (var row in rows)
 			{
-				newRows.Add(row);
 				foreach (var field in row)
 				{
 					csv.WriteField(field);
 				}
+				log?.Debug("Written row {RowNumber}: {Row}", rowNumber, string.Join(",", row));
 				csv.NextRecord();
-			}
-
-			// Code for console display of the result to check if
-			// the data is written correctly
-			// TODO: Comment or remove this code
-			Console.WriteLine(string.Join(",", headers));
-			foreach (var row in newRows)
-			{
-				Console.WriteLine(string.Join(",", row));
+				rowNumber++;
 			}
 		}
 
@@ -203,9 +198,11 @@ namespace MineguideEPOCParser.Core
 
 		public class Configuration
 		{
-			public required string CultureName { get; init; }
-			public required string InputFile { get; init; }
-			public required string OutputFile { get; init; }
+			public required string CultureName { get; set; }
+			public required string InputFile { get; set; }
+			public required string OutputFile { get; set; }
+
+			public ILogger? Logger { get; set; }
 		}
 
 		private class MedicationReadContent
