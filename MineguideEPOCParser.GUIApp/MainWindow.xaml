@@ -70,7 +70,7 @@
 
             <!-- Row count -->
             <Label Grid.Row="6" Grid.Column="0" Content="Row count:" VerticalAlignment="Center" HorizontalAlignment="Left" />
-            <TextBox Grid.Row="6" Grid.Column="2" x:Name="RowCountTextBox" />
+            <TextBox Grid.Row="6" Grid.Column="2" x:Name="RowCountTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
 
             <!-- Parse button -->
             <Button Grid.Row="8" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" />
