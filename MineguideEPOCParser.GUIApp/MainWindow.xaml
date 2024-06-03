@@ -7,9 +7,6 @@
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         Title="Mineguide EPOC Parser" Height="574" Width="867">
-    <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
-    </Window.Resources>
     <Grid Margin="10" VerticalAlignment="Center">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
@@ -73,11 +70,11 @@
             <TextBox Grid.Row="6" Grid.Column="2" x:Name="RowCountTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
 
             <!-- Parse button -->
-            <Button Grid.Row="8" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" />
+            <Button Grid.Row="8" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
         </Grid>
         
         <!-- Progress bar, cancel button and log viewer -->
-        <Grid Grid.Row="2" Visibility="{Binding IsParsing, Converter={StaticResource BoolToVisibilityConverter}}">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="5" />
@@ -104,7 +101,7 @@
             <TextBlock Grid.Column="4" x:Name="ProgressRowsReadTextBlock" Text="Rows read: 0" VerticalAlignment="Center" HorizontalAlignment="Left" />
 
             <!-- Cancel button -->
-            <Button Grid.Column="6" x:Name="CancelButton" Content="Cancel" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="CancelButton_Click" />
+            <Button Grid.Column="6" x:Name="CancelButton" Content="Cancel" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="CancelButton_Click" IsEnabled="{Binding IsParsing}" />
             
             <!-- Log viewer in expander (not expanded by default) -->
             <Expander Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="7" x:Name="LogExpander" Header="View logs" IsExpanded="False">

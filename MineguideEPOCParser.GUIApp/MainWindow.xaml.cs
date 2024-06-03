@@ -20,10 +20,32 @@ namespace MineguideEPOCParser.GUIApp
 			new PropertyMetadata(false)
 		);
 
+		// Dependency property IsNotParsing
+		public static readonly DependencyProperty IsNotParsingProperty = DependencyProperty.Register(
+			nameof(IsNotParsing),
+			typeof(bool),
+			typeof(MainWindow),
+			new PropertyMetadata(true)
+		);
+
 		public bool IsParsing
 		{
 			get => (bool)GetValue(IsParsingProperty);
-			private set => SetValue(IsParsingProperty, value);
+			private set
+			{
+				SetValue(IsParsingProperty, value);
+				SetValue(IsNotParsingProperty, !value);
+			}
+		}
+
+		public bool IsNotParsing
+		{
+			get => (bool)GetValue(IsNotParsingProperty);
+			private set
+			{
+				SetValue(IsNotParsingProperty, value);
+				SetValue(IsParsingProperty, !value);
+			}
 		}
 
 		// Cancelling
