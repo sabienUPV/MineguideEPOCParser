@@ -71,9 +71,15 @@ namespace MineguideEPOCParser.GUIApp
 
 		private LogEventLevel GetLogLevelFromComboBox()
 		{
-			return Enum.TryParse<LogEventLevel>(LogLevelComboBox.Text, out var logLevel)
-				? logLevel
-				: LogEventLevel.Information;
+			if (LogLevelComboBox.SelectedItem is not ComboBoxItem selectedItem 
+				|| selectedItem?.Content is not string selectedItemContent
+				|| !Enum.TryParse<LogEventLevel>(selectedItemContent, out var logLevel))
+			{
+				// Fallback default log level
+				return LogEventLevel.Verbose;
+			}
+
+			return logLevel;
 		}
 
 		/// <summary>
