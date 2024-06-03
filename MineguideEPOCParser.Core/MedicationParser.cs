@@ -136,7 +136,7 @@ namespace MineguideEPOCParser.Core
 				var row = csv.Parser.Record;
 
 				log?.Information("Read row {RowNumber}", rowsRead);
-				log?.Verbose("Read row {RowNumber}: {Row}", rowsRead, string.Join(",", row));
+				log?.Verbose("{Row}", string.Join(",", row));
 
 				yield return row;
 
@@ -229,7 +229,8 @@ namespace MineguideEPOCParser.Core
 				}
 
 				var rowNumber = rowsWritten + 1;
-				log?.Verbose("Written row {RowNumber}: {Row}", rowNumber, string.Join(",", row));
+                log?.Information("Written row {RowNumber}", rowNumber);
+                log?.Verbose("{Row}", string.Join(",", row));
 				
 				csv.NextRecord();
 				rowsWritten++;
