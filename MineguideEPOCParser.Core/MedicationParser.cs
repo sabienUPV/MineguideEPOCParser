@@ -30,7 +30,7 @@ namespace MineguideEPOCParser.Core
 			using var reader = new StreamReader(configuration.InputFile);
 			using var csvReader = new CsvReader(reader, csvConfig);
 
-			var medicationRead = ReadMedication(csvReader, reader, configuration.Count, configuration.Logger, configuration.Progress, cancellationToken);
+			var medicationRead = await ReadMedication(csvReader, reader, configuration.Count, configuration.Logger, configuration.Progress, cancellationToken);
 
 			// Add new header to the array
 			string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, "Medication");
@@ -57,15 +57,15 @@ namespace MineguideEPOCParser.Core
 		/// que contiene los headers, las rows y el index de la columna 'T' renombrada a 'Medication'
 		/// </summary>
 		/// <returns>result</returns>
-		private static MedicationReadContent ReadMedication(CsvReader csv, StreamReader sr, int? count = null, ILogger? log = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
+		private static async Task<MedicationReadContent> ReadMedication(CsvReader csv, StreamReader sr, int? count = null, ILogger? log = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
 		{
 			string[]? headerArray = null;
-			IEnumerable<string[]>? rowsEnumerable = null;
+			IAsyncEnumerable<string[]>? rowsEnumerable = null;
 			int tColumnIndex = -1;
 
 			try
 			{
-				if (csv.Read())
+				if (await csv.ReadAsync())
 				{
 					csv.ReadHeader();
 					headerArray = csv.HeaderRecord;
@@ -126,10 +126,10 @@ namespace MineguideEPOCParser.Core
 			return result;
 		}
 
-		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, StreamReader sr, int? count = null, ILogger? log = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
+		private static async IAsyncEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, StreamReader sr, int? count = null, ILogger? log = null, IProgress<ProgressValue>? progress = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 		{
 			int rowsRead = 0;
-			while (csv.Read())
+			while (await csv.ReadAsync())
 			{
 				rowsRead++;
 
@@ -195,9 +195,9 @@ namespace MineguideEPOCParser.Core
 			throw new Exception("No se ha encontrado la columna solicitada.");
 		}
 
-		private static async IAsyncEnumerable<string[]> ExtractMedications(IEnumerable<string[]> rows, int tColumnIndex, ILogger? logger = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+		private static async IAsyncEnumerable<string[]> ExtractMedications(IAsyncEnumerable<string[]> rows, int tColumnIndex, ILogger? logger = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 		{
-			foreach (var row in rows)
+			await foreach (var row in rows.WithCancellation(cancellationToken))
 			{
 				// Recoge la columna que contiene los medicamentos
 				var t = row[tColumnIndex];
@@ -217,7 +217,7 @@ namespace MineguideEPOCParser.Core
 
 			log?.Debug("Written headers: {Headers}", string.Join(",", headers));
 
-			csv.NextRecord();
+			await csv.NextRecordAsync();
 
 			int rowsWritten = 0;
 
@@ -232,7 +232,7 @@ namespace MineguideEPOCParser.Core
                 log?.Information("Written row {RowNumber}", rowNumber);
                 log?.Verbose("{Row}", string.Join(",", row));
 				
-				csv.NextRecord();
+				await csv.NextRecordAsync();
 				rowsWritten++;
 			}
 
@@ -280,7 +280,7 @@ namespace MineguideEPOCParser.Core
 			/// <summary>
 			/// Note: The rows are lazily evaluated.
 			/// </summary>
-			public required IEnumerable<string[]> Rows { get; init; }
+			public required IAsyncEnumerable<string[]> Rows { get; init; }
 
 			public int TColumnIndex { get; init; }
 		}
