@@ -141,6 +141,11 @@ namespace MineguideEPOCParser.GUIApp
 			// Clear the log
 			LogRichTextBox.Document.Blocks.Clear();
 
+			// Clear the progress bar, percentage text, and rows read text
+			ProgressBar.Value = 0;
+			ProgressPercentageTextBlock.Text = "0%";
+			ProgressRowsReadTextBlock.Text = "Rows read: 0";
+
 			// Parse the medication
 			
 			IsParsing = true;
