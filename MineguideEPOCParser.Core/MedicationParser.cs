@@ -77,7 +77,7 @@ namespace MineguideEPOCParser.Core
 						throw new InvalidOperationException("T column was not found");
 					}
 
-					rowsEnumerable = ReadMedicationFromCsv(csv, sr, count, progress, cancellationToken);
+					rowsEnumerable = ReadMedicationFromCsv(csv, sr, count, log, progress, cancellationToken);
 				}
 			}
 			catch (FileNotFoundException ex)
@@ -126,14 +126,24 @@ namespace MineguideEPOCParser.Core
 			return result;
 		}
 
-		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, StreamReader sr, int? count = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
+		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, StreamReader sr, int? count = null, ILogger? log = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
 		{
 			int rowsRead = 0;
 			while (csv.Read())
 			{
-				yield return csv.Parser.Record;
-				progress?.Report(CalculateProgress(csv, sr, ++rowsRead, count));
+				rowsRead++;
+
+				var row = csv.Parser.Record;
+
+				log?.Information("Read row {RowNumber}", rowsRead);
+				log?.Verbose("Read row {RowNumber}: {Row}", rowsRead, string.Join(",", row));
+
+				yield return row;
+
+				progress?.Report(CalculateProgress(csv, sr, rowsRead, count));
+
 				cancellationToken.ThrowIfCancellationRequested();
+
                 if (rowsRead == count)
                 {
                     break;
@@ -219,7 +229,7 @@ namespace MineguideEPOCParser.Core
 				}
 
 				var rowNumber = rowsWritten + 1;
-				log?.Debug("Written row {RowNumber}: {Row}", rowNumber, string.Join(",", row));
+				log?.Verbose("Written row {RowNumber}: {Row}", rowNumber, string.Join(",", row));
 				
 				csv.NextRecord();
 				rowsWritten++;

@@ -14,7 +14,10 @@ namespace MineguideEPOCParser.Core
 		public static async Task<string> CallToApi(string t, ILogger? log = null, CancellationToken cancellationToken = default)
         {
             var retryPolicy = Policy.Handle<JsonException>()
-                .WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(2));
+                .WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(2), (ex, _sleepDuration, retryCount, _context) =>
+				{
+					log?.Warning(ex, "Error from API - Invalid JSON: {ExceptionMessage}. Retrying in {SleepDuration} seconds... (number of retries: {AttemptNumber})", ex.Message, _sleepDuration.TotalSeconds, retryCount);
+				});
 
 			var client = new HttpClient();
 			
@@ -30,6 +33,10 @@ namespace MineguideEPOCParser.Core
 
             return await retryPolicy.ExecuteAsync(async () =>
             {
+				log?.Information("Calling API...");
+
+				log?.Verbose("Request:\n{Request}", JsonSerializer.Serialize(generateRequest));
+
                 var request = new HttpRequestMessage()
                 {
                     Method = HttpMethod.Post,
