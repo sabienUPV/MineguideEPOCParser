@@ -23,14 +23,14 @@ namespace MineguideEPOCParser.Core
 
 			var csvConfig = new CsvConfiguration(new CultureInfo(configuration.CultureName))
 			{
-				CountBytes = configuration.Progress is not null,
+				CountBytes = configuration.Progress is not null && configuration.Count is null,
 			};
 
 			// Read 
 			using var reader = new StreamReader(configuration.InputFile);
 			using var csvReader = new CsvReader(reader, csvConfig);
 
-			var medicationRead = ReadMedication(csvReader, reader, configuration.Logger, configuration.Progress, cancellationToken);
+			var medicationRead = ReadMedication(csvReader, reader, configuration.Count, configuration.Logger, configuration.Progress, cancellationToken);
 
 			// Add new header to the array
 			string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, "Medication");
@@ -57,7 +57,7 @@ namespace MineguideEPOCParser.Core
 		/// que contiene los headers, las rows y el index de la columna 'T' renombrada a 'Medication'
 		/// </summary>
 		/// <returns>result</returns>
-		private static MedicationReadContent ReadMedication(CsvReader csv, StreamReader sr, ILogger? log = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
+		private static MedicationReadContent ReadMedication(CsvReader csv, StreamReader sr, int? count = null, ILogger? log = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
 		{
 			string[]? headerArray = null;
 			IEnumerable<string[]>? rowsEnumerable = null;
@@ -77,7 +77,7 @@ namespace MineguideEPOCParser.Core
 						throw new InvalidOperationException("T column was not found");
 					}
 
-					rowsEnumerable = ReadMedicationFromCsv(csv, sr, progress, cancellationToken);
+					rowsEnumerable = ReadMedicationFromCsv(csv, sr, count, progress, cancellationToken);
 				}
 			}
 			catch (FileNotFoundException ex)
@@ -126,20 +126,43 @@ namespace MineguideEPOCParser.Core
 			return result;
 		}
 
-		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, StreamReader sr, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
+		private static IEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, StreamReader sr, int? count = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
 		{
 			int rowsRead = 0;
 			while (csv.Read())
 			{
 				yield return csv.Parser.Record;
-				progress?.Report(new ProgressValue
-				{
-					Value = (double)csv.Context.Parser.ByteCount / sr.BaseStream.Length,
-					RowsRead = ++rowsRead,
-				});
+				progress?.Report(CalculateProgress(csv, sr, ++rowsRead, count));
 				cancellationToken.ThrowIfCancellationRequested();
+                if (rowsRead == count)
+                {
+                    break;
+                }
 			}
 		}
+
+        private static ProgressValue CalculateProgress(CsvReader csv, StreamReader sr, int rowsRead, int? count = null)
+        {
+            if (count is null)
+            {
+				// If we don't know the number of rows (count),
+				// we calculate the progress using the number of bytes in the stream as reference,
+				// and counting the bytes for each row (CsvParser.ByteCount)
+                return new ProgressValue
+                {
+                    Value = (double)csv.Context.Parser.ByteCount / sr.BaseStream.Length,
+                    RowsRead = rowsRead,
+                };
+            }
+
+			// If we explicitly specified the number of rows (count),
+			// the progress is just the percentage of number of rows read from the total
+            return new ProgressValue
+            {
+                Value = (double)rowsRead / count.Value,
+                RowsRead = rowsRead,
+            };
+        }
 
 		/// <summary>
 		/// Este método recoge y devuelve la posición de la columna
@@ -223,6 +246,8 @@ namespace MineguideEPOCParser.Core
 			public required string CultureName { get; set; }
 			public required string InputFile { get; set; }
 			public required string OutputFile { get; set; }
+
+			public int? Count { get; set; }
 
 			public ILogger? Logger { get; set; }
 			public IProgress<ProgressValue>? Progress { get; set; }

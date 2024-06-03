@@ -111,11 +111,14 @@ namespace MineguideEPOCParser.GUIApp
 			// Get the culture name from the combo box
 			string cultureName = FileCultureComboBox.Text;
 
+            bool isRowCountValid = int.TryParse(RowCountTextBox.Text, out var rowCount);
+
 			var configuration = new MedicationParser.Configuration()
 			{
 				CultureName = cultureName,
 				InputFile = inputFile,
 				OutputFile = outputFile,
+				Count = isRowCountValid ? rowCount : null,
 				Logger = Logger,
 				Progress = Progress
 			};

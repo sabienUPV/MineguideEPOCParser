@@ -35,15 +35,17 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="10" />
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
             <!-- Input file -->
-            <Label Grid.Row="0" Grid.Column="0" Content="Input file:" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <Label Grid.Row="0" Grid.Column="0" Content="Input file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
             <TextBox Grid.Row="0" Grid.Column="2" x:Name="InputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
             <Button Grid.Row="0" Grid.Column="4" x:Name="BrowseInputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseInputFileButton_Click" />
 
             <!-- Output file -->
-            <Label Grid.Row="2" Grid.Column="0" Content="Output file:" VerticalAlignment="Center" HorizontalAlignment="Right" />
+            <Label Grid.Row="2" Grid.Column="0" Content="Output file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
             <TextBox Grid.Row="2" Grid.Column="2" x:Name="OutputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
             <Button Grid.Row="2" Grid.Column="4" x:Name="BrowseOutputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseOutputFileButton_Click" />
 
@@ -66,8 +68,12 @@
                 <ComboBoxItem Content="ko-KR" />
             </ComboBox>
 
+            <!-- Row count -->
+            <Label Grid.Row="6" Grid.Column="0" Content="Row count:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="6" Grid.Column="2" x:Name="RowCountTextBox" />
+
             <!-- Parse button -->
-            <Button Grid.Row="6" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" />
+            <Button Grid.Row="8" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" />
         </Grid>
         
         <!-- Progress bar, cancel button and log viewer -->
