@@ -168,6 +168,8 @@ namespace MineguideEPOCParser.GUIApp
 				// Set the cancellation token source to null
 				CancellationTokenSource = null;
 			}
+
+			MessageBox.Show($"Parsing has been completed successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 
 		private void CancelButton_Click(object sender, RoutedEventArgs e)
