@@ -6,7 +6,7 @@ using Serilog;
 
 using CancellationTokenSource cts = new();
 
-using var log = new LoggerConfiguration()
+await using var log = new LoggerConfiguration()
 	.MinimumLevel.Verbose() // Log everything by default
 	.WriteTo.Console()
 	.CreateLogger();
