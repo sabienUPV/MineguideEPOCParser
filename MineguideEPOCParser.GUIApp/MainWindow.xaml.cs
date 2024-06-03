@@ -3,6 +3,7 @@ using Serilog;
 using Serilog.Core;
 using Serilog.Events;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace MineguideEPOCParser.GUIApp
 {
@@ -44,6 +45,11 @@ namespace MineguideEPOCParser.GUIApp
 
 			// Create a new progress object
 			CreateProgress();
+
+			#if DEBUG
+			// Setup test autocompletions
+			SetupTestAutocompletions();
+			#endif
 		}
 
 		/// <summary>
@@ -213,5 +219,97 @@ namespace MineguideEPOCParser.GUIApp
 				LoggingLevelSwitch.MinimumLevel = logLevel;
 			}
 		}
+
+#if DEBUG
+		// TEST Autocompletions
+		private void SetupTestAutocompletions()
+		{
+			// Add two columns to the grid for the test buttons
+			var columnSpacing1 = new ColumnDefinition { Width = new GridLength(10) };
+			var column1 = new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) };
+			var columnSpacing2 = new ColumnDefinition { Width = new GridLength(10) };
+			var column2 = new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) };
+
+			// Add the columns to the grid
+			ParametersGrid.ColumnDefinitions.Add(columnSpacing1);
+			ParametersGrid.ColumnDefinitions.Add(column1);
+			ParametersGrid.ColumnDefinitions.Add(columnSpacing2);
+			ParametersGrid.ColumnDefinitions.Add(column2);
+
+			// Create the test buttons
+			var testJuanInputButton = new Button
+			{
+				Content = "TEST Juan Input",
+				VerticalAlignment = VerticalAlignment.Center,
+				HorizontalAlignment = HorizontalAlignment.Left
+			};
+
+			var testAlejandroInputButton = new Button
+			{
+				Content = "TEST Alejandro Input",
+				VerticalAlignment = VerticalAlignment.Center,
+				HorizontalAlignment = HorizontalAlignment.Left
+			};
+
+			var testJuanOutputButton = new Button
+			{
+				Content = "TEST Juan Output",
+				VerticalAlignment = VerticalAlignment.Center,
+				HorizontalAlignment = HorizontalAlignment.Left
+			};
+
+			var testAlejandroOutputButton = new Button
+			{
+				Content = "TEST Alejandro Output",
+				VerticalAlignment = VerticalAlignment.Center,
+				HorizontalAlignment = HorizontalAlignment.Left
+			};
+
+			// Add the buttons to the grid
+
+			ParametersGrid.Children.Add(testJuanInputButton);
+			ParametersGrid.Children.Add(testAlejandroInputButton);
+			ParametersGrid.Children.Add(testJuanOutputButton);
+			ParametersGrid.Children.Add(testAlejandroOutputButton);
+
+			const int inputRow = 0, outputRow = 2;
+
+			int juanColumn = ParametersGrid.ColumnDefinitions.Count - 3;
+			int alejandroColumn = ParametersGrid.ColumnDefinitions.Count - 1;
+
+			Grid.SetRow(testJuanInputButton, inputRow);
+			Grid.SetRow(testAlejandroInputButton, inputRow);
+			Grid.SetRow(testJuanOutputButton, outputRow);
+			Grid.SetRow(testAlejandroOutputButton, outputRow);
+
+			Grid.SetColumn(testJuanInputButton, juanColumn);
+			Grid.SetColumn(testJuanOutputButton, juanColumn);
+			Grid.SetColumn(testAlejandroInputButton, alejandroColumn);
+			Grid.SetColumn(testAlejandroOutputButton, alejandroColumn);
+
+			// Add the event handlers
+
+			testJuanInputButton.Click += TEST_Juan_Input_Button_Click;
+			testAlejandroInputButton.Click += TEST_Alejandro_Input_Button_Click;
+			testJuanOutputButton.Click += TEST_Juan_Output_Button_Click;
+			testAlejandroOutputButton.Click += TEST_Alejandro_Output_Button_Click;
+		}
+		private void TEST_Juan_Input_Button_Click(object sender, RoutedEventArgs e)
+		{
+			InputFileTextBox.Text = TestConfigurations.JuanInputFile;
+        }
+		private void TEST_Alejandro_Input_Button_Click(object sender, RoutedEventArgs e)
+		{
+			InputFileTextBox.Text = TestConfigurations.AlejandroInputFile;
+		}
+		private void TEST_Juan_Output_Button_Click(object sender, RoutedEventArgs e)
+		{
+			OutputFileTextBox.Text = TestConfigurations.JuanOutputFile;
+		}
+		private void TEST_Alejandro_Output_Button_Click(object sender, RoutedEventArgs e)
+		{
+			OutputFileTextBox.Text = TestConfigurations.AlejandroOutputFile;
+		}
+#endif
 	}
 }
