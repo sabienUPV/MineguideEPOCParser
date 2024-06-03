@@ -153,8 +153,9 @@ namespace MineguideEPOCParser.GUIApp
 			try
 			{
 				await MedicationParser.ParseMedication(configuration, CancellationTokenSource.Token);
-			}
-			catch (OperationCanceledException)
+                MessageBox.Show($"Parsing has been completed successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (OperationCanceledException)
 			{
 				MessageBox.Show($"Parsing was cancelled.\nThe information that was already parsed has been written to the output file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
 			}
@@ -174,7 +175,6 @@ namespace MineguideEPOCParser.GUIApp
 				CancellationTokenSource = null;
 			}
 
-			MessageBox.Show($"Parsing has been completed successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
 		}
 
 		private void CancelButton_Click(object sender, RoutedEventArgs e)
