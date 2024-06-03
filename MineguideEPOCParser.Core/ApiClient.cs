@@ -28,17 +28,17 @@ namespace MineguideEPOCParser.Core
 				Stream = false,
 			};
 
-			var request = new HttpRequestMessage()
-			{
-				Method = HttpMethod.Post,
-				RequestUri = uri,
-				Content = new StringContent(JsonSerializer.Serialize(generateRequest), Encoding.UTF8, "application/json")
-			};
-
-			request.Headers.Add("X-API-Key", ApiKey);
-
             return await retryPolicy.ExecuteAsync(async () =>
             {
+                var request = new HttpRequestMessage()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = uri,
+                    Content = new StringContent(JsonSerializer.Serialize(generateRequest), Encoding.UTF8, "application/json")
+                };
+
+                request.Headers.Add("X-API-Key", ApiKey);
+
                 var response = await client.SendAsync(request, cancellationToken);
 
                 cancellationToken.ThrowIfCancellationRequested();
