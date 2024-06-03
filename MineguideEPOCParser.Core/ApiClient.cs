@@ -67,7 +67,7 @@ namespace MineguideEPOCParser.Core
 
                 var medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
 
-                log?.Debug("Medication list:\n\n{MedicationList}", medicamentosString);
+                log?.Debug("Medication list:\n{MedicationList}", medicamentosString);
 
 				return medicamentosString;
 			});
