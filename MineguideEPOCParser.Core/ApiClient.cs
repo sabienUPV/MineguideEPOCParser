@@ -61,7 +61,7 @@ namespace MineguideEPOCParser.Core
                     throw new InvalidOperationException("Error: API response is null");
                 }
 
-                log?.Debug("Raw API Response:\n\n{Response}", apiResponse.Response);
+                log?.Debug("Raw API Response:\n{Response}", apiResponse.Response);
 
                 var medicamentosList = JsonSerializer.Deserialize<MedicationsList>(apiResponse.Response);
 
