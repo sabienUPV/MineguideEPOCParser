@@ -167,6 +167,13 @@ namespace MineguideEPOCParser.GUIApp
 			string inputFile = InputFileTextBox.Text;
 			string outputFile = OutputFileTextBox.Text;
 
+			// Check for empty input or output file
+			if (string.IsNullOrEmpty(inputFile) || string.IsNullOrEmpty(outputFile))
+			{
+				MessageBox.Show("Please select an input and output file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+				return;
+			}
+
 			// Get the culture name from the combo box
 			string cultureName = FileCultureComboBox.Text;
 
