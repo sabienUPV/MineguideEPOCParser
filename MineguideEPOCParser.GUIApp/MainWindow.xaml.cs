@@ -5,7 +5,6 @@ using Serilog.Events;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Threading;
 
 namespace MineguideEPOCParser.GUIApp
 {
@@ -50,30 +49,8 @@ namespace MineguideEPOCParser.GUIApp
 			}
 		}
 
-        private DispatcherTimer _dispatcherTimer;
-		private TimeSpan _elapsedTime = TimeSpan.Zero;
-
-		// Timer
-        private void StartTimer()
-        {
-            _dispatcherTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(1),
-            };
-
-            void DispatcherTimerTick(object? sender, EventArgs e)
-            {
-                _elapsedTime = _elapsedTime.Add(TimeSpan.FromSeconds(1));
-                ProcessTimeTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
-            }
-
-            _dispatcherTimer.Tick += DispatcherTimerTick;
-
-            _dispatcherTimer.Start();
-        }
-
-        // Cancelling
-        private CancellationTokenSource? CancellationTokenSource { get; set; }
+		// Cancelling
+		private CancellationTokenSource? CancellationTokenSource { get; set; }
 
 		// Logging
 		private ILogger? Logger { get; set; }
@@ -89,9 +66,9 @@ namespace MineguideEPOCParser.GUIApp
 			// Create a new progress object
 			CreateProgress();
 
-#if DEBUG
-            // Setup test autocompletions
-            SetupTestAutocompletions();
+			#if DEBUG
+			// Setup test autocompletions
+			SetupTestAutocompletions();
 			#endif
 		}
 
@@ -142,8 +119,8 @@ namespace MineguideEPOCParser.GUIApp
 		{
 			Progress = new Progress<MedicationParser.ProgressValue>(value =>
 			{
-                // Value is between 0 and 1, so multiply by 100 to get percentage
-                var percentage = value.Value * 100;
+				// Value is between 0 and 1, so multiply by 100 to get percentage
+				var percentage = value.Value * 100;
 
 				// Update the progress bar
 				ProgressBar.Value = percentage;
@@ -153,10 +130,7 @@ namespace MineguideEPOCParser.GUIApp
 
 				// Update the progress rows read text
 				ProgressRowsReadTextBlock.Text = $"Rows read: {value.RowsRead}";
-
-				// Update the process time text
-                ProcessTimeTextBlock.Text = _dispatcherTimer.ToString();
-            });
+			});
 		}
 
 		public void Dispose()
@@ -208,10 +182,7 @@ namespace MineguideEPOCParser.GUIApp
 			// Create a new logger
 			CreateLogger();
 
-			// Initialice the timer
-            StartTimer();
-
-            var configuration = new MedicationParser.Configuration()
+			var configuration = new MedicationParser.Configuration()
 			{
 				CultureName = cultureName,
 				InputFile = inputFile,
@@ -228,13 +199,12 @@ namespace MineguideEPOCParser.GUIApp
 			ProgressBar.Value = 0;
 			ProgressPercentageTextBlock.Text = "0%";
 			ProgressRowsReadTextBlock.Text = "Rows read: 0";
-            ProcessTimeTextBlock.Text = "00:00:00";
 
 			// Create a new cancellation token source
 			CancellationTokenSource = new CancellationTokenSource();
 
-            // Parse the medication
-            IsParsing = true;
+			// Parse the medication
+			IsParsing = true;
 			
 			try
 			{
@@ -281,7 +251,6 @@ namespace MineguideEPOCParser.GUIApp
 		{
 			// Cancel the parsing
 			CancellationTokenSource?.Cancel();
-			_dispatcherTimer.Stop();
 		}
 
 		private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)
