@@ -72,7 +72,7 @@
             <!-- Parse button -->
             <Button Grid.Row="8" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
         </Grid>
-        
+
         <!-- Progress bar, cancel button and log viewer -->
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
@@ -81,7 +81,9 @@
                 <ColumnDefinition Width="auto" />
                 <ColumnDefinition Width="5" />
                 <ColumnDefinition Width="auto" />
-                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="8" />
                 <ColumnDefinition Width="auto" />
             </Grid.ColumnDefinitions>
 
@@ -90,21 +92,24 @@
                 <RowDefinition Height="10" />
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
-            
+
             <!-- Progress bar -->
             <ProgressBar Grid.Column="0" x:Name="ProgressBar" Height="20" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
-            
+
             <!-- Progress percentage text -->
-            <TextBlock Grid.Column="2" x:Name="ProgressPercentageTextBlock" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Left" />
-            
+            <TextBlock Grid.Column="2" x:Name="ProgressPercentageTextBlock" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Center" />
+
             <!-- Progress rows read text -->
             <TextBlock Grid.Column="4" x:Name="ProgressRowsReadTextBlock" Text="Rows read: 0" VerticalAlignment="Center" HorizontalAlignment="Left" />
 
+            <!-- Timer -->
+            <TextBlock Grid.Column="6" x:Name="TimerTextBlock" Text="00:00:00" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+
             <!-- Cancel button -->
-            <Button Grid.Column="6" x:Name="CancelButton" Content="Cancel" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="CancelButton_Click" IsEnabled="{Binding IsParsing}" />
-            
+            <Button Grid.Column="8" x:Name="CancelButton" Content="Cancel" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="CancelButton_Click" IsEnabled="{Binding IsParsing}" Width="57" />
+
             <!-- Log viewer in expander (not expanded by default) -->
-            <Expander Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="7" x:Name="LogExpander" Header="View logs" IsExpanded="False">
+            <Expander Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="9" x:Name="LogExpander" Header="View logs" IsExpanded="False">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="auto" />
@@ -117,7 +122,7 @@
                         <RowDefinition Height="10" />
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
-                    
+
                     <!-- Select log level -->
                     <Label Grid.Row="0" Grid.Column="0" Content="Log level:" VerticalAlignment="Center" HorizontalAlignment="Left" />
                     <ComboBox Grid.Row="0" Grid.Column="2" x:Name="LogLevelComboBox" SelectionChanged="LogLevelComboBox_SelectionChanged" IsEnabled="{Binding IsParsing}" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">

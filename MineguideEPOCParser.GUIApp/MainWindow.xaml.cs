@@ -5,6 +5,7 @@ using Serilog.Events;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 
 namespace MineguideEPOCParser.GUIApp
 {
@@ -49,8 +50,12 @@ namespace MineguideEPOCParser.GUIApp
 			}
 		}
 
-		// Cancelling
-		private CancellationTokenSource? CancellationTokenSource { get; set; }
+        // Timer
+        private DispatcherTimer _dispatcherTimer;
+        private TimeSpan _elapsedTime = TimeSpan.Zero;
+
+        // Cancelling
+        private CancellationTokenSource? CancellationTokenSource { get; set; }
 
 		// Logging
 		private ILogger? Logger { get; set; }
@@ -85,7 +90,7 @@ namespace MineguideEPOCParser.GUIApp
             void DispatcherTimerTick(object? sender, EventArgs e)
             {
                 _elapsedTime = _elapsedTime.Add(TimeSpan.FromSeconds(1));
-                ProcessTimeTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
+                TimerTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
             }
 
             _dispatcherTimer.Tick += DispatcherTimerTick;
@@ -151,7 +156,9 @@ namespace MineguideEPOCParser.GUIApp
 
 				// Update the progress rows read text
 				ProgressRowsReadTextBlock.Text = $"Rows read: {value.RowsRead}";
-			});
+
+                TimerTextBlock.Text = _dispatcherTimer.ToString();
+            });
 		}
 
 		public void Dispose()
@@ -203,6 +210,9 @@ namespace MineguideEPOCParser.GUIApp
 			// Create a new logger
 			CreateLogger();
 
+			// Run timer
+			StartTimer();
+
 			var configuration = new MedicationParser.Configuration()
 			{
 				CultureName = cultureName,
@@ -220,6 +230,7 @@ namespace MineguideEPOCParser.GUIApp
 			ProgressBar.Value = 0;
 			ProgressPercentageTextBlock.Text = "0%";
 			ProgressRowsReadTextBlock.Text = "Rows read: 0";
+            TimerTextBlock.Text = "00:00:00";
 
 			// Create a new cancellation token source
 			CancellationTokenSource = new CancellationTokenSource();
@@ -272,6 +283,7 @@ namespace MineguideEPOCParser.GUIApp
 		{
 			// Cancel the parsing
 			CancellationTokenSource?.Cancel();
+			_dispatcherTimer.Stop();
 		}
 
 		private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)
