@@ -73,9 +73,30 @@ namespace MineguideEPOCParser.GUIApp
 		}
 
 		/// <summary>
-		/// Create a new logger that writes to a TextBox
+		/// Starts a timer while parsing
 		/// </summary>
-		private void CreateLogger()
+        private void StartTimer()
+        {
+            _dispatcherTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(1),
+            };
+
+            void DispatcherTimerTick(object? sender, EventArgs e)
+            {
+                _elapsedTime = _elapsedTime.Add(TimeSpan.FromSeconds(1));
+                ProcessTimeTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
+            }
+
+            _dispatcherTimer.Tick += DispatcherTimerTick;
+
+            _dispatcherTimer.Start();
+        }
+
+        /// <summary>
+        /// Create a new logger that writes to a TextBox
+        /// </summary>
+        private void CreateLogger()
 		{
 			LoggingLevelSwitch = new LoggingLevelSwitch
 			{
