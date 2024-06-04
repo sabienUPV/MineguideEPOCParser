@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:MineguideEPOCParser.GUIApp"
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
-        Title="Mineguide EPOC Parser" Height="574" Width="867">
+        Title="Mineguide EPOC Parser" Height="618" Width="867">
     <Grid Margin="10" VerticalAlignment="Center">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
