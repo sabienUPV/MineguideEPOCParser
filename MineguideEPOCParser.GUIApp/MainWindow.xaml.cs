@@ -50,12 +50,8 @@ namespace MineguideEPOCParser.GUIApp
 			}
 		}
 
-		// Timer
-        private DispatcherTimer _dispatcherTimer;
-		private TimeSpan _elapsedTime = TimeSpan.Zero;
-
-        // Cancelling
-        private CancellationTokenSource? CancellationTokenSource { get; set; }
+		// Cancelling
+		private CancellationTokenSource? CancellationTokenSource { get; set; }
 
 		// Logging
 		private ILogger? Logger { get; set; }
