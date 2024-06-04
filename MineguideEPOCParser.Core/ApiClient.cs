@@ -14,12 +14,12 @@ namespace MineguideEPOCParser.Core
 		public static async Task<string> CallToApi(string t, ILogger? log = null, CancellationToken cancellationToken = default)
         {
             var retryPolicy = Policy.Handle<JsonException>()
-                .WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(2), (ex, _sleepDuration, retryCount, _context) =>
+                .WaitAndRetryAsync(10, i => TimeSpan.FromSeconds(2), (ex, _sleepDuration, retryCount, _context) =>
 				{
 					log?.Warning(ex, "Error from API - Invalid JSON: {ExceptionMessage}. Retrying in {SleepDuration} seconds... (number of retries: {AttemptNumber})", ex.Message, _sleepDuration.TotalSeconds, retryCount);
 				});
 
-			var client = new HttpClient();
+			using var client = new HttpClient();
 			
 			var uri = new Uri("https://mineguide-epoc.itaca.upv.es:11434/api/generate");
 
@@ -31,53 +31,69 @@ namespace MineguideEPOCParser.Core
 				Stream = false,
 			};
 
-            return await retryPolicy.ExecuteAsync(async () =>
-            {
-				log?.Information("Calling API...");
+			try
+			{
+				return await retryPolicy.ExecuteAsync(async () =>
+				{
+					log?.Information("Calling API...");
 
-				log?.Verbose("Request:\n{Request}", JsonSerializer.Serialize(generateRequest));
+					log?.Verbose("Request:\n{Request}", JsonSerializer.Serialize(generateRequest));
 
-                var request = new HttpRequestMessage()
-                {
-                    Method = HttpMethod.Post,
-                    RequestUri = uri,
-                    Content = new StringContent(JsonSerializer.Serialize(generateRequest), Encoding.UTF8, "application/json")
-                };
+					using var request = new HttpRequestMessage()
+					{
+						Method = HttpMethod.Post,
+						RequestUri = uri,
+						Content = new StringContent(JsonSerializer.Serialize(generateRequest), Encoding.UTF8, "application/json")
+					};
 
-                request.Headers.Add("X-API-Key", ApiKey);
+					request.Headers.Add("X-API-Key", ApiKey);
 
-                var response = await client.SendAsync(request, cancellationToken);
+					var response = await client.SendAsync(request, cancellationToken);
 
-                cancellationToken.ThrowIfCancellationRequested();
+					cancellationToken.ThrowIfCancellationRequested();
 
-                response.EnsureSuccessStatusCode();
+					response.EnsureSuccessStatusCode();
 
-                var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>(cancellationToken);
+					var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>(cancellationToken);
 
-                cancellationToken.ThrowIfCancellationRequested();
+					cancellationToken.ThrowIfCancellationRequested();
 
-                if (apiResponse == null)
-                {
-                    throw new InvalidOperationException("Error: API response is null");
-                }
+					if (apiResponse == null)
+					{
+						throw new InvalidOperationException("Error: API response is null");
+					}
 
-                log?.Debug("Raw API Response:\n{Response}", apiResponse.Response);
+					log?.Debug("Raw API Response:\n{Response}", apiResponse.Response);
 
-                var medicamentosList = JsonSerializer.Deserialize<MedicationsList>(apiResponse.Response);
+					var medicamentosList = JsonSerializer.Deserialize<MedicationsList>(apiResponse.Response);
 
-                cancellationToken.ThrowIfCancellationRequested();
+					cancellationToken.ThrowIfCancellationRequested();
 
-                if (medicamentosList == null)
-                {
-                    throw new InvalidOperationException($"Error: API response is in an invalid format. Could not parse medication as JSON.\nRaw response: {apiResponse.Response}");
-                }
+					if (medicamentosList == null)
+					{
+						throw new InvalidOperationException($"Error: API response is in an invalid format. Could not parse medication as JSON.\nRaw response: {apiResponse.Response}");
+					}
 
-                var medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
+					var medicamentosString = string.Join('\n', medicamentosList.Medicamentos);
 
-                log?.Debug("Medication list:\n{MedicationList}", medicamentosString);
+					log?.Debug("Medication list:\n{MedicationList}", medicamentosString);
 
-				return medicamentosString;
-			});
+					return medicamentosString;
+				});
+			}
+            catch (JsonException ex)
+			{
+				// JsonException is thrown when the API returns an invalid JSON response.
+				// We account for this and we have a retry policy set in place.
+				// But if we exhaust all retries and the response is still invalid, we log the error and return an empty medication list.
+				log?.Warning(ex, "Error from API - Invalid JSON. Exhausted all retries. Returning empty medication list.\nError Message: {ExceptionMessage}", ex.Message);
+				return string.Empty;
+			}
+			catch (Exception ex)
+			{
+				log?.Error(ex, "Unexpected error from API: {ExceptionMessage}", ex.Message);
+				throw;
+			}
 		}
 
 		private class RequestConfig
