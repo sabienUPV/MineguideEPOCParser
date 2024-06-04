@@ -89,17 +89,6 @@ namespace MineguideEPOCParser.Core
 				log?.Warning(ex, "Error from API - Invalid JSON. Exhausted all retries. Returning empty medication list.\nError Message: {ExceptionMessage}", ex.Message);
 				return string.Empty;
 			}
-			catch (OperationCanceledException)
-			{
-				// If the operation was cancelled, don't log it as an error.
-				log?.Information("API: Operation was cancelled.");
-				throw;
-			}
-			catch (Exception ex)
-			{
-				log?.Error(ex, "Unexpected error from API: {ExceptionMessage}", ex.Message);
-				throw;
-			}
 		}
 
 		private class RequestConfig

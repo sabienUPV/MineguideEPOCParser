@@ -19,37 +19,50 @@ namespace MineguideEPOCParser.Core
 		/// </summary>
 		public static async Task ParseMedication(Configuration configuration, CancellationToken cancellationToken = default)
 		{
-			cancellationToken.ThrowIfCancellationRequested();
-
-			var csvConfig = new CsvConfiguration(new CultureInfo(configuration.CultureName))
+			try
 			{
-				CountBytes = configuration.Progress is not null && configuration.Count is null,
-			};
+				cancellationToken.ThrowIfCancellationRequested();
 
-			// Read 
-			using var reader = new StreamReader(configuration.InputFile);
-			using var csvReader = new CsvReader(reader, csvConfig);
+				var csvConfig = new CsvConfiguration(new CultureInfo(configuration.CultureName))
+				{
+					CountBytes = configuration.Progress is not null && configuration.Count is null,
+				};
 
-			var medicationRead = await ReadMedication(csvReader, reader, configuration.Count, configuration.Logger, configuration.Progress, cancellationToken);
+				// Read 
+				using var reader = new StreamReader(configuration.InputFile);
+				using var csvReader = new CsvReader(reader, csvConfig);
 
-			// Add new header to the array
-			string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, "Medication");
+				var medicationRead = await ReadMedication(csvReader, reader, configuration.Count, configuration.Logger, configuration.Progress, cancellationToken);
 
-			var newRows = ExtractMedications(medicationRead.Rows, medicationRead.TColumnIndex, configuration.Logger, cancellationToken);
+				// Add new header to the array
+				string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, "Medication");
 
-			// Write
-			await using var writer = new StreamWriter(configuration.OutputFile, false, Encoding.UTF8);
-			await using var csvWriter = new CsvWriter(writer, csvConfig);
+				var newRows = ExtractMedications(medicationRead.Rows, medicationRead.TColumnIndex, configuration.Logger, cancellationToken);
 
-			int rowsWritten = await WriteMedication(csvWriter, newHeaders, newRows, configuration.Logger);
+				// Write
+				await using var writer = new StreamWriter(configuration.OutputFile, false, Encoding.UTF8);
+				await using var csvWriter = new CsvWriter(writer, csvConfig);
 
-			// Report progress and log completion
-			configuration.Progress?.Report(new ProgressValue
+				int rowsWritten = await WriteMedication(csvWriter, newHeaders, newRows, configuration.Logger);
+
+				// Report progress and log completion
+				configuration.Progress?.Report(new ProgressValue
+				{
+					Value = 1, // 100%
+					RowsRead = rowsWritten,
+				});
+				configuration.Logger?.Information("Medication parsing completed.");
+			}
+			catch (OperationCanceledException)
 			{
-				Value = 1, // 100%
-				RowsRead = rowsWritten,
-			});
-			configuration.Logger?.Information("Medication parsing completed.");
+				configuration.Logger?.Warning("Medication parsing was cancelled.");
+				throw;
+			}
+			catch (Exception ex)
+			{
+				configuration.Logger?.Error(ex, "An unexpected error occurred: {Message}", ex.Message);
+				throw;
+			}
 		}
 
 		/// <summary>
