@@ -2,6 +2,7 @@
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -10,7 +11,7 @@ namespace MineguideEPOCParser.GUIApp
 	/// <summary>
 	/// Interaction logic for MainWindow.xaml
 	/// </summary>
-	public partial class MainWindow : Window, IDisposable
+	public partial class MainWindow : Window, IDisposable, IAsyncDisposable
 	{
 		// Dependency property IsParsing
 		public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
@@ -62,9 +63,6 @@ namespace MineguideEPOCParser.GUIApp
 		{
 			InitializeComponent();
 
-			// Create a new logger
-			CreateLogger();
-
 			// Create a new progress object
 			CreateProgress();
 
@@ -85,9 +83,19 @@ namespace MineguideEPOCParser.GUIApp
 				MinimumLevel = GetLogLevelFromComboBox()
 			};
 
+			// Get directory from output file path
+			var outputDirectory = Path.GetDirectoryName(OutputFileTextBox.Text);
+
+			// If the output directory is empty, use the current directory
+			var logFileDirectory = string.IsNullOrEmpty(outputDirectory) ? "." : outputDirectory;
+
+			var logFilePath = Path.Combine(logFileDirectory, "MineguideEPOCParser-.log");
+
+			// Create a new logger
 			Logger = new LoggerConfiguration()
 				.MinimumLevel.ControlledBy(LoggingLevelSwitch)
 				.WriteTo.RichTextBox(LogRichTextBox)
+				.WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
 				.CreateLogger();
 		}
 
@@ -127,10 +135,27 @@ namespace MineguideEPOCParser.GUIApp
 
 		public void Dispose()
 		{
+			// Dispose the cancellation token source
 			CancellationTokenSource?.Dispose();
 			
 			// Dispose the logger
 			if (Logger is IDisposable disposableLogger)
+			{
+				disposableLogger.Dispose();
+			}
+		}
+
+		public async ValueTask DisposeAsync()
+		{
+			// Dispose the cancellation token source
+			CancellationTokenSource?.Dispose();
+
+			// Dispose the logger
+			if (Logger is IAsyncDisposable asyncDisposableLogger)
+			{
+				await asyncDisposableLogger.DisposeAsync().ConfigureAwait(false);
+			}
+			else if (Logger is IDisposable disposableLogger)
 			{
 				disposableLogger.Dispose();
 			}
@@ -147,6 +172,9 @@ namespace MineguideEPOCParser.GUIApp
 
             bool isRowCountValid = int.TryParse(RowCountTextBox.Text, out var rowCount);
 
+			// Create a new logger
+			CreateLogger();
+
 			var configuration = new MedicationParser.Configuration()
 			{
 				CultureName = cultureName,
@@ -157,9 +185,6 @@ namespace MineguideEPOCParser.GUIApp
 				Progress = Progress
 			};
 
-			// Create a new cancellation token source
-			CancellationTokenSource = new CancellationTokenSource();
-
 			// Clear the log
 			LogRichTextBox.Document.Blocks.Clear();
 
@@ -168,8 +193,10 @@ namespace MineguideEPOCParser.GUIApp
 			ProgressPercentageTextBlock.Text = "0%";
 			ProgressRowsReadTextBlock.Text = "Rows read: 0";
 
+			// Create a new cancellation token source
+			CancellationTokenSource = new CancellationTokenSource();
+
 			// Parse the medication
-			
 			IsParsing = true;
 			
 			try
@@ -195,6 +222,20 @@ namespace MineguideEPOCParser.GUIApp
 
 				// Set the cancellation token source to null
 				CancellationTokenSource = null;
+
+				// Dispose the logger
+				if (Logger is IAsyncDisposable asyncDisposableLogger)
+				{
+					await asyncDisposableLogger.DisposeAsync().ConfigureAwait(false);
+				}
+				else if (Logger is IDisposable disposableLogger)
+				{
+					disposableLogger.Dispose();
+				}
+
+				// Set the logger to null
+				Logger = null;
+				LoggingLevelSwitch = null;
 			}
 
 		}
