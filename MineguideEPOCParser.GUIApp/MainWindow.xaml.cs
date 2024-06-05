@@ -155,7 +155,7 @@ namespace MineguideEPOCParser.GUIApp
 				ProgressPercentageTextBlock.Text = $"{percentage:0.00}%";
 
 				// Update the progress rows read text
-				ProgressRowsWrittenTextBlock.Text = $"Rows read: {value.RowsRead}";
+				ProgressRowsWrittenTextBlock.Text = $"Rows written: {value.RowsRead}";
 
                 TimerTextBlock.Text = _dispatcherTimer.ToString();
             });
@@ -229,7 +229,7 @@ namespace MineguideEPOCParser.GUIApp
 			// Clear the progress bar, percentage text, and rows read text
 			ProgressBar.Value = 0;
 			ProgressPercentageTextBlock.Text = "0%";
-			ProgressRowsWrittenTextBlock.Text = "Rows read: 0";
+			ProgressRowsWrittenTextBlock.Text = "Rows written: 0";
             TimerTextBlock.Text = "00:00:00";
 
 			// Create a new cancellation token source
