@@ -114,13 +114,16 @@ namespace MineguideEPOCParser.GUIApp
 				MinimumLevel = GetLogLevelFromComboBox()
 			};
 
+			// Get input file name without extension
+			var inputFileName = Path.GetFileNameWithoutExtension(InputFileTextBox.Text);
+
 			// Get directory from output file path
 			var outputDirectory = Path.GetDirectoryName(OutputFileTextBox.Text);
 
 			// If the output directory is empty, use the current directory
 			var logFileDirectory = string.IsNullOrEmpty(outputDirectory) ? "." : outputDirectory;
 
-			var logFilePath = Path.Combine(logFileDirectory, "MineguideEPOCParser-.log");
+			var logFilePath = Path.Combine(logFileDirectory, $"MineguideEPOCParser-{inputFileName}-.log");
 
 			// Create a new logger
 			Logger = new LoggerConfiguration()
