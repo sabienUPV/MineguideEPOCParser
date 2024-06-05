@@ -302,7 +302,15 @@ namespace MineguideEPOCParser.GUIApp
 		{
 			// Cancel the parsing
 			CancellationTokenSource?.Cancel();
+
+			// Stop the timer
 			_dispatcherTimer?.Stop();
+
+			// Update the timer text block
+			UpdateTimerTextBlock();
+
+			// Set the timer to null
+			_dispatcherTimer = null;
 		}
 
 		private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)
