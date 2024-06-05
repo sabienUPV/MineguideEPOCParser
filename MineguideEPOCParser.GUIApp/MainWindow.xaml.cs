@@ -169,6 +169,9 @@ namespace MineguideEPOCParser.GUIApp
 			{
 				disposableLogger.Dispose();
 			}
+
+			// Stop the timer
+			_dispatcherTimer?.Stop();
 		}
 
 		public async ValueTask DisposeAsync()
@@ -185,6 +188,9 @@ namespace MineguideEPOCParser.GUIApp
 			{
 				disposableLogger.Dispose();
 			}
+
+			// Stop the timer
+			_dispatcherTimer?.Stop();
 		}
 
 		private async void ParseButton_Click(object sender, RoutedEventArgs e)
