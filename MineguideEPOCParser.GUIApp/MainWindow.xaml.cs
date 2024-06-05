@@ -51,7 +51,7 @@ namespace MineguideEPOCParser.GUIApp
 		}
 
         // Timer
-        private DispatcherTimer _dispatcherTimer;
+        private DispatcherTimer? _dispatcherTimer;
         private TimeSpan _elapsedTime = TimeSpan.Zero;
 
         // Cancelling
@@ -154,10 +154,8 @@ namespace MineguideEPOCParser.GUIApp
 				// Update the progress percentage text
 				ProgressPercentageTextBlock.Text = $"{percentage:0.00}%";
 
-				// Update the progress rows read text
+				// Update the progress rows written text
 				ProgressRowsWrittenTextBlock.Text = $"Rows written: {value.RowsRead}";
-
-                TimerTextBlock.Text = _dispatcherTimer.ToString();
             });
 		}
 
