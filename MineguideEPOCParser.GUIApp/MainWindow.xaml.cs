@@ -234,10 +234,11 @@ namespace MineguideEPOCParser.GUIApp
 			ProgressBar.Value = 0;
 			ProgressPercentageTextBlock.Text = "0%";
 			ProgressRowsWrittenTextBlock.Text = "Rows written: 0";
-            TimerTextBlock.Text = "00:00:00";
+            TimerTextBlock.Text = "00:00:00"; 
+            _elapsedTime = TimeSpan.Zero;
 
-			// Create a new cancellation token source
-			CancellationTokenSource = new CancellationTokenSource();
+        // Create a new cancellation token source
+        CancellationTokenSource = new CancellationTokenSource();
 
 			// Parse the medication
 			IsParsing = true;
@@ -287,7 +288,7 @@ namespace MineguideEPOCParser.GUIApp
 		{
 			// Cancel the parsing
 			CancellationTokenSource?.Cancel();
-			_dispatcherTimer.Stop();
+			_dispatcherTimer?.Stop();
 		}
 
 		private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)
