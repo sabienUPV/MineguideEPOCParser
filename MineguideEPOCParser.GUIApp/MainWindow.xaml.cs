@@ -50,12 +50,12 @@ namespace MineguideEPOCParser.GUIApp
 			}
 		}
 
-        // Timer
-        private DispatcherTimer? _dispatcherTimer;
-        private TimeSpan _elapsedTime = TimeSpan.Zero;
+		// Timer
+		private DispatcherTimer? _dispatcherTimer;
+		private TimeSpan _elapsedTime = TimeSpan.Zero;
 
-        // Cancelling
-        private CancellationTokenSource? CancellationTokenSource { get; set; }
+		// Cancelling
+		private CancellationTokenSource? CancellationTokenSource { get; set; }
 
 		// Logging
 		private ILogger? Logger { get; set; }
@@ -71,37 +71,42 @@ namespace MineguideEPOCParser.GUIApp
 			// Create a new progress object
 			CreateProgress();
 
-			#if DEBUG
+#if DEBUG
 			// Setup test autocompletions
 			SetupTestAutocompletions();
-			#endif
+#endif
 		}
 
 		/// <summary>
 		/// Starts a timer while parsing
 		/// </summary>
-        private void StartTimer()
-        {
-            _dispatcherTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromSeconds(1),
-            };
+		private void StartTimer()
+		{
+			_dispatcherTimer = new DispatcherTimer
+			{
+				Interval = TimeSpan.FromSeconds(1),
+			};
 
-            void DispatcherTimerTick(object? sender, EventArgs e)
-            {
-                _elapsedTime = _elapsedTime.Add(TimeSpan.FromSeconds(1));
-                TimerTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
-            }
+			void DispatcherTimerTick(object? sender, EventArgs e)
+			{
+				_elapsedTime = _elapsedTime.Add(TimeSpan.FromSeconds(1));
+				UpdateTimerTextBlock();
+			}
 
-            _dispatcherTimer.Tick += DispatcherTimerTick;
+			_dispatcherTimer.Tick += DispatcherTimerTick;
 
-            _dispatcherTimer.Start();
-        }
+			_dispatcherTimer.Start();
+		}
 
-        /// <summary>
-        /// Create a new logger that writes to a TextBox
-        /// </summary>
-        private void CreateLogger()
+		private void UpdateTimerTextBlock()
+		{
+			TimerTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
+		}
+
+		/// <summary>
+		/// Create a new logger that writes to a TextBox
+		/// </summary>
+		private void CreateLogger()
 		{
 			LoggingLevelSwitch = new LoggingLevelSwitch
 			{
@@ -127,7 +132,7 @@ namespace MineguideEPOCParser.GUIApp
 
 		private LogEventLevel GetLogLevelFromComboBox()
 		{
-			if (LogLevelComboBox.SelectedItem is not ComboBoxItem selectedItem 
+			if (LogLevelComboBox.SelectedItem is not ComboBoxItem selectedItem
 				|| selectedItem?.Content is not string selectedItemContent
 				|| !Enum.TryParse<LogEventLevel>(selectedItemContent, out var logLevel))
 			{
@@ -156,14 +161,14 @@ namespace MineguideEPOCParser.GUIApp
 
 				// Update the progress rows written text
 				ProgressRowsWrittenTextBlock.Text = $"Rows written: {value.RowsRead}";
-            });
+			});
 		}
 
 		public void Dispose()
 		{
 			// Dispose the cancellation token source
 			CancellationTokenSource?.Dispose();
-			
+
 			// Dispose the logger
 			if (Logger is IDisposable disposableLogger)
 			{
@@ -209,7 +214,7 @@ namespace MineguideEPOCParser.GUIApp
 			// Get the culture name from the combo box
 			string cultureName = FileCultureComboBox.Text;
 
-            bool isRowCountValid = int.TryParse(RowCountTextBox.Text, out var rowCount);
+			bool isRowCountValid = int.TryParse(RowCountTextBox.Text, out var rowCount);
 
 			// Create a new logger
 			CreateLogger();
@@ -234,21 +239,21 @@ namespace MineguideEPOCParser.GUIApp
 			ProgressBar.Value = 0;
 			ProgressPercentageTextBlock.Text = "0%";
 			ProgressRowsWrittenTextBlock.Text = "Rows written: 0";
-            TimerTextBlock.Text = "00:00:00"; 
-            _elapsedTime = TimeSpan.Zero;
+			TimerTextBlock.Text = "00:00:00";
+			_elapsedTime = TimeSpan.Zero;
 
-        // Create a new cancellation token source
-        CancellationTokenSource = new CancellationTokenSource();
+			// Create a new cancellation token source
+			CancellationTokenSource = new CancellationTokenSource();
 
 			// Parse the medication
 			IsParsing = true;
-			
+
 			try
 			{
 				await MedicationParser.ParseMedication(configuration, CancellationTokenSource.Token);
-                MessageBox.Show($"Parsing has been completed successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (OperationCanceledException)
+				MessageBox.Show($"Parsing has been completed successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+			}
+			catch (OperationCanceledException)
 			{
 				MessageBox.Show($"Parsing was cancelled.\nThe information that was already parsed has been written to the output file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
 			}
@@ -280,6 +285,15 @@ namespace MineguideEPOCParser.GUIApp
 				// Set the logger to null
 				Logger = null;
 				LoggingLevelSwitch = null;
+
+				// Stop the timer
+				_dispatcherTimer?.Stop();
+
+				// Update the timer text block
+				UpdateTimerTextBlock();
+
+				// Set the timer to null
+				_dispatcherTimer = null;
 			}
 
 		}
@@ -333,7 +347,7 @@ namespace MineguideEPOCParser.GUIApp
 		private void LogLevelComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
 		{
 			LogEventLevel logLevel = GetLogLevelFromComboBox();
-			
+
 			// Update the log level switch
 			if (LoggingLevelSwitch is not null)
 			{
@@ -418,7 +432,7 @@ namespace MineguideEPOCParser.GUIApp
 		private void TEST_Juan_Input_Button_Click(object sender, RoutedEventArgs e)
 		{
 			InputFileTextBox.Text = TestConfigurations.JuanInputFile;
-        }
+		}
 		private void TEST_Alejandro_Input_Button_Click(object sender, RoutedEventArgs e)
 		{
 			InputFileTextBox.Text = TestConfigurations.AlejandroInputFile;
