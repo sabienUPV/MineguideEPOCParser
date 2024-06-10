@@ -253,7 +253,19 @@ namespace MineguideEPOCParser.GUIApp
 
 			try
 			{
-				await MedicationParser.ParseMedication(configuration, CancellationTokenSource.Token);
+				try
+				{
+					await MedicationParser.ParseMedication(configuration, CancellationTokenSource.Token);
+				}
+				finally
+				{
+					// Stop the timer
+					_dispatcherTimer?.Stop();
+
+					// Update the timer text block
+					UpdateTimerTextBlock();
+				}
+
 				MessageBox.Show($"Parsing has been completed successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
 			}
 			catch (OperationCanceledException)
@@ -288,12 +300,6 @@ namespace MineguideEPOCParser.GUIApp
 				// Set the logger to null
 				Logger = null;
 				LoggingLevelSwitch = null;
-
-				// Stop the timer
-				_dispatcherTimer?.Stop();
-
-				// Update the timer text block
-				UpdateTimerTextBlock();
 
 				// Set the timer to null
 				_dispatcherTimer = null;
