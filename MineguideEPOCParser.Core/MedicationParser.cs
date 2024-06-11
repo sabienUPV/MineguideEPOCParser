@@ -218,7 +218,8 @@ namespace MineguideEPOCParser.Core
 				var t = row[tColumnIndex];
 				var medications = await ApiClient.CallToApi(t, logger, cancellationToken);
 
-				foreach (var medication in medications)
+				// Devuelve cada medicamento en una fila, ordenados alfabéticamente
+				foreach (var medication in medications.Order())
                 {
 					// Duplicate the row for each medication, adding the medication to the end
                     var newRow = ArrayCopyAndAdd(row, medication);
