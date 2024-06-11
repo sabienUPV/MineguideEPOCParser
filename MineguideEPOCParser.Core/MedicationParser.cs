@@ -216,8 +216,12 @@ namespace MineguideEPOCParser.Core
 				var t = row[tColumnIndex];
 				var medications = await ApiClient.CallToApi(t, logger, cancellationToken);
 
-				var newRow = ArrayCopyAndAdd(row, medications);
-				yield return newRow;
+				foreach (var medication in medications)
+                {
+					// Duplicate the row for each medication, adding the medication to the end
+                    var newRow = ArrayCopyAndAdd(row, medication);
+                    yield return newRow;
+                }
 			}
 		}
 
