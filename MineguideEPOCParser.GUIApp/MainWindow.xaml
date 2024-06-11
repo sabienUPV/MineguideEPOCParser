@@ -99,8 +99,8 @@
             <!-- Progress percentage text -->
             <TextBlock Grid.Column="2" x:Name="ProgressPercentageTextBlock" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Center" />
 
-            <!-- Progress rows written text -->
-            <TextBlock Grid.Column="4" x:Name="ProgressRowsWrittenTextBlock" Text="Rows written: 0" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <!-- Progress rows processed text -->
+            <TextBlock Grid.Column="4" x:Name="ProgressRowsProcessedTextBlock" Text="Rows processed: 0" VerticalAlignment="Center" HorizontalAlignment="Left" />
 
             <!-- Timer -->
             <TextBlock Grid.Column="6" x:Name="TimerTextBlock" Text="00:00:00" VerticalAlignment="Center" HorizontalAlignment="Left"/>

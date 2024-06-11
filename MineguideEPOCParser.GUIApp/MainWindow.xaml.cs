@@ -162,8 +162,11 @@ namespace MineguideEPOCParser.GUIApp
 				// Update the progress percentage text
 				ProgressPercentageTextBlock.Text = $"{percentage:0.00}%";
 
-				// Update the progress rows written text
-				ProgressRowsWrittenTextBlock.Text = $"Rows written: {value.RowsRead}";
+				// Update the progress rows processed text
+				if (value.RowsProcessed.HasValue)
+                {
+                    ProgressRowsProcessedTextBlock.Text = $"Rows processed: {value.RowsProcessed}";
+                }
 			});
 		}
 
@@ -238,10 +241,10 @@ namespace MineguideEPOCParser.GUIApp
 			// Clear the log
 			LogRichTextBox.Document.Blocks.Clear();
 
-			// Clear the progress bar, percentage text, and rows read text
+			// Clear the progress bar, percentage text, and rows processed text
 			ProgressBar.Value = 0;
 			ProgressPercentageTextBlock.Text = "0%";
-			ProgressRowsWrittenTextBlock.Text = "Rows written: 0";
+			ProgressRowsProcessedTextBlock.Text = "Rows processed: 0";
 			TimerTextBlock.Text = "00:00:00";
 			_elapsedTime = TimeSpan.Zero;
 

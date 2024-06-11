@@ -43,13 +43,15 @@ namespace MineguideEPOCParser.Core
 				await using var writer = new StreamWriter(configuration.OutputFile, false, Encoding.UTF8);
 				await using var csvWriter = new CsvWriter(writer, csvConfig);
 
-				int rowsWritten = await WriteMedication(csvWriter, newHeaders, newRows, configuration.Logger);
+				await WriteMedication(csvWriter, newHeaders, newRows, configuration.Logger);
 
 				// Report progress and log completion
 				configuration.Progress?.Report(new ProgressValue
 				{
 					Value = 1, // 100%
-					RowsRead = rowsWritten,
+					// RowsProcessed is not set because we don't know the total number of rows
+					// (because it normally writes more rows than it reads - one duplicated row per medication)
+					// and it should be the last value reported anyways
 				});
 				configuration.Logger?.Information("Medication parsing completed.");
 			}
@@ -174,7 +176,7 @@ namespace MineguideEPOCParser.Core
                 return new ProgressValue
                 {
                     Value = (double)csv.Context.Parser.ByteCount / sr.BaseStream.Length,
-                    RowsRead = rowsRead,
+                    RowsProcessed = rowsRead,
                 };
             }
 
@@ -183,7 +185,7 @@ namespace MineguideEPOCParser.Core
             return new ProgressValue
             {
                 Value = (double)rowsRead / count.Value,
-                RowsRead = rowsRead,
+                RowsProcessed = rowsRead,
             };
         }
 
@@ -287,7 +289,7 @@ namespace MineguideEPOCParser.Core
 			/// Progress value between 0 and 1.
 			/// </summary>
 			public double Value { get; init; }
-			public int RowsRead { get; init; }
+			public int? RowsProcessed { get; init; }
 		}
 
 		private class MedicationReadContent
