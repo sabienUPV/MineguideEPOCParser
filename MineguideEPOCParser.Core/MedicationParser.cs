@@ -223,6 +223,10 @@ namespace MineguideEPOCParser.Core
                 {
 					// Duplicate the row for each medication, adding the medication to the end
                     var newRow = ArrayCopyAndAdd(row, medication);
+
+					// In the 'T' column, replace the multiline original text with a single line text
+					newRow[tColumnIndex] = t.Replace('\n', '\t').Replace("\r", "");
+
                     yield return newRow;
                 }
 			}
