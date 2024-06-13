@@ -22,7 +22,7 @@ namespace MineguideEPOCParser.Core
             var httpRetryPolicy = Policy.Handle<HttpRequestException>()
                 .WaitAndRetryAsync(
                 [
-						// 10 retries with exponential backoff
+						// 12 retries with exponential backoff
                         TimeSpan.FromSeconds(1), // 1 second
                         TimeSpan.FromSeconds(2), // 2 seconds
                         TimeSpan.FromSeconds(5), // 5 seconds
@@ -32,7 +32,9 @@ namespace MineguideEPOCParser.Core
                         TimeSpan.FromSeconds(60), // 1 minute
                         TimeSpan.FromSeconds(120), // 2 minutes
                         TimeSpan.FromSeconds(300), // 5 minutes
-                        TimeSpan.FromSeconds(600) // 10 minutes
+                        TimeSpan.FromSeconds(600), // 10 minutes
+						TimeSpan.FromSeconds(1800), // 30 minutes
+						TimeSpan.FromSeconds(3600) // 1 hour
                 ], (ex, sleepDuration, retryCount, _context) =>
                 {
                     log?.Warning(ex, "Error from API - HTTP error: {ExceptionMessage}. Retrying in {SleepDuration} seconds... (number of retries: {AttemptNumber})", ex.Message, sleepDuration.TotalSeconds, retryCount);
