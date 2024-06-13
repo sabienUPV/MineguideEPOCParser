@@ -13,13 +13,34 @@ namespace MineguideEPOCParser.Core
 
 		public static async Task<string[]> CallToApi(string t, ILogger? log = null, CancellationToken cancellationToken = default)
         {
-            var retryPolicy = Policy.Handle<JsonException>()
-                .WaitAndRetryAsync(10, i => TimeSpan.FromSeconds(2), (ex, _sleepDuration, retryCount, _context) =>
+			var jsonRetryPolicy = Policy.Handle<JsonException>()
+				.WaitAndRetryAsync(10, i => TimeSpan.FromSeconds(2), (ex, sleepDuration, retryCount, _context) =>
 				{
-					log?.Warning(ex, "Error from API - Invalid JSON: {ExceptionMessage}. Retrying in {SleepDuration} seconds... (number of retries: {AttemptNumber})", ex.Message, _sleepDuration.TotalSeconds, retryCount);
+					log?.Warning(ex, "Error from API - Invalid JSON: {ExceptionMessage}. Retrying in {SleepDuration} seconds... (number of retries: {AttemptNumber})", ex.Message, sleepDuration.TotalSeconds, retryCount);
 				});
 
-			using var client = new HttpClient();
+            var httpRetryPolicy = Policy.Handle<HttpRequestException>()
+                .WaitAndRetryAsync(
+                [
+						// 10 retries with exponential backoff
+                        TimeSpan.FromSeconds(1), // 1 second
+                        TimeSpan.FromSeconds(2), // 2 seconds
+                        TimeSpan.FromSeconds(5), // 5 seconds
+                        TimeSpan.FromSeconds(10), // 10 seconds
+                        TimeSpan.FromSeconds(20), // 20 seconds
+                        TimeSpan.FromSeconds(30), // 30 seconds
+                        TimeSpan.FromSeconds(60), // 1 minute
+                        TimeSpan.FromSeconds(120), // 2 minutes
+                        TimeSpan.FromSeconds(300), // 5 minutes
+                        TimeSpan.FromSeconds(600) // 10 minutes
+                ], (ex, sleepDuration, retryCount, _context) =>
+                {
+                    log?.Warning(ex, "Error from API - HTTP error: {ExceptionMessage}. Retrying in {SleepDuration} seconds... (number of retries: {AttemptNumber})", ex.Message, sleepDuration.TotalSeconds, retryCount);
+                });
+
+			var retryPolicy = Policy.WrapAsync(jsonRetryPolicy, httpRetryPolicy);
+
+            using var client = new HttpClient();
 			
 			var uri = new Uri("https://mineguide-epoc.itaca.upv.es:11434/api/generate");
 
