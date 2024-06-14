@@ -10,14 +10,16 @@ namespace MineguideEPOCParser.Core
 {
 	public static class MedicationParser
 	{
-		/// <summary>
-		/// Parses the medication from the input CSV file, lazily,
-		/// calls the Ollama API to extract the medications,
-		/// and writes the results to the output CSV file.
-		/// 
-		/// This is lazily evaluated, so it will not read the entire input file into memory.
-		/// </summary>
-		public static async Task ParseMedication(Configuration configuration, CancellationToken cancellationToken = default)
+		public const string MedicationHeaderName = "Medication";
+
+        /// <summary>
+        /// Parses the medication from the input CSV file, lazily,
+        /// calls the Ollama API to extract the medications,
+        /// and writes the results to the output CSV file.
+        /// 
+        /// This is lazily evaluated, so it will not read the entire input file into memory.
+        /// </summary>
+        public static async Task ParseMedication(Configuration configuration, CancellationToken cancellationToken = default)
 		{
 			try
 			{
@@ -35,7 +37,7 @@ namespace MineguideEPOCParser.Core
 				var medicationRead = await ReadMedication(csvReader, reader, configuration.Count, configuration.Logger, configuration.Progress, cancellationToken);
 
 				// Add new header to the array
-				string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, "Medication");
+				string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, MedicationHeaderName);
 
 				var newRows = ExtractMedications(medicationRead.Rows, medicationRead.TColumnIndex, configuration.Logger, cancellationToken);
 
@@ -69,7 +71,7 @@ namespace MineguideEPOCParser.Core
 
 		/// <summary>
 		/// Este método se encarga de leer el archivo csv y devolver un objeto 'MedicationContent'
-		/// que contiene los headers, las rows y el index de la columna 'T' renombrada a 'Medication'
+		/// que contiene los headers, las rows y el index de la columna 'T' que contiene el texto completo con las medicaciones sin extraer
 		/// </summary>
 		/// <returns>result</returns>
 		private static async Task<MedicationReadContent> ReadMedication(CsvReader csv, StreamReader sr, int? count = null, ILogger? log = null, IProgress<ProgressValue>? progress = null, CancellationToken cancellationToken = default)
@@ -197,20 +199,27 @@ namespace MineguideEPOCParser.Core
 		/// <returns>i</returns>
 		/// <exception cref="Exception"></exception>
 		private static int GetTColumnIndex(string[] headerArray)
-		{
-			// Guardado del índice donde se encuentran los medicamentos 'T'
-			for (int i = 0; i < headerArray.Length; i++)
-			{
-				if (headerArray[i].Equals("T", StringComparison.OrdinalIgnoreCase))
-				{
-					return i;
-				}
-			}
+			=> GetColumnIndex(headerArray, "T");
 
-			throw new Exception("No se ha encontrado la columna solicitada.");
-		}
+        /// <summary>
+        /// Get the index of the column whose header is the one provided
+        /// </summary>
+        /// <param name="headerArray"></param>
+        /// <exception cref="Exception"></exception>
+        private static int GetColumnIndex(string[] headerArray, string headerName)
+        {
+            for (int i = 0; i < headerArray.Length; i++)
+            {
+                if (headerArray[i].Equals(headerName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return i;
+                }
+            }
 
-		private static async IAsyncEnumerable<string[]> ExtractMedications(IAsyncEnumerable<string[]> rows, int tColumnIndex, ILogger? logger = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+            throw new Exception("No se ha encontrado la columna solicitada.");
+        }
+
+        private static async IAsyncEnumerable<string[]> ExtractMedications(IAsyncEnumerable<string[]> rows, int tColumnIndex, ILogger? logger = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
 		{
 			await foreach (var row in rows.WithCancellation(cancellationToken))
 			{
