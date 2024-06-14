@@ -10,6 +10,8 @@ namespace MineguideEPOCParser.Core
 {
 	public static class MedicationParser
 	{
+		public delegate IAsyncEnumerable<string[]> MedicationParsingDelegate(IAsyncEnumerable<string[]> rows, int tColumnIndex, ILogger? logger = null, CancellationToken cancellationToken = default);
+
 		public const string MedicationHeaderName = "Medication";
 
         /// <summary>
@@ -20,6 +22,9 @@ namespace MineguideEPOCParser.Core
         /// This is lazily evaluated, so it will not read the entire input file into memory.
         /// </summary>
         public static async Task ParseMedication(Configuration configuration, CancellationToken cancellationToken = default)
+			=> await ParseMedication(configuration, MedicationHeaderName, ExtractMedications, cancellationToken);
+
+        public static async Task ParseMedication(Configuration configuration, string newHeaderName, MedicationParsingDelegate parsingFunction, CancellationToken cancellationToken = default)
 		{
 			try
 			{
@@ -37,9 +42,9 @@ namespace MineguideEPOCParser.Core
 				var medicationRead = await ReadMedication(csvReader, reader, configuration.Count, configuration.Logger, configuration.Progress, cancellationToken);
 
 				// Add new header to the array
-				string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, MedicationHeaderName);
+				string[]? newHeaders = ArrayCopyAndAdd(medicationRead.Headers, newHeaderName);
 
-				var newRows = ExtractMedications(medicationRead.Rows, medicationRead.TColumnIndex, configuration.Logger, cancellationToken);
+				var newRows = parsingFunction(medicationRead.Rows, medicationRead.TColumnIndex, configuration.Logger, cancellationToken);
 
 				// Write
 				await using var writer = new StreamWriter(configuration.OutputFile, false, Encoding.UTF8);
@@ -196,7 +201,6 @@ namespace MineguideEPOCParser.Core
 		/// donde se encuentran los medicamentos
 		/// </summary>
 		/// <param name="headerArray"></param>
-		/// <returns>i</returns>
 		/// <exception cref="Exception"></exception>
 		private static int GetTColumnIndex(string[] headerArray)
 			=> GetColumnIndex(headerArray, "T");
