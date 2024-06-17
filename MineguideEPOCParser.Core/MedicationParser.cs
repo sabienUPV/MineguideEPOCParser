@@ -53,8 +53,15 @@ namespace MineguideEPOCParser.Core
                 // Add new header to the array
                 var finalHeader = Utilities.ArrayEnsureUniqueHeader(medicationRead.Headers, Configuration.OutputHeaderName);
                 FinalOutputHeaderName = finalHeader;
+
+                if (finalHeader != Configuration.OutputHeaderName)
+                {
+                    Logger?.Warning("The output header name was changed to {OutputHeaderName} because it already existed in the input file.", finalHeader);
+                }
+
                 string[]? newHeaders = Utilities.ArrayCopyAndAdd(medicationRead.Headers, finalHeader);
 
+                // Apply transformations
                 var newRows = ApplyTransformations(medicationRead.Rows, medicationRead.InputColumnIndex, cancellationToken);
 
                 // Write
