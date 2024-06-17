@@ -14,5 +14,20 @@
 
             return destinationArray;
         }
+
+        public static string ArrayEnsureUniqueHeader(string[] headers, string header)
+        {
+            // If the header is already in the headers, add a number at the end
+            if (headers.Contains(header))
+            {
+                int i = 1;
+                while (headers.Contains(header + i))
+                {
+                    i++;
+                }
+                return header + i;
+            }
+            return header;
+        }
     }
 }

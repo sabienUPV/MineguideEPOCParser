@@ -16,6 +16,17 @@ namespace MineguideEPOCParser.Core
         public IProgress<ProgressValue>? Progress { get; set; }
 
         /// <summary>
+        /// After parsing, this property contains the name of the final output header the result was written to.
+        /// 
+        /// <para>
+        /// This is normally the same as <see cref="MedicationParserConfiguration.OutputHeaderName"/> in <see cref="Configuration"/>;
+        /// but if the header already existed in the input file,
+        /// the parser will add a number at the end to make it unique.
+        /// </para>
+        /// </summary>
+        public string? FinalOutputHeaderName { get; private set; }
+
+        /// <summary>
         /// Reads the medication from the input CSV file, lazily,
         /// applies a transformation to extract the medications from the 'T' column,
         /// and writes the results to the output CSV file.
@@ -40,7 +51,9 @@ namespace MineguideEPOCParser.Core
                 var medicationRead = await ReadMedication(csvReader, reader, Configuration.Count, cancellationToken);
 
                 // Add new header to the array
-                string[]? newHeaders = Utilities.ArrayCopyAndAdd(medicationRead.Headers, Configuration.OutputHeaderName);
+                var finalHeader = Utilities.ArrayEnsureUniqueHeader(medicationRead.Headers, Configuration.OutputHeaderName);
+                FinalOutputHeaderName = finalHeader;
+                string[]? newHeaders = Utilities.ArrayCopyAndAdd(medicationRead.Headers, finalHeader);
 
                 var newRows = ApplyTransformations(medicationRead.Rows, medicationRead.InputColumnIndex, cancellationToken);
 
