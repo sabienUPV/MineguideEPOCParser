@@ -10,9 +10,9 @@
 
 		public const string DefaultCultureName = "es-ES";
 
-		public static MedicationParser.Configuration JuanConfig()
+		public static MedicationParser.MedicationParserConfiguration JuanConfig()
 		{
-			return new MedicationParser.Configuration()
+			return new MedicationParser.MedicationParserConfiguration()
 			{
 				CultureName = DefaultCultureName,
 				InputFile = JuanInputFile,
@@ -20,9 +20,9 @@
 			};
 		}
 
-		public static MedicationParser.Configuration AlejandroConfig()
+		public static MedicationParser.MedicationParserConfiguration AlejandroConfig()
 		{
-			return new MedicationParser.Configuration()
+			return new MedicationParser.MedicationParserConfiguration()
 			{
 				CultureName = DefaultCultureName,
 				InputFile = AlejandroInputFile,

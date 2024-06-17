@@ -50,6 +50,9 @@ namespace MineguideEPOCParser.GUIApp
 			}
 		}
 
+		// Parser
+		private MedicationExtractingParser? MedicationParser { get; set; }
+
 		// Timer
 		private DispatcherTimer? _dispatcherTimer;
 		private TimeSpan _elapsedTime = TimeSpan.Zero;
@@ -228,14 +231,12 @@ namespace MineguideEPOCParser.GUIApp
 			// Run timer
 			StartTimer();
 
-			var configuration = new MedicationParser.Configuration()
+			var configuration = new MedicationParser.MedicationParserConfiguration()
 			{
 				CultureName = cultureName,
 				InputFile = inputFile,
 				OutputFile = outputFile,
 				Count = isRowCountValid ? rowCount : null,
-				Logger = Logger,
-				Progress = Progress
 			};
 
 			// Clear the log
@@ -258,7 +259,14 @@ namespace MineguideEPOCParser.GUIApp
 			{
 				try
 				{
-					await MedicationParser.ParseMedication(configuration, CancellationTokenSource.Token);
+					MedicationParser = new MedicationExtractingParser()
+					{
+						Configuration = configuration,
+						Logger = Logger,
+						Progress = Progress,
+					};
+
+                    await MedicationParser.ParseMedication(CancellationTokenSource.Token);
 				}
 				finally
 				{
@@ -306,6 +314,9 @@ namespace MineguideEPOCParser.GUIApp
 
 				// Set the timer to null
 				_dispatcherTimer = null;
+
+				// Set the parser to null
+				MedicationParser = null;
 			}
 
 		}
