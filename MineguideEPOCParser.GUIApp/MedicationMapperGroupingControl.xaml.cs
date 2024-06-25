@@ -350,7 +350,7 @@ namespace MineguideEPOCParser.GUIApp
 
         private void BrowseOutputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medication.csv") ?? string.Empty;
+            OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medicationMapper.csv") ?? string.Empty;
         }
 
         private static string? BrowseCsvFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
