@@ -114,22 +114,22 @@ namespace MineguideEPOCParser.GUIApp
                 MinimumLevel = GetLogLevelFromComboBox()
             };
 
-            // Get input file name without extension
-            var inputFileName = Path.GetFileNameWithoutExtension(InputFileTextBox.Text);
+            //// Get input file name without extension
+            //var inputFileName = Path.GetFileNameWithoutExtension(InputFileTextBox.Text);
 
-            // Get directory from output file path
-            var outputDirectory = Path.GetDirectoryName(OutputFileTextBox.Text);
+            //// Get directory from output file path
+            //var outputDirectory = Path.GetDirectoryName(OutputFileTextBox.Text);
 
-            // If the output directory is empty, use the current directory
-            var logFileDirectory = string.IsNullOrEmpty(outputDirectory) ? "." : outputDirectory;
+            //// If the output directory is empty, use the current directory
+            //var logFileDirectory = string.IsNullOrEmpty(outputDirectory) ? "." : outputDirectory;
 
-            var logFilePath = Path.Combine(logFileDirectory, $"MineguideEPOCParser-{inputFileName}-.log");
+            //var logFilePath = Path.Combine(logFileDirectory, $"MineguideEPOCParser-GroupingToMapper-{inputFileName}-.log");
 
             // Create a new logger
             Logger = new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(LoggingLevelSwitch)
                 .WriteTo.RichTextBox(LogRichTextBox)
-                .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
+                //.WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
                 .CreateLogger();
         }
 
