@@ -18,7 +18,7 @@ namespace MineguideEPOCParser.GUIApp
         public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
             nameof(IsParsing),
             typeof(bool),
-            typeof(MainWindow),
+            typeof(MedicationParserControl),
             new PropertyMetadata(false)
         );
 
@@ -26,7 +26,7 @@ namespace MineguideEPOCParser.GUIApp
         public static readonly DependencyProperty IsNotParsingProperty = DependencyProperty.Register(
             nameof(IsNotParsing),
             typeof(bool),
-            typeof(MainWindow),
+            typeof(MedicationParserControl),
             new PropertyMetadata(true)
         );
 
