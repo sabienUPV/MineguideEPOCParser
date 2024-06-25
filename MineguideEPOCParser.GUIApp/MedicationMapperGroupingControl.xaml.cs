@@ -51,7 +51,7 @@ namespace MineguideEPOCParser.GUIApp
         }
 
         // Parser
-        private MedicationExtractingParser? MedicationParser { get; set; }
+        private MedicationMapperGroupingParser? MedicationParser { get; set; }
 
         // Timer
         private DispatcherTimer? _dispatcherTimer;
@@ -261,7 +261,7 @@ namespace MineguideEPOCParser.GUIApp
             {
                 try
                 {
-                    MedicationParser = new MedicationExtractingParser()
+                    MedicationParser = new MedicationMapperGroupingParser()
                     {
                         Configuration = configuration,
                         Logger = Logger,
