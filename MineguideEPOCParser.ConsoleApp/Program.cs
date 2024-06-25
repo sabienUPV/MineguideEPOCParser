@@ -16,10 +16,7 @@ await using var log = new LoggerConfiguration()
 // TEST ALEJANDRO
 var testConfiguration = TestConfigurations.AlejandroConfig();
 
-// Add logger to configuration
-testConfiguration.Logger = log;
-
-Console.WriteLine("Application started.");
+log.Information("Application started.");
 Console.WriteLine("Press the ENTER key to cancel...\n");
 
 Task cancelTask = Task.Run(() =>
@@ -29,16 +26,22 @@ Task cancelTask = Task.Run(() =>
 		Console.WriteLine("Press ENTER key to cancel the operation...");
 	}
 
-	Console.WriteLine("Cancelling operation...");
+	log.Information("Cancelling operation...");
 	cts.Cancel();
 });
 
 try
 {
-	await MedicationParser.ParseMedication(testConfiguration, cts.Token);
-	Console.WriteLine("ParseMedication completed");
+	var medicationParser = new MedicationExtractingParser()
+	{
+		Configuration = testConfiguration,
+		Logger = log
+	};
+
+	await medicationParser.ParseMedication(cts.Token);
+	log.Information("ParseMedication completed");
 }
 catch (OperationCanceledException)
 {
-	Console.WriteLine("ParseMedication has been cancelled.");
+    log.Information("ParseMedication has been cancelled.");
 }
