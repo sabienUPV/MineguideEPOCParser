@@ -345,7 +345,7 @@ namespace MineguideEPOCParser.GUIApp
 
         private void BrowseInputGroupingFileButton_Click(object sender, RoutedEventArgs e)
         {
-            InputMappingFileTextBox.Text = BrowseJsonFile<Microsoft.Win32.OpenFileDialog>(InputGroupingFileTextBox.Text) ?? string.Empty;
+            InputGroupingFileTextBox.Text = BrowseJsonFile<Microsoft.Win32.OpenFileDialog>(InputGroupingFileTextBox.Text) ?? string.Empty;
         }
 
         private void BrowseOutputFileButton_Click(object sender, RoutedEventArgs e)
