@@ -322,21 +322,33 @@ namespace MineguideEPOCParser.GUIApp
 
         private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            InputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.OpenFileDialog>(InputFileTextBox.Text) ?? string.Empty;
+            InputFileTextBox.Text = BrowseJsonFile<Microsoft.Win32.OpenFileDialog>(InputFileTextBox.Text) ?? string.Empty;
         }
 
         private void BrowseOutputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medication.csv") ?? string.Empty;
+            OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medicationGroupsMapper.csv") ?? string.Empty;
         }
 
         private static string? BrowseCsvFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
             where TFileDialog : Microsoft.Win32.FileDialog, new()
         {
+            return BrowseFile<TFileDialog>("CSV files (*.csv)|*.csv|All files (*.*)|*.*", currentPath, defaultFileName);
+        }
+
+        private static string? BrowseJsonFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
+            where TFileDialog : Microsoft.Win32.FileDialog, new()
+        {
+            return BrowseFile<TFileDialog>("JSON files (*.json)|*.json|All files (*.*)|*.*", currentPath, defaultFileName);
+        }
+
+        private static string? BrowseFile<TFileDialog>(string filter, string? currentPath = null, string? defaultFileName = null)
+            where TFileDialog : Microsoft.Win32.FileDialog, new()
+        {
             // Create a new file dialog
             var dialog = new TFileDialog()
             {
-                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
+                Filter = filter,
             };
 
             if (!string.IsNullOrEmpty(currentPath))
