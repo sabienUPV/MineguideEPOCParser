@@ -16,4 +16,10 @@
     <PackageReference Include="Serilog.Sinks.RichTextBox.Wpf" Version="1.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Update="MedicationMapperGroupingControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+
 </Project>

@@ -2,7 +2,7 @@
 
 namespace MineguideEPOCParser.Core
 {
-    public class MedicationExtractingParser : MedicationParser
+    public class MedicationExtractingParser : MedicationParser<MedicationParserConfiguration>
     {
         /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.

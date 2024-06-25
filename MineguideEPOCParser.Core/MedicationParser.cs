@@ -8,9 +8,10 @@ using Serilog;
 
 namespace MineguideEPOCParser.Core
 {
-	public abstract class MedicationParser
+    public abstract class MedicationParser<TConfiguration>
+        where TConfiguration : MedicationParserConfiguration
 	{
-        public required MedicationParserConfiguration Configuration { get; set; }
+        public required TConfiguration Configuration { get; set; }
 
         public ILogger? Logger { get; set; }
         public IProgress<ProgressValue>? Progress { get; set; }
@@ -44,6 +45,8 @@ namespace MineguideEPOCParser.Core
                     CountBytes = Progress is not null && Configuration.Count is null,
                 };
 
+                await DoPreProcessing(cancellationToken);
+
                 // Read
                 using var reader = new StreamReader(Configuration.InputFile);
                 using var csvReader = new CsvReader(reader, csvConfig);
@@ -51,15 +54,40 @@ namespace MineguideEPOCParser.Core
                 var medicationRead = await ReadMedication(csvReader, reader, Configuration.Count, cancellationToken);
 
                 // Add new header to the array
-                var finalHeader = Utilities.ArrayEnsureUniqueHeader(medicationRead.Headers, Configuration.OutputHeaderName);
-                FinalOutputHeaderName = finalHeader;
-
-                if (finalHeader != Configuration.OutputHeaderName)
+                string[]? newHeaders;
+                if (Configuration.OverwriteColumn && Configuration.InputHeaderName == Configuration.OutputHeaderName)
                 {
-                    Logger?.Warning("The output header name was changed to {OutputHeaderName} because it already existed in the input file.", finalHeader);
+                    // If we are overwriting the column, and the input and output headers are the same,
+                    // we don't need to modify the headers array
+                    newHeaders = medicationRead.Headers;
+                    FinalOutputHeaderName = Configuration.OutputHeaderName;
                 }
+                else
+                {
+                    // Ensure the output header is unique
+                    // (if the column is new, then we need to ensure its uniqueness;
+                    // and if we are overwriting the column, we already checked that it doesn't match the input header,
+                    // but we still need to ensure its uniqueness against the other headers)
 
-                string[]? newHeaders = Utilities.ArrayCopyAndAdd(medicationRead.Headers, finalHeader);
+                    var finalHeader = Utilities.ArrayEnsureUniqueHeader(medicationRead.Headers, Configuration.OutputHeaderName);
+                    FinalOutputHeaderName = finalHeader;
+
+                    if (finalHeader != Configuration.OutputHeaderName)
+                    {
+                        Logger?.Warning("The output header name was changed to {OutputHeaderName} because it already existed in the input file.", finalHeader);
+                    }
+
+                    if (Configuration.OverwriteColumn)
+                    {
+                        // If we are overwriting the column, we replace the input header with the output header
+                        newHeaders = medicationRead.Headers.Select((header, i) => i == medicationRead.InputColumnIndex ? finalHeader : header).ToArray();
+                    }
+                    else
+                    {
+                        // If we are not overwriting the column, we add the output header at the end
+                        newHeaders = Utilities.ArrayCopyAndAdd(medicationRead.Headers, finalHeader);
+                    }
+                }
 
                 // Apply transformations
                 var newRows = ApplyTransformations(medicationRead.Rows, medicationRead.InputColumnIndex, cancellationToken);
@@ -90,6 +118,12 @@ namespace MineguideEPOCParser.Core
                 Logger?.Error(ex, "An unexpected error occurred: {Message}", ex.Message);
                 throw;
             }
+        }
+
+        protected virtual async Task DoPreProcessing(CancellationToken cancellationToken = default)
+        {
+            // Override this method to add custom pre-processing logic
+            await Task.CompletedTask;
         }
 
         protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputColumnIndex, CancellationToken cancellationToken = default);
@@ -272,30 +306,6 @@ namespace MineguideEPOCParser.Core
             }
 
             return rowsWritten;
-        }
-
-        public class MedicationParserConfiguration
-        {
-            public required string CultureName { get; set; }
-            public required string InputFile { get; set; }
-            public required string OutputFile { get; set; }
-
-            public const string THeaderName = "T";
-            public const string MedicationHeaderName = "Medication";
-
-            public string InputHeaderName { get; set; } = THeaderName;
-            public string OutputHeaderName { get; set; } = MedicationHeaderName;
-
-            public int? Count { get; set; }
-        }
-
-        public readonly struct ProgressValue
-        {
-            /// <summary>
-            /// Progress value between 0 and 1.
-            /// </summary>
-            public double Value { get; init; }
-            public int? RowsProcessed { get; init; }
         }
 
         protected class MedicationReadContent
