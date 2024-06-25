@@ -33,7 +33,7 @@ namespace MineguideEPOCParser.Core
             NameToGroup = CreateNameToGroup(Groups);
         }
 
-        protected static async Task<Dictionary<string, string[]>?> LoadGroups(string inputGroupingFile, CancellationToken cancellationToken = default)
+        public static async Task<Dictionary<string, string[]>?> LoadGroups(string inputGroupingFile, CancellationToken cancellationToken = default)
         {
             using var jsonStream = File.OpenRead(inputGroupingFile);
             return await JsonSerializer.DeserializeAsync<Dictionary<string, string[]>>(jsonStream, cancellationToken: cancellationToken);

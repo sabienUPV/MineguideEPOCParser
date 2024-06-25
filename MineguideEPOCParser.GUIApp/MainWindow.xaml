@@ -11,8 +11,11 @@
         <TabItem Header="Medication Parser">
             <local:MedicationParserControl />
         </TabItem>
-        <TabItem Header="Medication Mapper Grouping">
+        <TabItem Header="Medication Mapper and Grouping to Group Mapper">
             <local:MedicationMapperGroupingControl />
+        </TabItem>
+        <TabItem Header="Medication Grouping To Mapper">
+            <local:MedicationGroupingToMapperControl />
         </TabItem>
     </TabControl>
 </Window>
