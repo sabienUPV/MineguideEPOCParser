@@ -55,8 +55,18 @@ namespace MineguideEPOCParser.Core
                 // If the medication is not in a group, use "UNK" as the group name
                 var group = NameToGroup!.GetValueOrDefault(t, UnknownGroup);
 
-                // If the medication is in a group, replace the medication name with the group name
-                var newRow = row.Select((value, index) => index == inputColumnIndex ? group : value).ToArray();
+                // If the medication is in a group, replace or add the group name
+                string[] newRow;
+                if (Configuration.OverwriteColumn)
+                {
+                    // If we are overwriting, replace the medication name with the group name
+                    newRow = row.Select((value, index) => index == inputColumnIndex ? group : value).ToArray();
+                }
+                else
+                {
+                    // If we are not overwriting, add the group name
+                    newRow = Utilities.ArrayCopyAndAdd(row, group);
+                }
 
                 yield return newRow;
             }

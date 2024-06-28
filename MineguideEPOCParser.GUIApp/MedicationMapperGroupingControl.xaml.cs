@@ -239,6 +239,9 @@ namespace MineguideEPOCParser.GUIApp
                 InputGroupingFile = inputGroupingFile,
                 OutputFile = outputFile,
                 Count = isRowCountValid ? rowCount : null,
+                // Overwrite the column by default
+                // TODO: Add a checkbox to allow the user to choose whether to overwrite the column or add a new column
+                OverwriteColumn = true,
             };
 
             // Clear the log

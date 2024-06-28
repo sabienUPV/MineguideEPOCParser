@@ -237,6 +237,9 @@ namespace MineguideEPOCParser.GUIApp
                 InputFile = inputFile,
                 OutputFile = outputFile,
                 Count = isRowCountValid ? rowCount : null,
+                // Don't overwrite the column by default
+                // TODO: Add a checkbox to allow the user to choose whether to overwrite the column or add a new column
+                OverwriteColumn = false,
             };
 
             // Clear the log

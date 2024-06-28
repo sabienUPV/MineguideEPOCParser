@@ -18,11 +18,26 @@ namespace MineguideEPOCParser.Core
                 // Devuelve cada medicamento en una fila, ordenados alfabéticamente
                 foreach (var medication in medications.Order())
                 {
-                    // Duplicate the row for each medication, adding the medication to the end
-                    var newRow = Utilities.ArrayCopyAndAdd(row, medication);
+                    // Duplicate the row for each medication, including the medication
+                    string[] newRow;
 
-                    // In the 'T' column, replace the multiline original text with a single line text
-                    newRow[inputColumnIndex] = t.Replace('\n', '\t').Replace("\r", "");
+                    if (Configuration.OverwriteColumn)
+                    {
+                        // If we are overwriting, replace the input column with the medication
+                        newRow = row.Select((value, index) => index == inputColumnIndex ? medication : value).ToArray();
+
+                        // Note: If we are overwriting, the 'T' column is being replaced with the medication name,
+                        // so we don't need to replace the multiline text with a single line text,
+                        // because we are replacing the whole column
+                    }
+                    else
+                    {
+                        // If we are not overwriting the column, add the medication to the end
+                        newRow = Utilities.ArrayCopyAndAdd(row, medication);
+
+                        // In the 'T' column, replace the multiline original text with a single line text
+                        newRow[inputColumnIndex] = t.Replace('\n', '\t').Replace("\r", "");
+                    }
 
                     yield return newRow;
                 }
