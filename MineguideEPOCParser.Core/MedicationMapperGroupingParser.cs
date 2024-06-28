@@ -6,6 +6,7 @@ namespace MineguideEPOCParser.Core
     public class MedicationMapperGroupingParser : MedicationParser<MedicationMapperGroupingParserConfiguration>
     {
         public const string UnknownGroup = "UNK";
+        public const char MedicationSeparator = '+';
 
         /// <summary>
         /// Original dictionary loaded from the JSON file.
@@ -52,29 +53,30 @@ namespace MineguideEPOCParser.Core
                 var t = row[inputColumnIndex];
 
                 // Split the medication name by "+" to handle multiple medications in a single cell
-                var medications = t.Split('+');
+                var medications = t.Split(MedicationSeparator);
 
-                foreach (var medication in medications)
+                // Get the group of each medication, and combine them with "+"
+                var groups = string.Join(MedicationSeparator, medications.Select(m =>
                 {
                     // Get the group of the medication.
                     // If the medication is not in a group, use "UNK" as the group name
-                    var group = NameToGroup!.GetValueOrDefault(medication, UnknownGroup);
+                    return NameToGroup!.GetValueOrDefault(m, UnknownGroup);
+                }));
 
-                    // If the medication is in a group, replace or add the group name
-                    string[] newRow;
-                    if (Configuration.OverwriteColumn)
-                    {
-                        // If we are overwriting, replace the medication name with the group name
-                        newRow = row.Select((value, index) => index == inputColumnIndex ? group : value).ToArray();
-                    }
-                    else
-                    {
-                        // If we are not overwriting, add the group name
-                        newRow = Utilities.ArrayCopyAndAdd(row, group);
-                    }
-
-                    yield return newRow;
+                // Replace or add the group or groups to the row
+                string[] newRow;
+                if (Configuration.OverwriteColumn)
+                {
+                    // If we are overwriting, replace the medication name(s) with the group name(s)
+                    newRow = row.Select((value, index) => index == inputColumnIndex ? groups : value).ToArray();
                 }
+                else
+                {
+                    // If we are not overwriting, add the group name(s) to the row
+                    newRow = Utilities.ArrayCopyAndAdd(row, groups);
+                }
+
+                yield return newRow;
             }
         }
     }
