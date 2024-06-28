@@ -51,24 +51,30 @@ namespace MineguideEPOCParser.Core
                 // Get the medication name
                 var t = row[inputColumnIndex];
 
-                // Get the group of the medication.
-                // If the medication is not in a group, use "UNK" as the group name
-                var group = NameToGroup!.GetValueOrDefault(t, UnknownGroup);
+                // Split the medication name by "+" to handle multiple medications in a single cell
+                var medications = t.Split('+');
 
-                // If the medication is in a group, replace or add the group name
-                string[] newRow;
-                if (Configuration.OverwriteColumn)
+                foreach (var medication in medications)
                 {
-                    // If we are overwriting, replace the medication name with the group name
-                    newRow = row.Select((value, index) => index == inputColumnIndex ? group : value).ToArray();
-                }
-                else
-                {
-                    // If we are not overwriting, add the group name
-                    newRow = Utilities.ArrayCopyAndAdd(row, group);
-                }
+                    // Get the group of the medication.
+                    // If the medication is not in a group, use "UNK" as the group name
+                    var group = NameToGroup!.GetValueOrDefault(medication, UnknownGroup);
 
-                yield return newRow;
+                    // If the medication is in a group, replace or add the group name
+                    string[] newRow;
+                    if (Configuration.OverwriteColumn)
+                    {
+                        // If we are overwriting, replace the medication name with the group name
+                        newRow = row.Select((value, index) => index == inputColumnIndex ? group : value).ToArray();
+                    }
+                    else
+                    {
+                        // If we are not overwriting, add the group name
+                        newRow = Utilities.ArrayCopyAndAdd(row, group);
+                    }
+
+                    yield return newRow;
+                }
             }
         }
     }
