@@ -17,6 +17,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Update="FileEncodingConverterControl.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="MedicationMapperGroupingControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
