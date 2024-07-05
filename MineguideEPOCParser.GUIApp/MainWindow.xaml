@@ -17,5 +17,8 @@
         <TabItem Header="Medication Grouping To Mapper">
             <local:MedicationGroupingToMapperControl />
         </TabItem>
+        <TabItem Header="File Encoding Converter">
+            <local:FileEncodingConverterControl />
+        </TabItem>
     </TabControl>
 </Window>
