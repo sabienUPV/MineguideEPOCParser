@@ -330,7 +330,7 @@ namespace MineguideEPOCParser.GUIApp
 
         private void BrowseOutputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            OutputFileTextBox.Text = BrowseFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, Path.GetFileName(InputFileTextBox.Text)) ?? string.Empty;
+            OutputFileTextBox.Text = BrowseFile<Microsoft.Win32.SaveFileDialog>(string.Empty, OutputFileTextBox.Text, Path.GetFileName(InputFileTextBox.Text)) ?? string.Empty;
         }
 
         private static string? BrowseCsvFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
