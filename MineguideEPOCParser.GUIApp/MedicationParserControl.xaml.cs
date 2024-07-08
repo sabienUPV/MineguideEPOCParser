@@ -225,21 +225,24 @@ namespace MineguideEPOCParser.GUIApp
 
             bool isRowCountValid = int.TryParse(RowCountTextBox.Text, out var rowCount);
 
+            bool overwriteColumn = OverwriteColumnCheckBox.IsChecked == true;
+
+            bool decodeHtml = DecodeHtmlCheckBox.IsChecked == true;
+
             // Create a new logger
             CreateLogger();
 
             // Run timer
             StartTimer();
 
-            var configuration = new MedicationParserConfiguration()
+            var configuration = new MedicationExtractingParserConfiguration()
             {
                 CultureName = cultureName,
                 InputFile = inputFile,
                 OutputFile = outputFile,
                 Count = isRowCountValid ? rowCount : null,
-                // Don't overwrite the column by default
-                // TODO: Add a checkbox to allow the user to choose whether to overwrite the column or add a new column
-                OverwriteColumn = false,
+                OverwriteColumn = overwriteColumn,
+                DecodeHtmlFromInput = decodeHtml,
             };
 
             // Clear the log

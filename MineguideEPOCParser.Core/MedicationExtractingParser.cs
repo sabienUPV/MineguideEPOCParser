@@ -1,8 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Net;
+using System.Runtime.CompilerServices;
 
 namespace MineguideEPOCParser.Core
 {
-    public class MedicationExtractingParser : MedicationParser<MedicationParserConfiguration>
+    public class MedicationExtractingParser : MedicationParser<MedicationExtractingParserConfiguration>
     {
         /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.
@@ -13,6 +14,14 @@ namespace MineguideEPOCParser.Core
             {
                 // Recoge la columna que contiene los medicamentos
                 var t = row[inputColumnIndex];
+
+                // If the input text is HTML encoded, decode it
+                if (Configuration.DecodeHtmlFromInput)
+				{
+					t = WebUtility.HtmlDecode(t);
+				}
+
+                // Llama a la API para extraer los medicamentos
                 var medications = await ApiClient.CallToApi(t, Logger, cancellationToken);
 
                 // Devuelve cada medicamento en una fila, ordenados alfabéticamente
@@ -44,4 +53,9 @@ namespace MineguideEPOCParser.Core
             }
         }
     }
+
+	public class MedicationExtractingParserConfiguration : MedicationParserConfiguration
+	{
+		public bool DecodeHtmlFromInput { get; set; }
+	}
 }
