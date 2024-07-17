@@ -32,6 +32,8 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="10" />
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
             <!-- Input file -->
@@ -62,9 +64,12 @@
                 <ComboBoxItem Content="ja-JP" />
                 <ComboBoxItem Content="ko-KR" />
             </ComboBox>
+            
+            <!-- Only top categories -->
+            <CheckBox Grid.Row="6" Grid.Column="2" x:Name="OnlyTopCategoriesCheckBox" Content="Only top categories" VerticalAlignment="Center" HorizontalAlignment="Left" IsChecked="False" />
 
             <!-- Parse button -->
-            <Button Grid.Row="6" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
+            <Button Grid.Row="8" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
         </Grid>
 
         <!-- Progress bar, cancel button and log viewer -->

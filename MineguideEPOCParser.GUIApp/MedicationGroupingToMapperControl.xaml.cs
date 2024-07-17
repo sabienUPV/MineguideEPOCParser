@@ -222,6 +222,9 @@ namespace MineguideEPOCParser.GUIApp
 
             //bool isRowCountValid = int.TryParse(RowCountTextBox.Text, out var rowCount);
 
+            // Get if only top categories should be included
+            bool onlyTopCategories = OnlyTopCategoriesCheckBox.IsChecked == true;
+
             // Create a new logger
             CreateLogger();
 
@@ -248,7 +251,7 @@ namespace MineguideEPOCParser.GUIApp
             {
                 try
                 {
-                    await GroupingToMapperTransformer.Transform(inputFile, outputFile, CancellationTokenSource.Token);
+                    await GroupingToMapperTransformer.Transform(inputFile, outputFile, onlyTopCategories, CancellationTokenSource.Token);
 
                     Logger?.Information("Parsing has been completed successfully.");
 
