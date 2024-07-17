@@ -192,7 +192,7 @@ namespace MineguideEPOCParser.Core
                 return new EventCategory
                 {
                     Category = categoryBuilder.ToString(),
-                    SubCategory = subCategoryBuilder.ToString(),
+                    SubCategory = subCategoryBuilder.Length > 0 ? subCategoryBuilder.ToString() : null,
                     Name = nameBuilder.ToString()
                 };
             }
