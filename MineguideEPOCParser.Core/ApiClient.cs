@@ -11,7 +11,7 @@ namespace MineguideEPOCParser.Core
 	{
 		private const string ApiKey = "32868ebff04b45108ae1637756df5778";
 
-		public static async Task<string[]> CallToApi(string t, ILogger? log = null, CancellationToken cancellationToken = default)
+		public static async Task<TOutput?> CallToApi<TOutput>(string t, ILogger? log = null, CancellationToken cancellationToken = default)
         {
 			var jsonRetryPolicy = Policy.Handle<JsonException>()
 				.WaitAndRetryAsync(10, i => TimeSpan.FromSeconds(2), (ex, sleepDuration, retryCount, _context) =>
@@ -88,27 +88,27 @@ namespace MineguideEPOCParser.Core
 
 					log?.Debug("Raw API Response:\n{Response}", apiResponse.Response);
 
-					var medicamentosList = JsonSerializer.Deserialize<MedicationsList>(apiResponse.Response);
+					var output = JsonSerializer.Deserialize<TOutput>(apiResponse.Response);
 
 					cancellationToken.ThrowIfCancellationRequested();
 
-					if (medicamentosList == null)
+					if (output == null)
 					{
 						throw new InvalidOperationException($"Error: API response is in an invalid format. Could not parse medication as JSON.\nRaw response: {apiResponse.Response}");
 					}
 
-					log?.Debug("Medication list:\n{MedicationList}", string.Join(',', medicamentosList.Medicamentos));
+					log?.Debug("Extracted output:\n{Output}", output);
 
-					return medicamentosList.Medicamentos;
+					return output;
 				});
 			}
             catch (JsonException ex)
 			{
 				// JsonException is thrown when the API returns an invalid JSON response.
 				// We account for this and we have a retry policy set in place.
-				// But if we exhaust all retries and the response is still invalid, we log the error and return an empty medication list.
-				log?.Warning(ex, "Error from API - Invalid JSON. Exhausted all retries. Returning empty medication list.\nError Message: {ExceptionMessage}", ex.Message);
-				return [];
+				// But if we exhaust all retries and the response is still invalid, we log the error and return the default value as output.
+				log?.Warning(ex, "Error from API - Invalid JSON. Exhausted all retries. Returning default value.\nError Message: {ExceptionMessage}", ex.Message);
+				return default;
 			}
 		}
 
@@ -125,11 +125,6 @@ namespace MineguideEPOCParser.Core
 		private class ApiResponse
 		{
 			public required string Response { get; init; }
-		}
-
-		private class MedicationsList
-		{
-			public required string[] Medicamentos { get; set; }
 		}
 	}
 }

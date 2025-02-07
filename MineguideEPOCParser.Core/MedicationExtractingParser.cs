@@ -22,10 +22,16 @@ namespace MineguideEPOCParser.Core
 				}
 
                 // Llama a la API para extraer los medicamentos
-                var medications = await ApiClient.CallToApi(t, Logger, cancellationToken);
+                var medications = await ApiClient.CallToApi<MedicationsList>(t, Logger, cancellationToken);
+
+                if (medications == null)
+                {
+                    Logger?.Warning($"No medications found in the text: {t}");
+                    continue;
+                }
 
                 // Devuelve cada medicamento en una fila, ordenados alfabéticamente
-                foreach (var medication in medications.Order())
+                foreach (var medication in medications.Medicamentos.Order())
                 {
                     // Duplicate the row for each medication, including the medication
                     string[] newRow;
@@ -54,7 +60,14 @@ namespace MineguideEPOCParser.Core
         }
     }
 
-	public class MedicationExtractingParserConfiguration : DataParserConfiguration
+    public class MedicationsList
+    {
+        public required string[] Medicamentos { get; set; }
+
+        public override string ToString() => string.Join(',', Medicamentos);
+    }
+
+    public class MedicationExtractingParserConfiguration : DataParserConfiguration
 	{
 		public bool DecodeHtmlFromInput { get; set; }
 	}
