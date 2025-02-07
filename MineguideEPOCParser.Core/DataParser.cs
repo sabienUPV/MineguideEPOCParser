@@ -8,8 +8,8 @@ using Serilog;
 
 namespace MineguideEPOCParser.Core
 {
-    public abstract class MedicationParser<TConfiguration>
-        where TConfiguration : MedicationParserConfiguration
+    public abstract class DataParser<TConfiguration>
+        where TConfiguration : DataParserConfiguration
 	{
         public required TConfiguration Configuration { get; set; }
 
@@ -20,7 +20,7 @@ namespace MineguideEPOCParser.Core
         /// After parsing, this property contains the name of the final output header the result was written to.
         /// 
         /// <para>
-        /// This is normally the same as <see cref="MedicationParserConfiguration.OutputHeaderName"/> in <see cref="Configuration"/>;
+        /// This is normally the same as <see cref="DataParserConfiguration.OutputHeaderName"/> in <see cref="Configuration"/>;
         /// but if the header already existed in the input file,
         /// the parser will add a number at the end to make it unique.
         /// </para>
@@ -34,7 +34,7 @@ namespace MineguideEPOCParser.Core
         /// 
         /// This is lazily evaluated, so it will not read the entire input file into memory.
         /// </summary>
-        public async Task ParseMedication(CancellationToken cancellationToken = default)
+        public async Task ParseData(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -51,7 +51,7 @@ namespace MineguideEPOCParser.Core
                 using var reader = new StreamReader(Configuration.InputFile);
                 using var csvReader = new CsvReader(reader, csvConfig);
 
-                var medicationRead = await ReadMedication(csvReader, reader, Configuration.Count, cancellationToken);
+                var dataRead = await ReadData(csvReader, reader, Configuration.Count, cancellationToken);
 
                 // Add new header to the array
                 string[]? newHeaders;
@@ -59,7 +59,7 @@ namespace MineguideEPOCParser.Core
                 {
                     // If we are overwriting the column, and the input and output headers are the same,
                     // we don't need to modify the headers array
-                    newHeaders = medicationRead.Headers;
+                    newHeaders = dataRead.Headers;
                     FinalOutputHeaderName = Configuration.OutputHeaderName;
                 }
                 else
@@ -69,7 +69,7 @@ namespace MineguideEPOCParser.Core
                     // and if we are overwriting the column, we already checked that it doesn't match the input header,
                     // but we still need to ensure its uniqueness against the other headers)
 
-                    var finalHeader = Utilities.ArrayEnsureUniqueHeader(medicationRead.Headers, Configuration.OutputHeaderName);
+                    var finalHeader = Utilities.ArrayEnsureUniqueHeader(dataRead.Headers, Configuration.OutputHeaderName);
                     FinalOutputHeaderName = finalHeader;
 
                     if (finalHeader != Configuration.OutputHeaderName)
@@ -80,23 +80,23 @@ namespace MineguideEPOCParser.Core
                     if (Configuration.OverwriteColumn)
                     {
                         // If we are overwriting the column, we replace the input header with the output header
-                        newHeaders = medicationRead.Headers.Select((header, i) => i == medicationRead.InputColumnIndex ? finalHeader : header).ToArray();
+                        newHeaders = dataRead.Headers.Select((header, i) => i == dataRead.InputColumnIndex ? finalHeader : header).ToArray();
                     }
                     else
                     {
                         // If we are not overwriting the column, we add the output header at the end
-                        newHeaders = Utilities.ArrayCopyAndAdd(medicationRead.Headers, finalHeader);
+                        newHeaders = Utilities.ArrayCopyAndAdd(dataRead.Headers, finalHeader);
                     }
                 }
 
                 // Apply transformations
-                var newRows = ApplyTransformations(medicationRead.Rows, medicationRead.InputColumnIndex, cancellationToken);
+                var newRows = ApplyTransformations(dataRead.Rows, dataRead.InputColumnIndex, cancellationToken);
 
                 // Write
                 await using var writer = new StreamWriter(Configuration.OutputFile, false, Encoding.UTF8);
                 await using var csvWriter = new CsvWriter(writer, csvConfig);
 
-                await WriteMedication(csvWriter, newHeaders, newRows);
+                await WriteTransformedData(csvWriter, newHeaders, newRows);
 
                 // Report progress and log completion
                 Progress?.Report(new ProgressValue
@@ -106,11 +106,11 @@ namespace MineguideEPOCParser.Core
                                // (because it normally writes more rows than it reads - one duplicated row per medication)
                                // and it should be the last value reported anyways
                 });
-                Logger?.Information("Medication parsing completed.");
+                Logger?.Information("Data parsing completed.");
             }
             catch (OperationCanceledException)
             {
-                Logger?.Warning("Medication parsing was cancelled.");
+                Logger?.Warning("Data parsing was cancelled.");
                 throw;
             }
             catch (Exception ex)
@@ -120,20 +120,20 @@ namespace MineguideEPOCParser.Core
             }
         }
 
-        protected virtual async Task DoPreProcessing(CancellationToken cancellationToken = default)
+        protected virtual Task DoPreProcessing(CancellationToken cancellationToken = default)
         {
             // Override this method to add custom pre-processing logic
-            await Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputColumnIndex, CancellationToken cancellationToken = default);
 
         /// <summary>
-        /// Este método se encarga de leer el archivo csv y devolver un objeto 'MedicationContent'
-        /// que contiene los headers, las rows y el index de la columna 'T' que contiene el texto completo con las medicaciones sin extraer
+        /// Este método se encarga de leer el archivo csv y devolver un objeto 'DataReadContent'
+        /// que contiene los headers, las rows y el index de la columna 'T' que contiene el texto completo con los datos sin extraer
         /// </summary>
         /// <returns>result</returns>
-        protected async Task<MedicationReadContent> ReadMedication(CsvReader csv, StreamReader sr, int? count = null, CancellationToken cancellationToken = default)
+        protected async Task<DataReadContent> ReadData(CsvReader csv, StreamReader sr, int? count = null, CancellationToken cancellationToken = default)
         {
             string[]? headerArray = null;
             IAsyncEnumerable<string[]>? rowsEnumerable = null;
@@ -153,7 +153,7 @@ namespace MineguideEPOCParser.Core
                         throw new InvalidOperationException($"{Configuration.InputHeaderName} column was not found");
                     }
 
-                    rowsEnumerable = ReadMedicationFromCsv(csv, sr, count, cancellationToken);
+                    rowsEnumerable = ReadDataFromCsv(csv, sr, count, cancellationToken);
                 }
             }
             catch (FileNotFoundException ex)
@@ -192,7 +192,7 @@ namespace MineguideEPOCParser.Core
                 throw new InvalidOperationException("Rows enumerable is null");
             }
 
-            var result = new MedicationReadContent()
+            var result = new DataReadContent()
             {
                 Headers = headerArray,
                 Rows = rowsEnumerable,
@@ -202,7 +202,7 @@ namespace MineguideEPOCParser.Core
             return result;
         }
 
-        protected async IAsyncEnumerable<string[]> ReadMedicationFromCsv(CsvReader csv, StreamReader sr, int? count = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        protected async IAsyncEnumerable<string[]> ReadDataFromCsv(CsvReader csv, StreamReader sr, int? count = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             int rowsRead = 0;
             while (await csv.ReadAsync())
@@ -277,7 +277,7 @@ namespace MineguideEPOCParser.Core
             throw new Exception("No se ha encontrado la columna solicitada.");
         }
 
-        protected async Task<int> WriteMedication(CsvWriter csv, string[] headers, IAsyncEnumerable<string[]> rows)
+        protected async Task<int> WriteTransformedData(CsvWriter csv, string[] headers, IAsyncEnumerable<string[]> rows)
         {
             foreach (var header in headers)
             {
@@ -308,7 +308,7 @@ namespace MineguideEPOCParser.Core
             return rowsWritten;
         }
 
-        protected class MedicationReadContent
+        protected class DataReadContent
         {
             public required string[] Headers { get; init; }
 

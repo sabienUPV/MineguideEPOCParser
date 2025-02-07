@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace MineguideEPOCParser.Core
 {
-    public class MedicationExtractingParser : MedicationParser<MedicationExtractingParserConfiguration>
+    public class MedicationExtractingParser : DataParser<MedicationExtractingParserConfiguration>
     {
         /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.
@@ -54,7 +54,7 @@ namespace MineguideEPOCParser.Core
         }
     }
 
-	public class MedicationExtractingParserConfiguration : MedicationParserConfiguration
+	public class MedicationExtractingParserConfiguration : DataParserConfiguration
 	{
 		public bool DecodeHtmlFromInput { get; set; }
 	}

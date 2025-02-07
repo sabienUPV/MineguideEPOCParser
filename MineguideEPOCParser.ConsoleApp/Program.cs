@@ -38,7 +38,7 @@ try
 		Logger = log
 	};
 
-	await medicationParser.ParseMedication(cts.Token);
+	await medicationParser.ParseData(cts.Token);
 	log.Information("ParseMedication completed");
 }
 catch (OperationCanceledException)

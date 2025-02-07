@@ -1,6 +1,6 @@
 ﻿namespace MineguideEPOCParser.Core
 {
-    public class MedicationParserConfiguration
+    public class DataParserConfiguration
     {
         public required string CultureName { get; set; }
         public required string InputFile { get; set; }
@@ -16,7 +16,7 @@
 
         public int? Count { get; set; }
 
-        public MedicationParserConfiguration()
+        public DataParserConfiguration()
         {
             (InputHeaderName, OutputHeaderName) = GetDefaultColumns();
         }

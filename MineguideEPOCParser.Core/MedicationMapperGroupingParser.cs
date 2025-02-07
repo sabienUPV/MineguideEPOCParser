@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace MineguideEPOCParser.Core
 {
-    public class MedicationMapperGroupingParser : MedicationParser<MedicationMapperGroupingParserConfiguration>
+    public class MedicationMapperGroupingParser : DataParser<MedicationMapperGroupingParserConfiguration>
     {
         public const string UnknownGroup = "UNK";
         public const char MedicationSeparator = '+';
@@ -81,7 +81,7 @@ namespace MineguideEPOCParser.Core
         }
     }
 
-    public class MedicationMapperGroupingParserConfiguration : MedicationParserConfiguration
+    public class MedicationMapperGroupingParserConfiguration : DataParserConfiguration
     {
         public required string InputGroupingFile { get; set; }
 

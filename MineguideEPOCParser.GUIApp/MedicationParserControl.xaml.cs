@@ -272,7 +272,7 @@ namespace MineguideEPOCParser.GUIApp
                         Progress = Progress,
                     };
 
-                    await MedicationParser.ParseMedication(CancellationTokenSource.Token);
+                    await MedicationParser.ParseData(CancellationTokenSource.Token);
                 }
                 finally
                 {
