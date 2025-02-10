@@ -11,7 +11,7 @@ namespace MineguideEPOCParser.Core
 	{
 		private const string ApiKey = "32868ebff04b45108ae1637756df5778";
 
-		public static async Task<TOutput?> CallToApi<TOutput>(string t, string model, ILogger? log = null, CancellationToken cancellationToken = default)
+		public static async Task<TOutput?> CallToApi<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
         {
 			var jsonRetryPolicy = Policy.Handle<JsonException>()
 				.WaitAndRetryAsync(10, i => TimeSpan.FromSeconds(2), (ex, sleepDuration, retryCount, _context) =>
@@ -50,7 +50,8 @@ namespace MineguideEPOCParser.Core
 			{
 				Prompt = t,
 				Model = model,
-				Format = "json",
+                System = system,
+                Format = "json",
 				Stream = false,
 			};
 
@@ -112,14 +113,20 @@ namespace MineguideEPOCParser.Core
 			}
 		}
 
-		private class RequestConfig
+        /// <summary>
+		/// <see href="https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion"/>
+		/// </summary>
+        private class RequestConfig
 		{
 			public required string Prompt { get; set; }
 			public required string Model { get; set; }
 
-			[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public string? System { get; set; }
+
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 			public string? Format { get; set; }
-			public required bool Stream { get; set; }
+			public bool Stream { get; set; }
 		}
 
 		private class ApiResponse

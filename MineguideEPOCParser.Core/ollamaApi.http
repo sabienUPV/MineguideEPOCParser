@@ -1,3 +1,3 @@
 # For more info on HTTP files go to https://aka.ms/vs/httpfile
 GET https://mineguide-epoc.itaca.upv.es:11434/api/tags
-X-API-Key: 32868ebff04b45108ae1637756df5778 
+X-API-Key: 32868ebff04b45108ae1637756df5778
