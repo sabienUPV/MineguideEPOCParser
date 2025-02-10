@@ -136,7 +136,9 @@ namespace MineguideEPOCParser.Core
         public string[]? MeasurementsToLookFor { get; set; }
 
         // Default measurements to look for
-        protected virtual string[] GetDefaultMeasurementsToLookFor() => ["FEV1", "FVC"]; // Important EPOC-related measurements
+        // Important EPOC-related measurements: FEV1, FVC, FEV1/FVC
+        // other possibly useful measurements: DLCO, KCO
+        protected virtual string[] GetDefaultMeasurementsToLookFor() => ["FEV1", "FVC", "DLCO", "KCO"];
 
         public MeasurementsExtractingParserConfiguration() : base()
         {
