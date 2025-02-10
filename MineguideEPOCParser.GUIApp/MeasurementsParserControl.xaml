@@ -1,0 +1,161 @@
+﻿<UserControl x:Class="MineguideEPOCParser.GUIApp.MeasurementsParserControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MineguideEPOCParser.GUIApp"
+             mc:Ignorable="d"
+             DataContext="{Binding RelativeSource={RelativeSource Self}}"
+             d:DesignHeight="618" d:DesignWidth="867">
+    <Grid Margin="10" VerticalAlignment="Center">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto" />
+            <RowDefinition Height="20" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" x:Name="ParametersGrid" HorizontalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Input file -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Input file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="0" Grid.Column="2" x:Name="InputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Button Grid.Row="0" Grid.Column="4" x:Name="BrowseInputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseInputFileButton_Click" />
+
+            <!-- Output file -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Output file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="2" Grid.Column="2" x:Name="OutputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Button Grid.Row="2" Grid.Column="4" x:Name="BrowseOutputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseOutputFileButton_Click" />
+
+            <!-- File culture -->
+            <Label Grid.Row="4" Grid.Column="0" Content="File culture:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <ComboBox Grid.Row="4" Grid.Column="2" x:Name="FileCultureComboBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
+                <ComboBoxItem Content="es-ES" IsSelected="True" />
+                <ComboBoxItem Content="en-US" />
+                <ComboBoxItem Content="en-GB" />
+                <ComboBoxItem Content="de-DE" />
+                <ComboBoxItem Content="fr-FR" />
+                <ComboBoxItem Content="it-IT" />
+                <ComboBoxItem Content="nl-NL" />
+                <ComboBoxItem Content="pl-PL" />
+                <ComboBoxItem Content="pt-PT" />
+                <ComboBoxItem Content="ru-RU" />
+                <ComboBoxItem Content="tr-TR" />
+                <ComboBoxItem Content="zh-CN" />
+                <ComboBoxItem Content="ja-JP" />
+                <ComboBoxItem Content="ko-KR" />
+            </ComboBox>
+
+            <!-- Row count -->
+            <Label Grid.Row="6" Grid.Column="0" Content="Row count:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="6" Grid.Column="2" x:Name="RowCountTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+
+            <!-- Overwrite column -->
+            <CheckBox Grid.Row="8" Grid.Column="2" x:Name="OverwriteColumnCheckBox" Content="Overwrite column" VerticalAlignment="Center" HorizontalAlignment="Left" />
+
+            <!-- Decode HTML from Input -->
+            <CheckBox Grid.Row="10" Grid.Column="2" x:Name="DecodeHtmlCheckBox" Content="Decode HTML from Input" VerticalAlignment="Center" HorizontalAlignment="Left" />
+
+            <!-- Parse button -->
+            <Button Grid.Row="12" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
+        </Grid>
+
+        <!-- Progress bar, cancel button and log viewer -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Progress bar -->
+            <ProgressBar Grid.Column="0" x:Name="ProgressBar" Height="20" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
+
+            <!-- Progress percentage text -->
+            <TextBlock Grid.Column="2" x:Name="ProgressPercentageTextBlock" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Center" />
+
+            <!-- Progress rows processed text -->
+            <TextBlock Grid.Column="4" x:Name="ProgressRowsProcessedTextBlock" Text="Rows processed: 0" VerticalAlignment="Center" HorizontalAlignment="Left" />
+
+            <!-- Timer -->
+            <TextBlock Grid.Column="6" x:Name="TimerTextBlock" Text="00:00:00" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+
+            <!-- Cancel button -->
+            <Button Grid.Column="8" x:Name="CancelButton" Content="Cancel" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="CancelButton_Click" IsEnabled="{Binding IsParsing}" Width="57" />
+
+            <!-- Log viewer in expander (not expanded by default) -->
+            <Expander Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="9" x:Name="LogExpander" Header="View logs" IsExpanded="False">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="auto" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <!-- Select log level -->
+                    <Label Grid.Row="0" Grid.Column="0" Content="Log level:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                    <ComboBox Grid.Row="0" Grid.Column="2" x:Name="LogLevelComboBox" SelectionChanged="LogLevelComboBox_SelectionChanged" IsEnabled="{Binding IsParsing}" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
+                        <ComboBoxItem Content="Verbose" IsSelected="True" />
+                        <ComboBoxItem Content="Debug" />
+                        <ComboBoxItem Content="Information" />
+                        <ComboBoxItem Content="Warning" />
+                        <ComboBoxItem Content="Error" />
+                        <ComboBoxItem Content="Fatal" />
+                    </ComboBox>
+
+                    <!-- Log viewer -->
+                    <RichTextBox
+                        Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                        x:Name="LogRichTextBox"
+                        Background="Black"
+                        Foreground="LightGray"
+                        FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
+                        VerticalScrollBarVisibility="Auto"
+                        MinHeight="100"
+                        MaxHeight="270" />
+                </Grid>
+            </Expander>
+        </Grid>
+    </Grid>
+</UserControl>

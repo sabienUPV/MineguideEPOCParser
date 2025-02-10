@@ -20,5 +20,8 @@
         <TabItem Header="File Encoding Converter">
             <local:FileEncodingConverterControl />
         </TabItem>
+        <TabItem Header="Measurements Parser">
+            <local:MeasurementsParserControl />
+        </TabItem>
     </TabControl>
 </Window>
