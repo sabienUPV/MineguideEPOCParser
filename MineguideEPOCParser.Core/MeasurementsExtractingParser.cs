@@ -87,12 +87,12 @@ namespace MineguideEPOCParser.Core
 
                     if (Configuration.OverwriteColumn)
                     {
-                        newRow = GenerateNewRowWithOverwrite(row, inputColumnIndex, [textToSearch, measurement.Type, measurement.Value, measurement.Unit]).ToArray();
+                        newRow = GenerateNewRowWithOverwrite(row, inputColumnIndex, [textToSearch, measurement.Type, measurement.Value.ToString(), measurement.Unit]).ToArray();
                     }
                     else
                     {
                         // If we are not overwriting the column, add the exact text that was searched, the measurement type, value and unit to the end
-                        newRow = row.Append(textToSearch).Append(measurement.Type).Append(measurement.Value).Append(measurement.Unit).ToArray();
+                        newRow = row.Append(textToSearch).Append(measurement.Type).Append(measurement.Value.ToString()).Append(measurement.Unit).ToArray();
 
                         // In the 'T' column, replace the multiline original text with a single line text
                         newRow[inputColumnIndex] = t;
