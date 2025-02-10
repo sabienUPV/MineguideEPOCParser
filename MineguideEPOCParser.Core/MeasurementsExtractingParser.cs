@@ -55,6 +55,7 @@ namespace MineguideEPOCParser.Core
                         // If we are not overwriting the column, add the measurement type, value and unit to the end
                         newRow = row.Append(measurement.Type).Append(measurement.Value).Append(measurement.Unit).ToArray();
 
+                        // In the 'T' column, replace the multiline original text with a single line text
                         newRow[inputColumnIndex] = t;
                     }
 

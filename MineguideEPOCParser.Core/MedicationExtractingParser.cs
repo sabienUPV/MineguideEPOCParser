@@ -30,6 +30,13 @@ namespace MineguideEPOCParser.Core
                     continue;
                 }
 
+                if (!Configuration.OverwriteColumn)
+                {
+                    // In the 'T' column, replace the multiline original text with a single line text
+                    // (only if we are not overwriting it)
+                    t = t.Replace('\n', '\t').Replace("\r", "");
+                }
+
                 // Devuelve cada medicamento en una fila, ordenados alfabéticamente
                 foreach (var medication in medications.Medicamentos.Order())
                 {
@@ -51,7 +58,7 @@ namespace MineguideEPOCParser.Core
                         newRow = Utilities.ArrayCopyAndAdd(row, medication);
 
                         // In the 'T' column, replace the multiline original text with a single line text
-                        newRow[inputColumnIndex] = t.Replace('\n', '\t').Replace("\r", "");
+                        newRow[inputColumnIndex] = t;
                     }
 
                     yield return newRow;
