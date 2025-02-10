@@ -17,15 +17,9 @@ namespace MineguideEPOCParser.Core
         public IProgress<ProgressValue>? Progress { get; set; }
 
         /// <summary>
-        /// After parsing, this property contains the name of the final output header the result was written to.
-        /// 
-        /// <para>
-        /// This is normally the same as <see cref="DataParserConfiguration.OutputHeaderName"/> in <see cref="Configuration"/>;
-        /// but if the header already existed in the input file,
-        /// the parser will add a number at the end to make it unique.
-        /// </para>
+        /// Number of output columns that the parser will write to the output file
         /// </summary>
-        public string? FinalOutputHeaderName { get; private set; }
+        public virtual int OutputColumnsCount => 1;
 
         /// <summary>
         /// Reads the medication from the input CSV file, lazily,
@@ -53,41 +47,8 @@ namespace MineguideEPOCParser.Core
 
                 var dataRead = await ReadData(csvReader, reader, Configuration.Count, cancellationToken);
 
-                // Add new header to the array
-                string[]? newHeaders;
-                if (Configuration.OverwriteColumn && Configuration.InputHeaderName == Configuration.OutputHeaderName)
-                {
-                    // If we are overwriting the column, and the input and output headers are the same,
-                    // we don't need to modify the headers array
-                    newHeaders = dataRead.Headers;
-                    FinalOutputHeaderName = Configuration.OutputHeaderName;
-                }
-                else
-                {
-                    // Ensure the output header is unique
-                    // (if the column is new, then we need to ensure its uniqueness;
-                    // and if we are overwriting the column, we already checked that it doesn't match the input header,
-                    // but we still need to ensure its uniqueness against the other headers)
-
-                    var finalHeader = Utilities.ArrayEnsureUniqueHeader(dataRead.Headers, Configuration.OutputHeaderName);
-                    FinalOutputHeaderName = finalHeader;
-
-                    if (finalHeader != Configuration.OutputHeaderName)
-                    {
-                        Logger?.Warning("The output header name was changed to {OutputHeaderName} because it already existed in the input file.", finalHeader);
-                    }
-
-                    if (Configuration.OverwriteColumn)
-                    {
-                        // If we are overwriting the column, we replace the input header with the output header
-                        newHeaders = dataRead.Headers.Select((header, i) => i == dataRead.InputColumnIndex ? finalHeader : header).ToArray();
-                    }
-                    else
-                    {
-                        // If we are not overwriting the column, we add the output header at the end
-                        newHeaders = Utilities.ArrayCopyAndAdd(dataRead.Headers, finalHeader);
-                    }
-                }
+                // Generate new headers
+                string[]? newHeaders = GenerateNewHeaders(dataRead);
 
                 // Apply transformations
                 var newRows = ApplyTransformations(dataRead.Rows, dataRead.InputColumnIndex, cancellationToken);
@@ -117,6 +78,61 @@ namespace MineguideEPOCParser.Core
             {
                 Logger?.Error(ex, "An unexpected error occurred: {Message}", ex.Message);
                 throw;
+            }
+        }
+
+        protected string[] GenerateNewHeaders(DataReadContent dataRead)
+        {
+            // Ensure that the number of output headers is correct
+            if (Configuration.NumberOfOutputColumns != OutputColumnsCount)
+            {
+                throw new InvalidOperationException($"The number of output headers ({Configuration.NumberOfOutputColumns}) does not match the expected number of output columns ({OutputColumnsCount}).");
+            }
+
+            // Ensure the output headers are unique (their names might already exist in the input headers)
+            var finalOutputHeaders = Configuration.OutputHeaderNames.Select(outputHeader =>
+            {
+                var finalOutputHeader = Utilities.ArrayEnsureUniqueHeader(dataRead.Headers, outputHeader);
+
+                if (finalOutputHeader != outputHeader)
+                {
+                    Logger?.Warning("The output header name {OriginalHeaderName} was changed to {OutputHeaderName} because it already existed in the input file.", outputHeader, finalOutputHeader);
+                }
+
+                return finalOutputHeader;
+            });
+
+            IEnumerable<string> headersEnumerable;
+
+            // If we are "overwriting" the input column, replace it with the output columns
+            if (Configuration.OverwriteColumn)
+            {
+                headersEnumerable = GenerateNewHeadersWithOverwrite(dataRead.Headers, finalOutputHeaders);
+            }
+            else
+            {
+                // Otherwise, add the output columns to the end
+                headersEnumerable = dataRead.Headers.Concat(finalOutputHeaders);
+            }
+
+            return headersEnumerable.ToArray();
+        }
+
+        private IEnumerable<string> GenerateNewHeadersWithOverwrite(IEnumerable<string> headers, IEnumerable<string> finalOutputHeaders)
+        {
+            foreach (var h in headers)
+            {
+                if (h == Configuration.InputHeaderName)
+                {
+                    foreach (var outputHeader in finalOutputHeaders)
+                    {
+                        yield return outputHeader;
+                    }
+                }
+                else
+                {
+                    yield return h;
+                }
             }
         }
 
