@@ -5,8 +5,8 @@ namespace MineguideEPOCParser.Core
 {
     public class MeasurementsExtractingParser : DataParser<MeasurementsExtractingParserConfiguration>
     {
-        // 3 Output columns: Type, Value, Unit
-        public override int OutputColumnsCount => 3;
+        // 4 Output columns: TextSearched, Type, Value, Unit
+        public override int OutputColumnsCount => 4;
 
         /// <summary>
         /// Calls the Ollama API to extract the measurements from the text in the input column.
@@ -24,9 +24,32 @@ namespace MineguideEPOCParser.Core
 					t = WebUtility.HtmlDecode(t);
 				}
 
+                // If we are not looking for specific measurements, send the whole text to the API
+                string textToSearch;
+
+                // If we are looking for specific measurements,
+                // cut the text to only send the lines of text that contain at least one of these measurements
+                if (Configuration.MeasurementsToLookFor != null)
+                {
+                    textToSearch = string.Join('\n', t.Split('\n')
+                        .Where(l => Configuration.MeasurementsToLookFor
+                            .Any(m => l.Contains(m, StringComparison.OrdinalIgnoreCase))));
+
+                    if (string.IsNullOrWhiteSpace(textToSearch))
+                    {
+                        Logger?.Warning("No lines of text contain any of the measurements to look for: {MeasurementsToLookFor}.\n\nOriginal text: {T}", string.Join(", ", Configuration.MeasurementsToLookFor), t);
+                        continue;
+                    }
+                }
+                else
+                {
+                    // If we are not looking for specific measurements, send the whole text
+                    textToSearch = t;
+                }
+
                 // Llama a la API para extraer las medidas
                 // TODO: UPDATE LLM MODEL USED TO EXTRACT MEASUREMENTS
-                var measurementsData = await ApiClient.CallToApi<MeasurementsData>(t, "medicamento-parser-dev", Logger, cancellationToken);
+                var measurementsData = await ApiClient.CallToApi<MeasurementsData>(textToSearch, "medicamento-parser-dev", Logger, cancellationToken);
 
                 if (measurementsData == null)
                 {
@@ -41,6 +64,10 @@ namespace MineguideEPOCParser.Core
                     t = t.Replace('\n', '\t').Replace("\r", "");
                 }
 
+                // For the text to search, replace the multiline original text with a single line text
+                // (we need this because the CSV parser we use with the output doesn't support multiline text)
+                textToSearch = textToSearch.Replace('\n', '\t').Replace("\r", "");
+
                 // Devuelve cada medida en una fila, ordenados alfabéticamente por tipo
                 foreach (var measurement in measurementsData.Measurements.OrderBy(m => m.Type))
                 {
@@ -49,12 +76,12 @@ namespace MineguideEPOCParser.Core
 
                     if (Configuration.OverwriteColumn)
                     {
-                        newRow = GenerateNewRowWithOverwrite(row, inputColumnIndex, [measurement.Type, measurement.Value, measurement.Unit]).ToArray();
+                        newRow = GenerateNewRowWithOverwrite(row, inputColumnIndex, [textToSearch, measurement.Type, measurement.Value, measurement.Unit]).ToArray();
                     }
                     else
                     {
-                        // If we are not overwriting the column, add the measurement type, value and unit to the end
-                        newRow = row.Append(measurement.Type).Append(measurement.Value).Append(measurement.Unit).ToArray();
+                        // If we are not overwriting the column, add the exact text that was searched, the measurement type, value and unit to the end
+                        newRow = row.Append(textToSearch).Append(measurement.Type).Append(measurement.Value).Append(measurement.Unit).ToArray();
 
                         // In the 'T' column, replace the multiline original text with a single line text
                         newRow[inputColumnIndex] = t;
@@ -100,11 +127,33 @@ namespace MineguideEPOCParser.Core
 	{
 		public bool DecodeHtmlFromInput { get; set; }
 
+        /// <summary>
+        /// Only send to the LLM API lines of text that contain at least one of these measurements (case insensitive) to reduce the search scope.
+        /// <para>
+        /// (Note: We only check for the presence of these strings in the lines of text. We don't check if they actually contain values. The LLM's work is to validate and extract those)
+        /// </para>
+        /// </summary>
+        public string[]? MeasurementsToLookFor { get; set; }
+
+        // Default measurements to look for
+        protected virtual string[] GetDefaultMeasurementsToLookFor() => ["FEV1", "FVC"]; // Important EPOC-related measurements
+
+        public MeasurementsExtractingParserConfiguration() : base()
+        {
+            MeasurementsToLookFor = GetDefaultMeasurementsToLookFor();
+        }
+
         // Default column names
+
+        /// <summary>
+        /// The text that was sent to the API (may be different from the original text if we reduced the search scope with <see cref="MeasurementsToLookFor"/>)
+        /// </summary>
+        public const string TextSearchedHeaderName = "T-Searched";
+
         public const string MeasurementTypeHeaderName = "Type";
         public const string MeasurementValueHeaderName = "Value";
         public const string MeasurementUnitHeaderName = "Unit";
 
-        protected override (string inputHeader, string[] outputHeaders) GetDefaultColumns() => (THeaderName, [MeasurementTypeHeaderName, MeasurementValueHeaderName, MeasurementUnitHeaderName]);
+        protected override (string inputHeader, string[] outputHeaders) GetDefaultColumns() => (THeaderName, [TextSearchedHeaderName, MeasurementTypeHeaderName, MeasurementValueHeaderName, MeasurementUnitHeaderName]);
     }
 }
