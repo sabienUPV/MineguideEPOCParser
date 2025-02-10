@@ -125,6 +125,8 @@ namespace MineguideEPOCParser.Core
     public class MeasurementsData
     {
         public required Measurement[] Measurements { get; set; }
+
+        public override string ToString() => string.Join(',', Measurements.Select(m => m.ToString()));
     }
 
     public class Measurement
@@ -132,6 +134,8 @@ namespace MineguideEPOCParser.Core
         public required string Type { get; set; }
         public required double Value { get; set; }
         public required string Unit { get; set; }
+
+        public override string ToString() => $"{{\"Type\": \"{Type}\", \"Value\": {Value}, \"Unit\": \"{Unit}\"}}";
     }
 
     public class MeasurementsExtractingParserConfiguration : DataParserConfiguration
