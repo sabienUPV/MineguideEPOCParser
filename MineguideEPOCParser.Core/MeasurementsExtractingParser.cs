@@ -60,7 +60,6 @@ namespace MineguideEPOCParser.Core
                 }
 
                 // Llama a la API para extraer las medidas
-                // TODO: UPDATE LLM MODEL USED TO EXTRACT MEASUREMENTS
                 var measurementsData = await ApiClient.CallToApi<MeasurementsData>(textToSearch, "deepseek-r1:latest", SystemPrompt, Logger, cancellationToken);
 
                 if (measurementsData == null)
