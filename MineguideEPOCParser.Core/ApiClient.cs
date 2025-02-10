@@ -11,7 +11,7 @@ namespace MineguideEPOCParser.Core
 	{
 		private const string ApiKey = "32868ebff04b45108ae1637756df5778";
 
-		public static async Task<TOutput?> CallToApi<TOutput>(string t, ILogger? log = null, CancellationToken cancellationToken = default)
+		public static async Task<TOutput?> CallToApi<TOutput>(string t, string model, ILogger? log = null, CancellationToken cancellationToken = default)
         {
 			var jsonRetryPolicy = Policy.Handle<JsonException>()
 				.WaitAndRetryAsync(10, i => TimeSpan.FromSeconds(2), (ex, sleepDuration, retryCount, _context) =>
@@ -49,7 +49,7 @@ namespace MineguideEPOCParser.Core
 			var generateRequest = new RequestConfig()
 			{
 				Prompt = t,
-				Model = "medicamento-parser-dev",
+				Model = model,
 				Format = "json",
 				Stream = false,
 			};

@@ -22,7 +22,7 @@ namespace MineguideEPOCParser.Core
 				}
 
                 // Llama a la API para extraer los medicamentos
-                var medications = await ApiClient.CallToApi<MedicationsList>(t, Logger, cancellationToken);
+                var medications = await ApiClient.CallToApi<MedicationsList>(t, "medicamento-parser-dev", Logger, cancellationToken);
 
                 if (medications == null)
                 {
