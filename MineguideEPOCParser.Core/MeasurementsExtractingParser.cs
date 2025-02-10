@@ -100,9 +100,9 @@ namespace MineguideEPOCParser.Core
 		public bool DecodeHtmlFromInput { get; set; }
 
         // Default column names
-        public const string MeasurementTypeHeaderName = "Measurement Type";
-        public const string MeasurementValueHeaderName = "Measurement Value";
-        public const string MeasurementUnitHeaderName = "Measurement Unit";
+        public const string MeasurementTypeHeaderName = "Type";
+        public const string MeasurementValueHeaderName = "Value";
+        public const string MeasurementUnitHeaderName = "Unit";
 
         protected override (string inputHeader, string[] outputHeaders) GetDefaultColumns() => (THeaderName, [MeasurementTypeHeaderName, MeasurementValueHeaderName, MeasurementUnitHeaderName]);
     }
