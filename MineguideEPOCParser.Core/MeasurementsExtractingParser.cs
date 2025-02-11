@@ -107,10 +107,12 @@ namespace MineguideEPOCParser.Core
                 var nextMeasurementIndex = -1;
                 foreach (var m in Configuration.MeasurementsToLookFor)
                 {
-                    nextMeasurementIndex = t.IndexOf(m, currentIndex + 1, StringComparison.OrdinalIgnoreCase);
-                    if (nextMeasurementIndex >= 0)
+                    var currentMeasurementIndex = t.IndexOf(m, currentIndex + 1, StringComparison.OrdinalIgnoreCase);
+
+                    // Save the index of the measurement found first in the text (if any)
+                    if (nextMeasurementIndex < 0 || currentMeasurementIndex < nextMeasurementIndex)
                     {
-                        break;
+                        nextMeasurementIndex = currentMeasurementIndex;
                     }
                 }
 
