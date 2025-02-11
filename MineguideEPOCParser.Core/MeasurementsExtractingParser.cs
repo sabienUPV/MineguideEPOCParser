@@ -107,7 +107,7 @@ namespace MineguideEPOCParser.Core
                 var nextMeasurementIndex = -1;
                 foreach (var m in Configuration.MeasurementsToLookFor)
                 {
-                    nextMeasurementIndex = t.IndexOf(m, currentIndex + 1);
+                    nextMeasurementIndex = t.IndexOf(m, currentIndex + 1, StringComparison.OrdinalIgnoreCase);
                     if (nextMeasurementIndex >= 0)
                     {
                         break;
@@ -132,7 +132,7 @@ namespace MineguideEPOCParser.Core
                 else
                 {
                     // Add the text from the measurement to the next line break
-                    sb.Append(t.AsSpan(nextMeasurementIndex, nextLineBreakIndex + 1));
+                    sb.Append(t.AsSpan(nextMeasurementIndex, nextLineBreakIndex - nextMeasurementIndex + 1));
 
                     if (nextLineBreakIndex + 1 >= t.Length)
                     {
