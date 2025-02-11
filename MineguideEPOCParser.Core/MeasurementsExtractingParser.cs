@@ -101,14 +101,13 @@ namespace MineguideEPOCParser.Core
 
             StringBuilder sb = new();
 
-            var remainingText = t;
-
-            while (remainingText.Length > 0)
+            var currentIndex = -1;
+            while (currentIndex < t.Length)
             {
                 var nextMeasurementIndex = -1;
                 foreach (var m in Configuration.MeasurementsToLookFor)
                 {
-                    nextMeasurementIndex = remainingText.IndexOf(m, nextMeasurementIndex);
+                    nextMeasurementIndex = t.IndexOf(m, currentIndex + 1);
                     if (nextMeasurementIndex >= 0)
                     {
                         break;
@@ -121,31 +120,28 @@ namespace MineguideEPOCParser.Core
                     break;
                 }
 
-                // If the measurement was found, remove the text before it
-                remainingText = remainingText[nextMeasurementIndex..];
-
-                var nextLineBreakIndex = remainingText.IndexOf('\n', nextMeasurementIndex);
+                // Find the next line break after the measurement
+                var nextLineBreakIndex = t.IndexOf('\n', nextMeasurementIndex + 1);
 
                 if (nextLineBreakIndex < 0)
                 {
                     // If there are no more line breaks, add the remaining text and finish
-                    sb.Append(remainingText.AsSpan(nextMeasurementIndex));
+                    sb.Append(t.AsSpan(nextMeasurementIndex));
                     break;
                 }
                 else
                 {
                     // Add the text from the measurement to the next line break
-                    sb.Append(remainingText.AsSpan(nextMeasurementIndex, nextLineBreakIndex + 1));
+                    sb.Append(t.AsSpan(nextMeasurementIndex, nextLineBreakIndex + 1));
 
-                    if (nextLineBreakIndex + 1 >= remainingText.Length)
+                    if (nextLineBreakIndex + 1 >= t.Length)
                     {
                         // If the line break is the last character, we don't need to continue
                         break;
                     }
-
-                    // Remove the text that was added
-                    remainingText = remainingText[(nextLineBreakIndex + 1)..];
                 }
+
+                currentIndex = nextLineBreakIndex;
             }
 
             if (sb.Length == 0)
