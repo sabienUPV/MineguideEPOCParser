@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace MineguideEPOCParser.Core
 {
@@ -36,27 +37,12 @@ namespace MineguideEPOCParser.Core
 					t = WebUtility.HtmlDecode(t);
 				}
 
-                // If we are not looking for specific measurements, send the whole text to the API
-                string textToSearch;
+                // Extract the text to search if looking for specific measurements for improved efficiency
+                string? textToSearch = ExtractTextToSearch(t);
 
-                // If we are looking for specific measurements,
-                // cut the text to only send the lines of text that contain at least one of these measurements
-                if (Configuration.MeasurementsToLookFor != null)
+                if (textToSearch == null)
                 {
-                    textToSearch = string.Join('\n', t.Split('\n')
-                        .Where(l => Configuration.MeasurementsToLookFor
-                            .Any(m => l.Contains(m, StringComparison.OrdinalIgnoreCase))));
-
-                    if (string.IsNullOrWhiteSpace(textToSearch))
-                    {
-                        Logger?.Warning("No lines of text contain any of the measurements to look for: {MeasurementsToLookFor}.\n\nOriginal text: {T}", string.Join(", ", Configuration.MeasurementsToLookFor), t);
-                        continue;
-                    }
-                }
-                else
-                {
-                    // If we are not looking for specific measurements, send the whole text
-                    textToSearch = t;
+                    continue;
                 }
 
                 // Llama a la API para extraer las medidas
@@ -101,6 +87,74 @@ namespace MineguideEPOCParser.Core
                     yield return newRow;
                 }
             }
+        }
+
+        private string? ExtractTextToSearch(string t)
+        {
+            // If we are looking for specific measurements,
+            // cut the text to only send the lines of text that contain at least one of these measurements
+            if (Configuration.MeasurementsToLookFor == null)
+            {
+                // If we are not looking for specific measurements, send the whole text
+                return t;
+            }
+
+            StringBuilder sb = new();
+
+            var remainingText = t;
+
+            while (remainingText.Length > 0)
+            {
+                var nextMeasurementIndex = -1;
+                foreach (var m in Configuration.MeasurementsToLookFor)
+                {
+                    nextMeasurementIndex = remainingText.IndexOf(m, nextMeasurementIndex);
+                    if (nextMeasurementIndex >= 0)
+                    {
+                        break;
+                    }
+                }
+
+                // If no measurement was found, finish
+                if (nextMeasurementIndex < 0)
+                {
+                    break;
+                }
+
+                // If the measurement was found, remove the text before it
+                remainingText = remainingText[nextMeasurementIndex..];
+
+                var nextLineBreakIndex = remainingText.IndexOf('\n', nextMeasurementIndex);
+
+                if (nextLineBreakIndex < 0)
+                {
+                    // If there are no more line breaks, add the remaining text and finish
+                    sb.Append(remainingText.AsSpan(nextMeasurementIndex));
+                    break;
+                }
+                else
+                {
+                    // Add the text from the measurement to the next line break
+                    sb.Append(remainingText.AsSpan(nextMeasurementIndex, nextLineBreakIndex + 1));
+
+                    if (nextLineBreakIndex + 1 >= remainingText.Length)
+                    {
+                        // If the line break is the last character, we don't need to continue
+                        break;
+                    }
+
+                    // Remove the text that was added
+                    remainingText = remainingText[(nextLineBreakIndex + 1)..];
+                }
+            }
+
+            if (sb.Length == 0)
+            {
+                Logger?.Warning("No lines of text contain any of the measurements to look for: {MeasurementsToLookFor}.\n\nOriginal text: {T}", string.Join(", ", Configuration.MeasurementsToLookFor), t);
+                return null;
+            }
+
+            return sb.ToString();
         }
 
         private static IEnumerable<string> GenerateNewRowWithOverwrite(string[] row, int inputColumnIndex, IEnumerable<string> outputValues)
