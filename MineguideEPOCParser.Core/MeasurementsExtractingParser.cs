@@ -14,7 +14,7 @@ namespace MineguideEPOCParser.Core
         - Ignore any other measurements that might look like they are related, such as "FEVI" or "PFR". They have probably different meanings than you think, and may confuse you. Stick only to literal "FEV1", "FVC", "FEV1/FVC", "DLCO" and "KCO" measurements, that's it.
         - REMEMBER: In SPANISH, commas (",") are used as DECIMAL delimiters (like dots "." in English). If the number has either a comma or a dot, always assume it's a decimal point, since we don't expect any thousands delimiters.
         - If the text is blank, return an empty JSON object.
-        - The JSON format should be: { ""Measurements"": [{""Type"": <""FEV1"" or ""FVC"" or ""FEV1/FVC"">, ""Value"": <number WITHOUT the Unit>, ""Unit"": <""%"" or ""l"" or ""ml"" (it should be present AFTER THE NUMBER...>} ] }
+        - The JSON format should be: { "Measurements": [{"Type": <"FEV1" or "FVC" or "FEV1/FVC">, "Value": <number WITHOUT the Unit>, "Unit": <"%" or "l" or "ml" (it should be present AFTER THE NUMBER...>} ] }
         """;
 
         // 4 Output columns: TextSearched, Type, Value, Unit
@@ -60,7 +60,7 @@ namespace MineguideEPOCParser.Core
                 }
 
                 // Llama a la API para extraer las medidas
-                var measurementsData = await ApiClient.CallToApi<MeasurementsData>(textToSearch, "deepseek-r1:latest", SystemPrompt, Logger, cancellationToken);
+                var measurementsData = await ApiClient.CallToApi<MeasurementsData>(textToSearch, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
 
                 if (measurementsData == null)
                 {
