@@ -15,7 +15,7 @@ namespace MineguideEPOCParser.Core
         - Ignore any other measurements that might look like they are related, such as "FEVI" or "PFR". They have probably different meanings than you think, and may confuse you. Stick only to literal "FEV1", "FVC", "FEV1/FVC", "DLCO" and "KCO" measurements, that's it.
         - REMEMBER: In SPANISH, commas (",") are used as DECIMAL delimiters (like dots "." in English). If the number has either a comma or a dot, always assume it's a decimal point, since we don't expect any thousands delimiters.
         - If the text is blank, return an empty JSON object.
-        - The JSON format should be: { "Measurements": [{"Type": <"FEV1" or "FVC" or "FEV1/FVC">, "Value": <number WITHOUT the Unit>, "Unit": <"%" or "l" or "ml" (it should be present AFTER THE NUMBER...>} ] }
+        - The JSON format should be: { "Measurements": [{"Type": <"FEV1" or "FVC" or "FEV1/FVC" or "DLCO" or "KCO">, "Value": <number WITHOUT the Unit>, "Unit": <"%" or "l" or "ml" (it should be present AFTER THE NUMBER... if it's not, set it to null>} ] }
         """;
 
         // 4 Output columns: TextSearched, Type, Value, Unit
@@ -71,6 +71,12 @@ namespace MineguideEPOCParser.Core
                     // Duplicate the row for each measurement, including the measurement
                     string[] newRow;
 
+                    // If the unit is missing, deduce it
+                    if (string.IsNullOrEmpty(measurement.Unit))
+                    {
+                        measurement.Unit = DeduceMissingUnit(measurement.Value);
+                    }
+
                     if (Configuration.OverwriteColumn)
                     {
                         newRow = GenerateNewRowWithOverwrite(row, inputColumnIndex, [textToSearch, measurement.Type, measurement.Value.ToString(), measurement.Unit]).ToArray();
@@ -88,6 +94,20 @@ namespace MineguideEPOCParser.Core
                 }
             }
         }
+
+        /// <summary>
+        /// <list type="bullet">
+        /// <item>If the value is less than 15, assume liters (l)</item>
+        /// <item>If the value is between 15 and 99, assume a percentage (%)</item>
+        /// <item>If the value is greater than or equal to 100, assume mililiters (ml)</item>
+        /// </list>
+        /// </summary>
+        private static string DeduceMissingUnit(double value) => value switch
+        {
+            < 15 => "l",
+            < 100 => "%",
+            _ => "ml"
+        };
 
         private string? ExtractTextToSearch(string t)
         {
@@ -185,7 +205,7 @@ namespace MineguideEPOCParser.Core
     {
         public required string Type { get; set; }
         public required double Value { get; set; }
-        public required string Unit { get; set; }
+        public string? Unit { get; set; }
 
         public override string ToString() => $"{{\"Type\": \"{Type}\", \"Value\": {Value}, \"Unit\": \"{Unit}\"}}";
     }
