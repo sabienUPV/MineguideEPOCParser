@@ -11,9 +11,6 @@ namespace MineguideEPOCParser.Core
         Follow STRICTLY these instructions by order priority:
         - ONLY return the values and units of "FEV1", "FVC", "FEV1/FVC", "DLCO", "KCO" measurements you find AS IS. Don't try to analyze any other context around them. If you see: "FEV1: 50%" or "FVC: 5000ml" or "FEV1/FVC 65%", then that data SHOULD be included, regardless of the origin or correctness. For now, we are just trying to extract these values, not evaluate them.
         - Notice that the same measurement might be included in multiple different units (i.e: ml and %). You should include both of them in different objects. We want all possible representations of measurements, even if it looks redundant. For example, if you have 2 FEV1 measurements in ml and %, and then 2 FVC measurements, also in ml and %, you would end up with 4 JSON objects, 2 for the 2 FEV1 measurements, and another 2 for the other 2 FVC measurements.
-        - DON'T EXCLUDE measurements that you consider might not be relevant. 
-        - Ignore any other measurements that might look like they are related, such as "FEVI" or "PFR". They have probably different meanings than you think, and may confuse you. Stick only to literal "FEV1", "FVC", "FEV1/FVC", "DLCO" and "KCO" measurements, that's it.
-        - REMEMBER: In SPANISH, commas (",") are used as DECIMAL delimiters (like dots "." in English). If the number has either a comma or a dot, always assume it's a decimal point, since we don't expect any thousands delimiters.
         - If the text is blank, return an empty JSON object.
         - The JSON format should be: { "Measurements": [{"Type": <"FEV1" or "FVC" or "FEV1/FVC" or "DLCO" or "KCO">, "Value": <number WITHOUT the Unit>, "Unit": <"%" or "l" or "ml" (it should be present AFTER THE NUMBER... if it's not, set it to null>} ] }
         """;
