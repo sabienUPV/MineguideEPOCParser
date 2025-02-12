@@ -172,7 +172,12 @@ namespace MineguideEPOCParser.Core
                 return null;
             }
 
-            return sb.ToString();
+            var textToSearch = sb.ToString();
+
+            // Normalize FEV1 spelling
+            textToSearch = textToSearch.Replace("FEV 1", "FEV1");
+
+            return textToSearch;
         }
 
         private static IEnumerable<string> GenerateNewRowWithOverwrite(string[] row, int inputColumnIndex, IEnumerable<string> outputValues)
@@ -223,9 +228,9 @@ namespace MineguideEPOCParser.Core
         public string[]? MeasurementsToLookFor { get; set; }
 
         // Default measurements to look for
-        // Important EPOC-related measurements: FEV1, FVC, FEV1/FVC
+        // Important EPOC-related measurements: FEV1 (with both spellings), FVC, FEV1/FVC
         // other possibly useful measurements: DLCO, KCO
-        protected virtual string[] GetDefaultMeasurementsToLookFor() => ["FEV1", "FVC", "DLCO", "KCO"];
+        protected virtual string[] GetDefaultMeasurementsToLookFor() => ["FEV1", "FEV 1", "FVC", "DLCO", "KCO"];
 
         public MeasurementsExtractingParserConfiguration() : base()
         {
