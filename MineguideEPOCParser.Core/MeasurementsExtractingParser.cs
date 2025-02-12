@@ -121,26 +121,48 @@ namespace MineguideEPOCParser.Core
             var currentIndex = -1;
             while (currentIndex < t.Length)
             {
-                var nextMeasurementIndex = -1;
+                List<int> nextMeasurementIndexes = [];
                 foreach (var m in Configuration.MeasurementsToLookFor)
                 {
                     var currentMeasurementIndex = t.IndexOf(m, currentIndex + 1, StringComparison.OrdinalIgnoreCase);
 
-                    // Save the index of the measurement found first in the text (if any)
-                    if (currentMeasurementIndex >= 0 && (nextMeasurementIndex < 0 || currentMeasurementIndex < nextMeasurementIndex))
+                    // Save the indexes of any found measurements
+                    if (currentMeasurementIndex >= 0)
                     {
-                        nextMeasurementIndex = currentMeasurementIndex;
+                        nextMeasurementIndexes.Add(currentMeasurementIndex);
                     }
                 }
 
                 // If no measurement was found, finish
-                if (nextMeasurementIndex < 0)
+                if (nextMeasurementIndexes.Count == 0)
                 {
                     break;
                 }
 
-                // Find the next line break after the measurement
+                // Find the first measurement index
+                nextMeasurementIndexes.Sort();
+                var nextMeasurementIndex = nextMeasurementIndexes[0];
+
+                // Find the next line break after the very next measurement
                 var nextLineBreakIndex = t.IndexOf('\n', nextMeasurementIndex + 1);
+
+                // Add any measurements before the next line break, each in different lines
+                var end = nextLineBreakIndex >= 0 ? nextLineBreakIndex : t.Length;
+                for (int i = 1; i < nextMeasurementIndexes.Count; i++)
+                {
+                    int lastIndex = nextMeasurementIndexes[i - 1];
+                    int index = nextMeasurementIndexes[i];
+
+                    if (index < end)
+                    {
+                        sb.Append(t.AsSpan(lastIndex, index - lastIndex));
+                        sb.Append('\n');
+                        
+                        nextMeasurementIndex = index;
+                    }
+                }
+
+                // Now we process the last measurement before the line break
 
                 if (nextLineBreakIndex < 0)
                 {
@@ -173,6 +195,9 @@ namespace MineguideEPOCParser.Core
 
             // Normalize FEV1 spelling
             textToSearch = textToSearch.Replace("FEV 1", "FEV1");
+
+            // Normalize line breaks
+            textToSearch = textToSearch.Replace("\r\n", "\n").Replace("\r", "\n");
 
             return textToSearch;
         }
