@@ -34,11 +34,32 @@ namespace MineguideEPOCParser.Core
 					t = WebUtility.HtmlDecode(t);
 				}
 
-                // Extract the text to search if looking for specific measurements for improved efficiency
-                string? textToSearch = ExtractTextToSearch(t);
-
-                if (textToSearch == null)
+                string? textToSearch;
+                if (Configuration.MeasurementsToLookFor == null)
                 {
+                    textToSearch = t;
+
+                    // Normalize the spelling of some measurements
+                    textToSearch = NormalizeSpelling(textToSearch);
+                }
+                else
+                {
+                    // Extract the text to search if looking for specific measurements for improved efficiency
+                    StringBuilder sb = new();
+                    foreach (var (measurement, text) in ExtractTextToSearch(t))
+                    {
+                        // Normalize the spelling of some measurements
+                        var finalText = NormalizeSpelling(measurement, text);
+
+                        sb.Append(finalText);
+                        sb.Append('\n');
+                    }
+                    textToSearch = sb.ToString();
+                }
+
+                if (string.IsNullOrEmpty(textToSearch))
+                {
+                    Logger?.Warning("No lines of text contain any of the measurements to look for: {MeasurementsToLookFor}.\n\nOriginal text: {T}", Configuration.MeasurementsToLookFor == null ? null : string.Join(", ", Configuration.MeasurementsToLookFor), t);
                     continue;
                 }
 
@@ -106,59 +127,58 @@ namespace MineguideEPOCParser.Core
             _ => "ml"
         };
 
-        private string? ExtractTextToSearch(string t)
+        private IEnumerable<(string Measurement, string Text)> ExtractTextToSearch(string t)
         {
-            // If we are looking for specific measurements,
-            // cut the text to only send the lines of text that contain at least one of these measurements
             if (Configuration.MeasurementsToLookFor == null)
             {
-                // If we are not looking for specific measurements, send the whole text
-                return t;
+                throw new InvalidOperationException($"{nameof(Configuration)}.{nameof(Configuration.MeasurementsToLookFor)} is null");
             }
 
-            StringBuilder sb = new();
+            // If we are looking for specific measurements,
+            // split the text into lines of text that contain one of these measurements
 
             var currentIndex = -1;
             while (currentIndex < t.Length)
             {
-                List<int> nextMeasurementIndexes = [];
-                foreach (var m in Configuration.MeasurementsToLookFor)
+                List<(int Index, string Measurement)> nextMeasurementsByIndex = [];
+                foreach (var measurement in Configuration.MeasurementsToLookFor)
                 {
-                    var currentMeasurementIndex = t.IndexOf(m, currentIndex + 1, StringComparison.OrdinalIgnoreCase);
+                    var currentMeasurementIndex = t.IndexOf(measurement, currentIndex + 1, StringComparison.OrdinalIgnoreCase);
 
                     // Save the indexes of any found measurements
                     if (currentMeasurementIndex >= 0)
                     {
-                        nextMeasurementIndexes.Add(currentMeasurementIndex);
+                        nextMeasurementsByIndex.Add((currentMeasurementIndex, measurement));
                     }
                 }
 
                 // If no measurement was found, finish
-                if (nextMeasurementIndexes.Count == 0)
+                if (nextMeasurementsByIndex.Count == 0)
                 {
                     break;
                 }
 
+                // We sort the measurements by index to process them in order
+                nextMeasurementsByIndex.Sort(Comparer<(int Index, string Measurement)>.Create((x, y) => x.Index.CompareTo(y.Index)));
+
                 // Find the first measurement index
-                nextMeasurementIndexes.Sort();
-                var nextMeasurementIndex = nextMeasurementIndexes[0];
+                var nextMeasurement = nextMeasurementsByIndex[0];
 
                 // Find the next line break after the very next measurement
-                var nextLineBreakIndex = t.IndexOf('\n', nextMeasurementIndex + 1);
+                var nextLineBreakIndex = t.IndexOf('\n', nextMeasurement.Index + 1);
 
                 // Add any measurements before the next line break, each in different lines
                 var end = nextLineBreakIndex >= 0 ? nextLineBreakIndex : t.Length;
-                for (int i = 1; i < nextMeasurementIndexes.Count; i++)
+                for (int i = 1; i < nextMeasurementsByIndex.Count; i++)
                 {
-                    int lastIndex = nextMeasurementIndexes[i - 1];
-                    int index = nextMeasurementIndexes[i];
+                    var lastMeasurement = nextMeasurementsByIndex[i - 1];
 
-                    if (index < end)
+                    var currentMeasurement = nextMeasurementsByIndex[i];
+
+                    if (currentMeasurement.Index < end)
                     {
-                        sb.Append(t.AsSpan(lastIndex, index - lastIndex));
-                        sb.Append('\n');
-                        
-                        nextMeasurementIndex = index;
+                        yield return (lastMeasurement.Measurement, t[lastMeasurement.Index..currentMeasurement.Index]);
+                        nextMeasurement = currentMeasurement;
                     }
                 }
 
@@ -167,13 +187,13 @@ namespace MineguideEPOCParser.Core
                 if (nextLineBreakIndex < 0)
                 {
                     // If there are no more line breaks, add the remaining text and finish
-                    sb.Append(t.AsSpan(nextMeasurementIndex));
+                    yield return (nextMeasurement.Measurement, t[nextMeasurement.Index..]);
                     break;
                 }
                 else
                 {
-                    // Add the text from the measurement to the next line break
-                    sb.Append(t.AsSpan(nextMeasurementIndex, nextLineBreakIndex - nextMeasurementIndex + 1));
+                    // Add the text from the measurement to the next line break (including the line break)
+                    yield return (nextMeasurement.Measurement, t.Substring(nextMeasurement.Index, nextLineBreakIndex - nextMeasurement.Index + 1));
 
                     if (nextLineBreakIndex + 1 >= t.Length)
                     {
@@ -184,20 +204,22 @@ namespace MineguideEPOCParser.Core
 
                 currentIndex = nextLineBreakIndex;
             }
+        }
 
-            if (sb.Length == 0)
-            {
-                Logger?.Warning("No lines of text contain any of the measurements to look for: {MeasurementsToLookFor}.\n\nOriginal text: {T}", string.Join(", ", Configuration.MeasurementsToLookFor), t);
-                return null;
-            }
-
+        private static string NormalizeSpelling(string text)
+        {
             // Normalize FEV1 spelling
-            sb.Replace("FEV 1", "FEV1");
+            return text.Replace("FEV 1", "FEV1");
+        }
 
-            // Normalize line breaks
-            sb.Replace("\r\n", "\n").Replace("\r", "\n");
-
-            return sb.ToString();
+        private static string NormalizeSpelling(string measurement, string text)
+        {
+            // Normalize FEV1 spelling
+            if (measurement == "FEV 1")
+            {
+                return text.Replace("FEV 1", "FEV1");
+            }
+            return text;
         }
 
         private static IEnumerable<string> GenerateNewRowWithOverwrite(string[] row, int inputColumnIndex, IEnumerable<string> outputValues)
