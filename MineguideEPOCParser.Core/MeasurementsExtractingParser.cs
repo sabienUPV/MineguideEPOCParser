@@ -55,12 +55,12 @@ namespace MineguideEPOCParser.Core
                         sb.Append('\n');
                     }
                     textToSearch = sb.ToString();
-                }
 
-                if (string.IsNullOrEmpty(textToSearch))
-                {
-                    Logger?.Warning("No lines of text contain any of the measurements to look for: {MeasurementsToLookFor}.\n\nOriginal text: {T}", Configuration.MeasurementsToLookFor == null ? null : string.Join(", ", Configuration.MeasurementsToLookFor), t);
-                    continue;
+                    if (string.IsNullOrEmpty(textToSearch))
+                    {
+                        Logger?.Warning("No lines of text contain any of the measurements to look for: {MeasurementsToLookFor}.\n\nOriginal text: {T}", string.Join(", ", Configuration.MeasurementsToLookFor), t);
+                        continue;
+                    }
                 }
 
                 // Llama a la API para extraer las medidas
