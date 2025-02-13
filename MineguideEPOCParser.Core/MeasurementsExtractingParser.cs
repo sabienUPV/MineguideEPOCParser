@@ -191,15 +191,13 @@ namespace MineguideEPOCParser.Core
                 return null;
             }
 
-            var textToSearch = sb.ToString();
-
             // Normalize FEV1 spelling
-            textToSearch = textToSearch.Replace("FEV 1", "FEV1");
+            sb.Replace("FEV 1", "FEV1");
 
             // Normalize line breaks
-            textToSearch = textToSearch.Replace("\r\n", "\n").Replace("\r", "\n");
+            sb.Replace("\r\n", "\n").Replace("\r", "\n");
 
-            return textToSearch;
+            return sb.ToString();
         }
 
         private static IEnumerable<string> GenerateNewRowWithOverwrite(string[] row, int inputColumnIndex, IEnumerable<string> outputValues)
