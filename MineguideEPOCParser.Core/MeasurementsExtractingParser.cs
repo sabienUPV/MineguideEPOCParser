@@ -34,39 +34,50 @@ namespace MineguideEPOCParser.Core
 					t = WebUtility.HtmlDecode(t);
 				}
 
-                string? textToSearch;
+                List<string> subTextsToSearch;
                 if (Configuration.MeasurementsToLookFor == null)
                 {
-                    textToSearch = t;
+                    var textToSearch = t;
 
                     // Normalize the spelling of some measurements
-                    textToSearch = NormalizeSpelling(textToSearch);
+                    textToSearch = NormalizeText(textToSearch);
+
+                    subTextsToSearch = [textToSearch];
                 }
                 else
                 {
                     // Extract the text to search if looking for specific measurements for improved efficiency
-                    StringBuilder sb = new();
+                    subTextsToSearch = [];
                     foreach (var (measurement, text) in ExtractTextToSearch(t))
                     {
                         // Normalize the spelling of some measurements
-                        var finalText = NormalizeSpelling(measurement, text);
+                        var finalText = NormalizeText(measurement, text);
 
-                        sb.Append(finalText);
-                        sb.Append('\n');
+                        subTextsToSearch.Add(finalText);
                     }
-                    textToSearch = sb.ToString();
 
-                    if (string.IsNullOrEmpty(textToSearch))
+                    if (subTextsToSearch.Count == 0)
                     {
                         Logger?.Warning("No lines of text contain any of the measurements to look for: {MeasurementsToLookFor}.\n\nOriginal text: {T}", string.Join(", ", Configuration.MeasurementsToLookFor), t);
                         continue;
                     }
                 }
 
-                // Llama a la API para extraer las medidas
-                var measurementsData = await ApiClient.CallToApi<MeasurementsData>(textToSearch, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
+                var allMeasurements = new List<Measurement>();
 
-                if (measurementsData == null)
+                foreach (var textToSearch in subTextsToSearch)
+                {
+                    // Call the API to extract the measurements
+                    var measurementsData = await ApiClient.CallToApi<MeasurementsData>(textToSearch, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
+                    if (measurementsData == null)
+                    {
+                        Logger?.Warning($"No measurements found in the subtext: {textToSearch}");
+                        continue;
+                    }
+                    allMeasurements.AddRange(measurementsData.Measurements);
+                }
+
+                if (allMeasurements.Count == 0)
                 {
                     Logger?.Warning($"No measurements found in the text: {t}");
                     continue;
@@ -79,12 +90,12 @@ namespace MineguideEPOCParser.Core
                     t = t.Replace('\n', '\t').Replace("\r", "");
                 }
 
-                // For the text to search, replace the multiline original text with a single line text
-                // (we need this because the CSV parser we use with the output doesn't support multiline text)
-                textToSearch = textToSearch.Replace('\n', '\t').Replace("\r", "");
+                // For all text searched, use a pipe symbol as a separator
+                // (because the CSV parser we use with the output doesn't support multiline text)
+                var allTextSearched = string.Join("|", subTextsToSearch);
 
                 // Devuelve cada medida en una fila, ordenados alfabéticamente por tipo
-                foreach (var measurement in measurementsData.Measurements.OrderBy(m => m.Type))
+                foreach (var measurement in allMeasurements.OrderBy(m => m.Type))
                 {
                     // Duplicate the row for each measurement, including the measurement
                     string[] newRow;
@@ -97,12 +108,12 @@ namespace MineguideEPOCParser.Core
 
                     if (Configuration.OverwriteColumn)
                     {
-                        newRow = GenerateNewRowWithOverwrite(row, inputColumnIndex, [textToSearch, measurement.Type, measurement.Value.ToString(), measurement.Unit]).ToArray();
+                        newRow = GenerateNewRowWithOverwrite(row, inputColumnIndex, [allTextSearched, measurement.Type, measurement.Value.ToString(), measurement.Unit]).ToArray();
                     }
                     else
                     {
                         // If we are not overwriting the column, add the exact text that was searched, the measurement type, value and unit to the end
-                        newRow = row.Append(textToSearch).Append(measurement.Type).Append(measurement.Value.ToString()).Append(measurement.Unit).ToArray();
+                        newRow = row.Append(allTextSearched).Append(measurement.Type).Append(measurement.Value.ToString()).Append(measurement.Unit).ToArray();
 
                         // In the 'T' column, replace the multiline original text with a single line text
                         newRow[inputColumnIndex] = t;
@@ -167,7 +178,7 @@ namespace MineguideEPOCParser.Core
                 // Find the next line break after the very next measurement
                 var nextLineBreakIndex = t.IndexOf('\n', nextMeasurement.Index + 1);
 
-                // Add any measurements before the next line break, each in different lines
+                // Add any measurements before the next line break, each in different strings
                 var end = nextLineBreakIndex >= 0 ? nextLineBreakIndex : t.Length;
                 for (int i = 1; i < nextMeasurementsByIndex.Count; i++)
                 {
@@ -192,8 +203,8 @@ namespace MineguideEPOCParser.Core
                 }
                 else
                 {
-                    // Add the text from the measurement to the next line break (including the line break)
-                    yield return (nextMeasurement.Measurement, t.Substring(nextMeasurement.Index, nextLineBreakIndex - nextMeasurement.Index + 1));
+                    // Add the text from the measurement to the next line break (excluding the line break)
+                    yield return (nextMeasurement.Measurement, t[nextMeasurement.Index..nextLineBreakIndex]);
 
                     if (nextLineBreakIndex + 1 >= t.Length)
                     {
@@ -206,19 +217,23 @@ namespace MineguideEPOCParser.Core
             }
         }
 
-        private static string NormalizeSpelling(string text)
+        private static string NormalizeText(string text)
         {
-            // Normalize FEV1 spelling
-            return text.Replace("FEV 1", "FEV1");
+            // Normalize FEV1 spelling and remove carriage returns
+            return text.Replace("FEV 1", "FEV1").Replace("\r", "");
         }
 
-        private static string NormalizeSpelling(string measurement, string text)
+        private static string NormalizeText(string measurement, string text)
         {
             // Normalize FEV1 spelling
             if (measurement == "FEV 1")
             {
-                return text.Replace("FEV 1", "FEV1");
+                text = text.Replace("FEV 1", "FEV1");
             }
+
+            // Remove carriage returns
+            text = text.Replace("\r", "");
+
             return text;
         }
 
