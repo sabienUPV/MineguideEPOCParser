@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              DataContext="{Binding RelativeSource={RelativeSource Self}}"
              d:DesignHeight="618" d:DesignWidth="867">
-    <Grid Margin="10" VerticalAlignment="Center">
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="20" />
@@ -71,7 +71,7 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="10" />
-                <RowDefinition Height="auto" />
+                <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <!-- Progress bar -->
@@ -123,8 +123,7 @@
                         Foreground="LightGray"
                         FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
                         VerticalScrollBarVisibility="Auto"
-                        MinHeight="100"
-                        MaxHeight="270" />
+                        MinHeight="100" />
                 </Grid>
             </Expander>
         </Grid>

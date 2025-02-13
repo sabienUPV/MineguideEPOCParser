@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
         Title="Mineguide EPOC Parser" Height="618" Width="1000">
-    <TabControl Margin="10" VerticalAlignment="Center">
+    <TabControl Margin="10">
         <TabItem Header="Medication Parser">
             <local:MedicationParserControl />
         </TabItem>
