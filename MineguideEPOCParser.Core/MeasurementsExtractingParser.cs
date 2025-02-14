@@ -206,7 +206,7 @@ namespace MineguideEPOCParser.Core
                 var indexBetweenTypeAndValue = occupationBoundaries[i + 1];
                 var endIndex = i < occupationBoundaries.Count - 2 ? occupationBoundaries[i + 2] : line.Length;
 
-                var text = line[startIndex..endIndex];
+                var text = line[startIndex..endIndex].Trim();
 
                 int measurementTypeLength = indexBetweenTypeAndValue - startIndex;
 
