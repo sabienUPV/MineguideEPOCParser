@@ -98,7 +98,7 @@ namespace MineguideEPOCParser.Core
 						throw new InvalidOperationException($"Error: API response is in an invalid format. Could not parse medication as JSON.\nRaw response: {apiResponse.Response}");
 					}
 
-					log?.Debug("Extracted output:\n{Output}", JsonSerializer.Serialize(output));
+					log?.Debug("Extracted output:\n{Output}", output);
 
 					return output;
 				});
