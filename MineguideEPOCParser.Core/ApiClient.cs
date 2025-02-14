@@ -50,6 +50,10 @@ namespace MineguideEPOCParser.Core
 			{
 				Prompt = t,
 				Model = model,
+                Options = new RequestOptions
+				{
+					Temperature = 0f // Temperature is set to 0 for getting the most predictable output possible
+                },
                 System = system,
                 Format = "json",
 				Stream = false,
@@ -121,6 +125,9 @@ namespace MineguideEPOCParser.Core
 			public required string Prompt { get; set; }
 			public required string Model { get; set; }
 
+			[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+			public RequestOptions? Options { get; set; }
+
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public string? System { get; set; }
 
@@ -128,6 +135,15 @@ namespace MineguideEPOCParser.Core
 			public string? Format { get; set; }
 			public bool Stream { get; set; }
 		}
+
+        /// <summary>
+		/// <see href="https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion"/>
+        /// <see cref="https://github.com/ollama/ollama/blob/main/docs/modelfile.md#parameter"/>
+        /// </summary>
+        private class RequestOptions
+		{
+			public float? Temperature { get; set; }
+        }
 
 		private class ApiResponse
 		{
