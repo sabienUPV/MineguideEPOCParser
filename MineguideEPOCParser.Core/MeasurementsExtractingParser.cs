@@ -219,7 +219,7 @@ namespace MineguideEPOCParser.Core
         private static string NormalizeText(string text)
         {
             // Normalize FEV1 spelling and remove carriage returns
-            return text.Replace("FEV 1", "FEV1").Replace("\r", "");
+            return text.Replace("FEV 1", "FEV1").Replace("FEVI", "FEV1").Replace("\r", "");
         }
 
         private static string NormalizeText(string measurement, string text)
@@ -228,6 +228,10 @@ namespace MineguideEPOCParser.Core
             if (measurement == "FEV 1")
             {
                 text = text.Replace("FEV 1", "FEV1");
+            }
+            else if (measurement == "FEVI")
+            {
+                text = text.Replace("FEVI", "FEV1");
             }
 
             // Remove carriage returns
@@ -284,9 +288,9 @@ namespace MineguideEPOCParser.Core
         public string[]? MeasurementsToLookFor { get; set; }
 
         // Default measurements to look for
-        // Important EPOC-related measurements: FEV1 (with both spellings), FVC, FEV1/FVC
+        // Important EPOC-related measurements: FEV1 (with all possible spellings: FEV1, FEV 1, FEVI), FVC, FEV1/FVC
         // other possibly useful measurements: DLCO, KCO
-        protected virtual string[] GetDefaultMeasurementsToLookFor() => ["FEV1", "FEV 1", "FVC", "DLCO", "KCO"];
+        protected virtual string[] GetDefaultMeasurementsToLookFor() => ["FEV1", "FEV 1", "FEVI", "FVC", "DLCO", "KCO"];
 
         public MeasurementsExtractingParserConfiguration() : base()
         {
