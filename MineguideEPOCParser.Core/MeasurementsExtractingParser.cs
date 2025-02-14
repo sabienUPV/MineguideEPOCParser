@@ -187,7 +187,14 @@ namespace MineguideEPOCParser.Core
 
                     if (currentMeasurement.Index < end)
                     {
-                        yield return (lastMeasurement.Measurement, t[lastMeasurement.Index..currentMeasurement.Index]);
+                        var text = t[lastMeasurement.Index..currentMeasurement.Index];
+
+                        // If there are no numbers after the measurement, we ignore it
+                        if (AnyNumbersAfterMeasurement(lastMeasurement.Measurement, text))
+                        {
+                            yield return (lastMeasurement.Measurement, text);
+                        }
+
                         nextMeasurement = currentMeasurement;
                     }
                 }
@@ -197,13 +204,24 @@ namespace MineguideEPOCParser.Core
                 if (nextLineBreakIndex < 0)
                 {
                     // If there are no more line breaks, add the remaining text and finish
-                    yield return (nextMeasurement.Measurement, t[nextMeasurement.Index..]);
+                    var text = t[nextMeasurement.Index..];
+                    
+                    if (AnyNumbersAfterMeasurement(nextMeasurement.Measurement, text))
+                    {
+                        yield return (nextMeasurement.Measurement, text);
+                    }
+
                     break;
                 }
                 else
                 {
                     // Add the text from the measurement to the next line break (excluding the line break)
-                    yield return (nextMeasurement.Measurement, t[nextMeasurement.Index..nextLineBreakIndex]);
+                    var text = t[nextMeasurement.Index..nextLineBreakIndex];
+
+                    if (AnyNumbersAfterMeasurement(nextMeasurement.Measurement, text))
+                    {
+                        yield return (nextMeasurement.Measurement, text);
+                    }
 
                     if (nextLineBreakIndex + 1 >= t.Length)
                     {
@@ -214,6 +232,27 @@ namespace MineguideEPOCParser.Core
 
                 currentIndex = nextLineBreakIndex;
             }
+        }
+
+        /// <summary>
+        /// Checks if there are any numbers after the measurement in the text.
+        /// If there are NOT, then the measurement is not valid for us, since we are expecting a value.
+        /// (This can happen with measurements like "FEVI normal" for example, which are not measurable values,
+        /// so we should ignore them)
+        /// </summary>
+        private bool AnyNumbersAfterMeasurement(string measurement, string text)
+        {
+            // Skip the measurement (we are expecting it to be at the beginning of the text)
+            var nextIndex = measurement.Length;
+            while (nextIndex < text.Length)
+            {
+                if (char.IsDigit(text[nextIndex]))
+                {
+                    return true;
+                }
+                nextIndex++;
+            }
+            return false;
         }
 
         private static string NormalizeText(string text)
