@@ -11,8 +11,8 @@ namespace MineguideEPOCParser.Core
         Follow STRICTLY these instructions by order priority:
         - ONLY return the values and units of "FEV1", "FVC", "FEV1/FVC", "DLCO", "KCO" measurements you find AS IS. Don't try to analyze any other context around them. If you see: "FEV1: 50%" or "FVC: 5000ml" or "FEV1/FVC 65%", then that data SHOULD be included, regardless of the origin or correctness. For now, we are just trying to extract these values, not evaluate them.
         - Notice that the same measurement might be included in multiple different units (i.e: ml and %). You should include both of them in different objects. We want all possible representations of measurements, even if it looks redundant. For example, if you have 2 FEV1 measurements in ml and %, and then 2 FVC measurements, also in ml and %, you would end up with 4 JSON objects, 2 for the 2 FEV1 measurements, and another 2 for the other 2 FVC measurements.
-        - If the text is blank, return an empty JSON object.
-        - The JSON format should be: { "Measurements": [{"Type": <"FEV1" or "FVC" or "FEV1/FVC" or "DLCO" or "KCO">, "Value": <number WITHOUT the Unit>, "Unit": <"%" or "l" or "ml" (it should be present AFTER THE NUMBER... if it's not, set it to null>} ] }
+        - If the text is blank, return an empty JSON array.
+        - The JSON format should be: [{"Type": <"FEV1" or "FVC" or "FEV1/FVC" or "DLCO" or "KCO">, "Value": <number WITHOUT the Unit>, "Unit": <"%" or "l" or "ml" (it should be present AFTER THE NUMBER... if it's not, set it to null>}]
         """;
 
         // 4 Output columns: TextSearched, Type, Value, Unit
@@ -68,13 +68,13 @@ namespace MineguideEPOCParser.Core
                 foreach (var textToSearch in subTextsToSearch)
                 {
                     // Call the API to extract the measurements
-                    var measurementsData = await ApiClient.CallToApi<MeasurementsData>(textToSearch, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
-                    if (measurementsData == null)
+                    var measurements = await ApiClient.CallToApi<Measurement[]>(textToSearch, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
+                    if (measurements == null || measurements.Length == 0)
                     {
                         Logger?.Warning($"No measurements found in the subtext: {textToSearch}");
                         continue;
                     }
-                    allMeasurements.AddRange(measurementsData.Measurements);
+                    allMeasurements.AddRange(measurements);
                 }
 
                 if (allMeasurements.Count == 0)
@@ -254,13 +254,6 @@ namespace MineguideEPOCParser.Core
                 }
             }
         }
-    }
-
-    public class MeasurementsData
-    {
-        public required Measurement[] Measurements { get; set; }
-
-        public override string ToString() => string.Join(',', Measurements.Select(m => m.ToString()));
     }
 
     public class Measurement
