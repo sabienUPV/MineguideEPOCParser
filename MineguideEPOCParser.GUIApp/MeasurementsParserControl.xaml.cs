@@ -51,7 +51,7 @@ namespace MineguideEPOCParser.GUIApp
         }
 
         // Parser
-        private MeasurementsExtractingParser? Parser { get; set; }
+        private DataParser<MeasurementsExtractingParserConfiguration>? Parser { get; set; }
 
         // Timer
         private DispatcherTimer? _dispatcherTimer;
@@ -173,6 +173,28 @@ namespace MineguideEPOCParser.GUIApp
             });
         }
 
+        private DataParser<MeasurementsExtractingParserConfiguration> CreateParser(MeasurementsExtractingParserConfiguration configuration)
+        {
+            if (ParserComboBox.SelectedIndex == 0)
+            {
+                return new SimpleMeasurementsExtractingParser()
+                {
+                    Configuration = configuration,
+                    Logger = Logger,
+                    Progress = Progress,
+                };
+            }
+            else
+            {
+                return new MeasurementsExtractingParser()
+                {
+                    Configuration = configuration,
+                    Logger = Logger,
+                    Progress = Progress,
+                };
+            }
+        }
+
         public void Dispose()
         {
             // Dispose the cancellation token source
@@ -265,12 +287,7 @@ namespace MineguideEPOCParser.GUIApp
             {
                 try
                 {
-                    Parser = new MeasurementsExtractingParser()
-                    {
-                        Configuration = configuration,
-                        Logger = Logger,
-                        Progress = Progress,
-                    };
+                    Parser = CreateParser(configuration);
 
                     await Parser.ParseData(CancellationTokenSource.Token);
                 }
