@@ -1,9 +1,13 @@
 ﻿using System.Net.Http.Json;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using Polly;
 using Serilog;
+using Newtonsoft.Json;
+using JsonException = Newtonsoft.Json.JsonException;
+using JsonSerializer = System.Text.Json.JsonSerializer;
+using System.Text.Json.Serialization;
+using JsonIgnoreAttribute = System.Text.Json.Serialization.JsonIgnoreAttribute;
+using Newtonsoft.Json.Linq;
 
 namespace MineguideEPOCParser.Core
 {
@@ -67,7 +71,10 @@ namespace MineguideEPOCParser.Core
 
 					log?.Verbose("Request:\n{Request}", JsonSerializer.Serialize(generateRequest));
 
-					using var request = new HttpRequestMessage()
+                    // NOTE: We use Newtonsoft.Json for deserializing the JSON response from the API because it can be set to ignore invalid JSON responses.
+                    // BUT we use System.Text.Json for serializing the request to the API because it is already implemented and we don't need to change it.
+
+                    using var request = new HttpRequestMessage()
 					{
 						Method = HttpMethod.Post,
 						RequestUri = uri,
@@ -93,7 +100,10 @@ namespace MineguideEPOCParser.Core
 
 					log?.Debug("Raw API Response:\n{Response}", apiResponse.Response);
 
-					var output = JsonSerializer.Deserialize<TOutput>(apiResponse.Response);
+					var output = Utilities.DeserializeObject<TOutput>(apiResponse.Response, new JsonSerializerSettings
+					{
+                        MissingMemberHandling = MissingMemberHandling.Error,
+                    }, DuplicatePropertyNameHandling.Error);
 
 					cancellationToken.ThrowIfCancellationRequested();
 
