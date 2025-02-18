@@ -101,8 +101,9 @@ namespace MineguideEPOCParser.Core
         /// - This accepts various spellings ("FEV1", "FEV 1", "FEVI") as the measurement name, in a case-insensitive way
         /// - The value can be a decimal number (with a dot or a comma as the decimal separator)
         /// - It prevents matching the FEV1/FVC ratio by checking that the measurement name is not followed by a slash
+        /// - It also prevents matching the measurement if it is followed by a "<" or ">" character (because it might show an interval rather than a single value)
         /// </summary>
-        [GeneratedRegex(@"FEV\s?[1I](?!\/).*?(\d+(?:[\.,]\d+)?)\s*?%", RegexOptions.IgnoreCase)]
+        [GeneratedRegex(@"FEV\s?[1I][^\/<>\n]*?(\d+(?:[\.,]\d+)?)\s*?%", RegexOptions.IgnoreCase)]
         internal static partial Regex ExtractFEV1Regex();
     }
 }
