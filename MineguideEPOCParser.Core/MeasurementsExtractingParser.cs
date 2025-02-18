@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace MineguideEPOCParser.Core
 {
-    public class MeasurementsExtractingParser : DataParser<MeasurementsExtractingParserConfiguration>
+    public class MeasurementsExtractingParser : DataParser<ComplexMeasurementsExtractingParserConfiguration>
     {
         public const string SystemPrompt = """
         You are meant to parse any medical data sent to you in SPANISH.

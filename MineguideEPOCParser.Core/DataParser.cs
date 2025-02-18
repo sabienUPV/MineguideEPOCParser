@@ -8,9 +8,8 @@ using Serilog;
 
 namespace MineguideEPOCParser.Core
 {
-    public abstract class DataParser<TConfiguration>
-        where TConfiguration : DataParserConfiguration
-	{
+    public abstract class DataParser<TConfiguration> : IDataParser<TConfiguration> where TConfiguration : DataParserConfiguration
+    {
         public required TConfiguration Configuration { get; set; }
 
         public ILogger? Logger { get; set; }

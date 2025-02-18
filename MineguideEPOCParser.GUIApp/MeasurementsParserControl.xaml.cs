@@ -51,7 +51,7 @@ namespace MineguideEPOCParser.GUIApp
         }
 
         // Parser
-        private DataParser<MeasurementsExtractingParserConfiguration>? Parser { get; set; }
+        private IDataParser? Parser { get; set; }
 
         // Timer
         private DispatcherTimer? _dispatcherTimer;
@@ -173,7 +173,7 @@ namespace MineguideEPOCParser.GUIApp
             });
         }
 
-        private DataParser<MeasurementsExtractingParserConfiguration> CreateParser(MeasurementsExtractingParserConfiguration configuration)
+        private IDataParser CreateParser(SimpleMeasurementsExtractingParserConfiguration configuration)
         {
             if (ParserComboBox.SelectedIndex == 0)
             {
@@ -188,7 +188,7 @@ namespace MineguideEPOCParser.GUIApp
             {
                 return new MeasurementsExtractingParser()
                 {
-                    Configuration = configuration,
+                    Configuration = ComplexMeasurementsExtractingParserConfiguration.FromSimple(configuration),
                     Logger = Logger,
                     Progress = Progress,
                 };
@@ -257,7 +257,7 @@ namespace MineguideEPOCParser.GUIApp
             // Run timer
             StartTimer();
 
-            var configuration = new MeasurementsExtractingParserConfiguration()
+            var configuration = new SimpleMeasurementsExtractingParserConfiguration()
             {
                 CultureName = cultureName,
                 InputFile = inputFile,

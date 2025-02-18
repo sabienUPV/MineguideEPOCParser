@@ -21,7 +21,7 @@
         public bool DecodeHtmlFromInput { get; set; }
     }
 
-    public class MeasurementsExtractingParserConfiguration : SimpleMeasurementsExtractingParserConfiguration
+    public class ComplexMeasurementsExtractingParserConfiguration : SimpleMeasurementsExtractingParserConfiguration
     {
         /// <summary>
         /// Only send to the LLM API lines of text that contain at least one of these measurements (case insensitive) to reduce the search scope.
@@ -36,9 +36,23 @@
         // other possibly useful measurements: DLCO, KCO
         protected virtual string[] GetDefaultMeasurementsToLookFor() => ["FEV1/FVC", "FEV1", "FVC", "DLCO", "KCO"];
 
-        public MeasurementsExtractingParserConfiguration() : base()
+        public ComplexMeasurementsExtractingParserConfiguration() : base()
         {
             MeasurementsToLookFor = GetDefaultMeasurementsToLookFor();
+        }
+
+        // Create from the base class
+        public static ComplexMeasurementsExtractingParserConfiguration FromSimple(SimpleMeasurementsExtractingParserConfiguration conf)
+        {
+            return new ComplexMeasurementsExtractingParserConfiguration()
+            {
+                CultureName = conf.CultureName,
+                InputFile = conf.InputFile,
+                OutputFile = conf.OutputFile,
+                Count = conf.Count,
+                OverwriteColumn = conf.OverwriteColumn,
+                DecodeHtmlFromInput = conf.DecodeHtmlFromInput,
+            };
         }
 
         // Default column names
