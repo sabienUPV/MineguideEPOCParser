@@ -399,12 +399,10 @@ namespace MineguideEPOCParser.GUIApp
 
         private void LogLevelComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            LogEventLevel logLevel = GetLogLevelFromComboBox();
-
             // Update the log level switch
             if (LoggingLevelSwitch is not null)
             {
-                LoggingLevelSwitch.MinimumLevel = logLevel;
+                LoggingLevelSwitch.MinimumLevel = GetLogLevelFromComboBox();
             }
         }
 

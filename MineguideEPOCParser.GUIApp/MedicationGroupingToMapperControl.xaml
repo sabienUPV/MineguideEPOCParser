@@ -124,7 +124,7 @@
 
                     <!-- Select log level -->
                     <Label Grid.Row="0" Grid.Column="0" Content="Log level:" VerticalAlignment="Center" HorizontalAlignment="Left" />
-                    <ComboBox Grid.Row="0" Grid.Column="2" x:Name="LogLevelComboBox" SelectionChanged="LogLevelComboBox_SelectionChanged" IsEnabled="{Binding IsParsing}" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
+                    <ComboBox Grid.Row="0" Grid.Column="2" x:Name="LogLevelComboBox" SelectionChanged="LogLevelComboBox_SelectionChanged" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
                         <ComboBoxItem Content="Verbose" IsSelected="True" />
                         <ComboBoxItem Content="Debug" />
                         <ComboBoxItem Content="Information" />
