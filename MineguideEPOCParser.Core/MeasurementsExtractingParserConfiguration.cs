@@ -19,6 +19,9 @@
     public class SimpleMeasurementsExtractingParserConfiguration : DataParserConfiguration
     {
         public bool DecodeHtmlFromInput { get; set; }
+
+        public const string FEV1HeaderName = "FEV1 (%)";
+        protected override (string inputHeader, string[] outputHeaders) GetDefaultColumns() => (THeaderName, [FEV1HeaderName]);
     }
 
     public class ComplexMeasurementsExtractingParserConfiguration : SimpleMeasurementsExtractingParserConfiguration
