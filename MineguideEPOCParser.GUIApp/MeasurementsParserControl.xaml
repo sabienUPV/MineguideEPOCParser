@@ -85,8 +85,8 @@
             <!-- Overwrite column -->
             <CheckBox Grid.Row="10" Grid.Column="2" x:Name="OverwriteColumnCheckBox" Content="Overwrite column" VerticalAlignment="Center" HorizontalAlignment="Left" />
 
-            <!-- Decode HTML from Input -->
-            <CheckBox Grid.Row="12" Grid.Column="2" x:Name="DecodeHtmlCheckBox" Content="Decode HTML from Input" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <!-- Decode HTML from Input (true by default) -->
+            <CheckBox Grid.Row="12" Grid.Column="2" x:Name="DecodeHtmlCheckBox" Content="Decode HTML from Input" VerticalAlignment="Center" HorizontalAlignment="Left" IsChecked="True" />
 
             <!-- Parse button -->
             <Button Grid.Row="14" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
