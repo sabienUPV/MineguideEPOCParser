@@ -1,10 +1,13 @@
 ﻿using System.Net;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 
 namespace MineguideEPOCParser.Core
 {
-    // TODO: Create Simple version of the parser (only FEV1 %, no LLM)
-    public class SimpleMeasurementsExtractingParser : DataParser<SimpleMeasurementsExtractingParserConfiguration>
+    /// <summary>
+    /// Simple version of the parser (only FEV1 %, no LLM)
+    /// </summary>
+    public partial class SimpleMeasurementsExtractingParser : DataParser<SimpleMeasurementsExtractingParserConfiguration>
     {
         /// <summary>
         /// Use Regex to extract the FEV1 (%) measurements from the text in the input column.
@@ -23,12 +26,14 @@ namespace MineguideEPOCParser.Core
 				}
 
                 // Normalize the spelling of some measurements
-                t = NormalizeText(t);
+                //t = NormalizeText(t);
+
+                Logger?.Debug("Extracting from text: {t}", t);
 
                 // TODO: Extrae las medidas de FEV1 (%) de la columna
-                var allMeasurements = ExtractFEV1Measurements(t).ToList();
+                var measurements = ExtractFEV1Measurements(t).ToList();
 
-                if (allMeasurements.Count == 0)
+                if (measurements.Count == 0)
                 {
                     Logger?.Warning($"No measurements found in the text: {t}");
                     continue;
@@ -41,26 +46,20 @@ namespace MineguideEPOCParser.Core
                     t = t.Replace('\n', '\t').Replace("\r", "");
                 }
 
-                // Devuelve cada medida en una fila, ordenados alfabéticamente por tipo
-                foreach (var measurement in allMeasurements.OrderBy(m => m.Type))
+                // Devuelve cada medida en una fila
+                foreach (var measurement in measurements)
                 {
-                    // Duplicate the row for each measurement, including the measurement
+                    // Duplicate the row for each measurement, including said measurement in it
                     string[] newRow;
-
-                    // If the unit is missing, deduce it
-                    if (string.IsNullOrEmpty(measurement.Unit))
-                    {
-                        measurement.Unit = DeduceMissingUnit(measurement.Value);
-                    }
 
                     if (Configuration.OverwriteColumn)
                     {
-                        newRow = GenerateNewRowWithOverwrite(row, inputColumnIndex, [measurement.Value.ToString()]).ToArray();
+                        newRow = row.Select((x, i) => i == inputColumnIndex ? measurement : x).ToArray();
                     }
                     else
                     {
-                        // If we are not overwriting the column, add the exact text that was searched, the measurement type, value and unit to the end
-                        newRow = row.Append(measurement.Value.ToString()).ToArray();
+                        // If we are not overwriting the column, add the FEV1 value (in %) to the end
+                        newRow = [.. row, measurement];
 
                         // In the 'T' column, replace the multiline original text with a single line text
                         newRow[inputColumnIndex] = t;
@@ -71,87 +70,31 @@ namespace MineguideEPOCParser.Core
             }
         }
 
-        private IEnumerable<Measurement> ExtractFEV1Measurements(string t)
+        private IEnumerable<string> ExtractFEV1Measurements(string t)
         {
-            // TODO: Extrae las medidas de FEV1 (%) de la columna
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// <list type="bullet">
-        /// <item>If the value is less than 15, assume liters (l)</item>
-        /// <item>If the value is between 15 and 99, assume a percentage (%)</item>
-        /// <item>If the value is greater than or equal to 100, assume mililiters (ml)</item>
-        /// </list>
-        /// </summary>
-        private static string DeduceMissingUnit(double value) => value switch
-        {
-            < 15 => "l",
-            < 100 => "%",
-            _ => "ml"
-        };
-
-        /// <summary>
-        /// Checks if there are any numbers after the measurement in the text.
-        /// If there are NOT, then the measurement is not valid for us, since we are expecting a value.
-        /// (This can happen with measurements like "FEVI normal" for example, which are not measurable values,
-        /// so we should ignore them)
-        /// </summary>
-        private static bool AnyNumbersAfterMeasurement(int measurementLength, string text)
-        {
-            // Skip the measurement (we are expecting it to be at the beginning of the text)
-            var nextIndex = measurementLength;
-            while (nextIndex < text.Length)
-            {
-                if (char.IsDigit(text[nextIndex]))
+            // Crear un Regex que extrae las medidas de FEV1 (%) del texto
+            // (ejemplo: "FEV1: 80%" o "FEV1 80%")
+            return ExtractFEV1Regex().Matches(t)
+                .Select(m =>
                 {
-                    return true;
-                }
-                nextIndex++;
-            }
-            return false;
+                    Logger?.Verbose("FEV1 measurement found: {Measurement}", m.Groups[0].Value);
+
+                    var value = m.Groups[1].Value.Replace(',', '.');
+
+                    Logger?.Debug("FEV1 value: {Value}", value);
+
+                    return value;
+                });
         }
 
-        private static string NormalizeText(string text)
-        {
-            // Normalize FEV1 spelling (possible spellings: FEV1, FEV 1, FEVI) and remove carriage returns
-            return text.Replace("FEV 1", "FEV1").Replace("FEVI", "FEV1").Replace("\r", "");
-        }
+        //private static string NormalizeText(string text)
+        //{
+        //    // Normalize FEV1 spelling (possible spellings: FEV1, FEV 1, FEVI)
+        //    // (also replace ALL commas with dots so decimal numbers are correctly parsed)
+        //    return text.Replace("FEV 1", "FEV1").Replace("FEVI", "FEV1").Replace(',', '.');
+        //}
 
-        private static string NormalizeText(string measurement, string text)
-        {
-            // Normalize FEV1 spelling (possible spellings: FEV1, FEV 1, FEVI)
-            if (measurement == "FEV 1")
-            {
-                text = text.Replace("FEV 1", "FEV1");
-            }
-            else if (measurement == "FEVI")
-            {
-                text = text.Replace("FEVI", "FEV1");
-            }
-
-            // Remove carriage returns
-            text = text.Replace("\r", "");
-
-            return text;
-        }
-
-        private static IEnumerable<string> GenerateNewRowWithOverwrite(string[] row, int inputColumnIndex, IEnumerable<string> outputValues)
-        {
-            for (int i = 0; i < row.Length; i++)
-            {
-                if (i == inputColumnIndex)
-                {
-                    foreach (var outputValue in outputValues)
-                    {
-                        yield return outputValue;
-                    }
-                }
-                else
-                {
-                    yield return row[i];
-                }
-            }
-        }
+        [GeneratedRegex(@"FEV\s?[1I].*?(\d+(?:[\.,]\d+)?)\s*?%")]
+        internal static partial Regex ExtractFEV1Regex();
     }
 }
