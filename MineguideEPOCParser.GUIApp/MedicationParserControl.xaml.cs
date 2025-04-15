@@ -244,7 +244,7 @@ namespace MineguideEPOCParser.GUIApp
                 {
                     // Only show the progress files processed text block if there are multiple input files being processed
                     ProgressFilesProcessedTextBlock.Visibility = inputFiles.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
-                    ProgressFilesProcessedTextBlock.Text = $"0/{inputFiles.Length}";
+                    ProgressFilesProcessedTextBlock.Text = $"Files processed: 0/{inputFiles.Length}";
 
                     // Parse for each input and output file
                     int filesProcessed = 0;
@@ -276,7 +276,7 @@ namespace MineguideEPOCParser.GUIApp
                             await MedicationParser.ParseData(CancellationTokenSource.Token);
 
                             filesProcessed++;
-                            ProgressFilesProcessedTextBlock.Text = $"{filesProcessed}/{inputFiles.Length}";
+                            ProgressFilesProcessedTextBlock.Text = $"Files processed: {filesProcessed}/{inputFiles.Length}";
                         }
                         finally
                         {
