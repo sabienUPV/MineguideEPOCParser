@@ -260,19 +260,31 @@ namespace MineguideEPOCParser.GUIApp
                         {
                             ProgressPromptsProcessedTextBlock.Visibility = Visibility.Visible;
 
-                            var csvConfig = new CsvConfiguration(new CultureInfo(cultureName));
+                            var csvConfig = new CsvConfiguration(new CultureInfo(cultureName))
+                            {
+                                HasHeaderRecord = false,
+                            };
 
                             using var reader = new StreamReader(promptsFile);
                             using var csvReader = new CsvReader(reader, csvConfig);
 
                             // Read the prompts file
-                            var promptsRecords = csvReader.GetRecords<string>().ToList();
+                            var promptsList = new List<string>();
+                            while (await csvReader.ReadAsync())
+                            {
+                                // Read the system prompt from the first column
+                                var systemPrompt = csvReader.GetField(0);
+                                if (!string.IsNullOrEmpty(systemPrompt))
+                                {
+                                    promptsList.Add(systemPrompt);
+                                }
+                            }
 
-                            ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: 0/{promptsRecords.Count}";
+                            ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: 0/{promptsList.Count}";
 
                             // Parse for each system prompt in the prompts file
                             int promptsProcessed = 0;
-                            foreach (var systemPrompt in promptsRecords)
+                            foreach (var systemPrompt in promptsList)
                             {
                                 // Update the output file name to include a number representing the system prompt
                                 var outputFileName = Path.GetFileNameWithoutExtension(outputFile);
@@ -292,7 +304,7 @@ namespace MineguideEPOCParser.GUIApp
                                     systemPrompt,
                                     CancellationTokenSource.Token).ConfigureAwait(false);
 
-                                ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: {++promptsProcessed}/{promptsRecords.Count}";
+                                ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: {++promptsProcessed}/{promptsList.Count}";
                             }
                         }
                         else
