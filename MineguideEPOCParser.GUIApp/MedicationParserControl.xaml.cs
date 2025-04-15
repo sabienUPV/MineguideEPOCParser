@@ -1,4 +1,5 @@
-﻿using MineguideEPOCParser.Core;
+﻿using Microsoft.Win32;
+using MineguideEPOCParser.Core;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -12,7 +13,7 @@ namespace MineguideEPOCParser.GUIApp
     /// <summary>
     /// Lógica de interacción para MedicationParserControl.xaml
     /// </summary>
-    public partial class MedicationParserControl : UserControl, IDisposable, IAsyncDisposable
+    public partial class MedicationParserControl : UserControl, IDisposable
     {
         // Dependency property IsParsing
         public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
@@ -50,6 +51,11 @@ namespace MineguideEPOCParser.GUIApp
             }
         }
 
+        // Input/Output files
+        private const char FileInTextSeparator = ';';
+        private string[] InputFiles => InputFileTextBox.Text.Split(FileInTextSeparator, StringSplitOptions.RemoveEmptyEntries);
+        private string[] OutputFiles => OutputFileTextBox.Text.Split(FileInTextSeparator, StringSplitOptions.RemoveEmptyEntries);
+
         // Parser
         private MedicationExtractingParser? MedicationParser { get; set; }
 
@@ -61,7 +67,6 @@ namespace MineguideEPOCParser.GUIApp
         private CancellationTokenSource? CancellationTokenSource { get; set; }
 
         // Logging
-        private ILogger? Logger { get; set; }
         private LoggingLevelSwitch? LoggingLevelSwitch { get; set; }
 
         // Progress reporting
@@ -109,19 +114,19 @@ namespace MineguideEPOCParser.GUIApp
         /// <summary>
         /// Create a new logger that writes to a TextBox
         /// </summary>
-        private void CreateLogger()
+        private Logger CreateLogger(string inputFile, string outputFile)
         {
-            LoggingLevelSwitch = new LoggingLevelSwitch
+            LoggingLevelSwitch ??= new LoggingLevelSwitch
             {
                 // Take the default log level from the control
                 MinimumLevel = GetLogLevelFromComboBox()
             };
 
             // Get input file name without extension
-            var inputFileName = Path.GetFileNameWithoutExtension(InputFileTextBox.Text);
+            var inputFileName = Path.GetFileNameWithoutExtension(inputFile);
 
             // Get directory from output file path
-            var outputDirectory = Path.GetDirectoryName(OutputFileTextBox.Text);
+            var outputDirectory = Path.GetDirectoryName(outputFile);
 
             // If the output directory is empty, use the current directory
             var logFileDirectory = string.IsNullOrEmpty(outputDirectory) ? "." : outputDirectory;
@@ -129,11 +134,13 @@ namespace MineguideEPOCParser.GUIApp
             var logFilePath = Path.Combine(logFileDirectory, $"MineguideEPOCParser-{inputFileName}-.log");
 
             // Create a new logger
-            Logger = new LoggerConfiguration()
-                .MinimumLevel.ControlledBy(LoggingLevelSwitch)
-                .WriteTo.RichTextBox(LogRichTextBox)
+            var logger = new LoggerConfiguration()
+                //.MinimumLevel.ControlledBy(LoggingLevelSwitch) // always log verbose to file, switch now only controls the log level in the UI
+                .WriteTo.RichTextBox(LogRichTextBox, levelSwitch: LoggingLevelSwitch)
                 .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
                 .CreateLogger();
+
+            return logger;
         }
 
         private LogEventLevel GetLogLevelFromComboBox()
@@ -178,31 +185,6 @@ namespace MineguideEPOCParser.GUIApp
             // Dispose the cancellation token source
             CancellationTokenSource?.Dispose();
 
-            // Dispose the logger
-            if (Logger is IDisposable disposableLogger)
-            {
-                disposableLogger.Dispose();
-            }
-
-            // Stop the timer
-            _dispatcherTimer?.Stop();
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            // Dispose the cancellation token source
-            CancellationTokenSource?.Dispose();
-
-            // Dispose the logger
-            if (Logger is IAsyncDisposable asyncDisposableLogger)
-            {
-                await asyncDisposableLogger.DisposeAsync().ConfigureAwait(false);
-            }
-            else if (Logger is IDisposable disposableLogger)
-            {
-                disposableLogger.Dispose();
-            }
-
             // Stop the timer
             _dispatcherTimer?.Stop();
         }
@@ -210,13 +192,20 @@ namespace MineguideEPOCParser.GUIApp
         private async void ParseButton_Click(object sender, RoutedEventArgs e)
         {
             // Get the input and output files from the text boxes
-            string inputFile = InputFileTextBox.Text;
-            string outputFile = OutputFileTextBox.Text;
+            var inputFiles = InputFiles;
+            var outputFiles = OutputFiles;
 
-            // Check for empty input or output file
-            if (string.IsNullOrEmpty(inputFile) || string.IsNullOrEmpty(outputFile))
+            // Check for empty input or output files
+            if (inputFiles.Length == 0 || outputFiles.Length == 0)
             {
-                MessageBox.Show("Please select an input and output file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Please select at least one input and one output file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Check for mismatched input and output files
+            if (inputFiles.Length != outputFiles.Length)
+            {
+                MessageBox.Show("The number of input and output files must be the same.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
@@ -229,23 +218,8 @@ namespace MineguideEPOCParser.GUIApp
 
             bool decodeHtml = DecodeHtmlCheckBox.IsChecked == true;
 
-            // Create a new logger
-            CreateLogger();
 
-            // Run timer
-            StartTimer();
-
-            var configuration = new MedicationExtractingParserConfiguration()
-            {
-                CultureName = cultureName,
-                InputFile = inputFile,
-                OutputFile = outputFile,
-                Count = isRowCountValid ? rowCount : null,
-                OverwriteColumn = overwriteColumn,
-                DecodeHtmlFromInput = decodeHtml,
-            };
-
-            // Clear the log
+            // Clear the log UI
             LogRichTextBox.Document.Blocks.Clear();
 
             // Clear the progress bar, percentage text, and rows processed text
@@ -261,18 +235,61 @@ namespace MineguideEPOCParser.GUIApp
             // Parse the medication
             IsParsing = true;
 
+            // Run timer
+            StartTimer();
+
             try
             {
                 try
                 {
-                    MedicationParser = new MedicationExtractingParser()
-                    {
-                        Configuration = configuration,
-                        Logger = Logger,
-                        Progress = Progress,
-                    };
+                    // Only show the progress files processed text block if there are multiple input files being processed
+                    ProgressFilesProcessedTextBlock.Visibility = inputFiles.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
 
-                    await MedicationParser.ParseData(CancellationTokenSource.Token);
+                    // Parse for each input and output file
+                    int filesProcessed = 0;
+                    foreach (var (inputFile, outputFile) in inputFiles.Zip(outputFiles))
+                    {
+                        var logger = CreateLogger(inputFile, outputFile);
+
+                        var configuration = new MedicationExtractingParserConfiguration()
+                        {
+                            CultureName = cultureName,
+                            InputFile = inputFile,
+                            OutputFile = outputFile,
+                            Count = isRowCountValid ? rowCount : null,
+                            OverwriteColumn = overwriteColumn,
+                            DecodeHtmlFromInput = decodeHtml,
+                        };
+
+                        try
+                        {
+                            MedicationParser = new MedicationExtractingParser()
+                            {
+                                Configuration = configuration,
+                                Logger = logger,
+                                Progress = Progress,
+                            };
+
+                            logger.Information($"### Starting parsing for input file: {inputFile}");
+
+                            await MedicationParser.ParseData(CancellationTokenSource.Token);
+
+                            filesProcessed++;
+                            ProgressFilesProcessedTextBlock.Text = filesProcessed.ToString();
+                        }
+                        finally
+                        {
+                            // Dispose the logger
+                            if (logger is IAsyncDisposable asyncDisposableLogger)
+                            {
+                                await asyncDisposableLogger.DisposeAsync().ConfigureAwait(false);
+                            }
+                            else if (logger is IDisposable disposableLogger)
+                            {
+                                disposableLogger.Dispose();
+                            }
+                        }
+                    }
                 }
                 finally
                 {
@@ -304,20 +321,6 @@ namespace MineguideEPOCParser.GUIApp
                 // Set the cancellation token source to null
                 CancellationTokenSource = null;
 
-                // Dispose the logger
-                if (Logger is IAsyncDisposable asyncDisposableLogger)
-                {
-                    await asyncDisposableLogger.DisposeAsync().ConfigureAwait(false);
-                }
-                else if (Logger is IDisposable disposableLogger)
-                {
-                    disposableLogger.Dispose();
-                }
-
-                // Set the logger to null
-                Logger = null;
-                LoggingLevelSwitch = null;
-
                 // Set the timer to null
                 _dispatcherTimer = null;
 
@@ -344,31 +347,76 @@ namespace MineguideEPOCParser.GUIApp
 
         private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            InputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.OpenFileDialog>(InputFileTextBox.Text) ?? string.Empty;
+            var files = BrowseInputCsvFiles(InputFiles);
+            InputFileTextBox.Text = files is null ? string.Empty : string.Join(FileInTextSeparator, files);
         }
 
         private void BrowseOutputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medication.csv") ?? string.Empty;
+            var inputFiles = InputFiles;
+
+            if (inputFiles.Length == 0)
+            {
+                MessageBox.Show("Please select at least one input file first.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            OutputFileTextBox.Text = string.Join(FileInTextSeparator, BrowseOutputCsvFiles(inputFiles, "{0}-OUTPUT"));
         }
 
-        private static string? BrowseCsvFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
-            where TFileDialog : Microsoft.Win32.FileDialog, new()
+        const string CsvFilesFilter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
+        private static string[]? BrowseInputCsvFiles(string[] currentPaths)
         {
-            // Create a new file dialog
-            var dialog = new TFileDialog()
+            // Create a new open file dialog
+            var dialog = new OpenFileDialog()
             {
-                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
+                Title = "Select input files",
+                Filter = CsvFilesFilter,
+                Multiselect = true,
             };
 
-            if (!string.IsNullOrEmpty(currentPath))
+            // Setup the dialog with the current path and default file name
+            if (currentPaths.Length > 0)
             {
-                dialog.InitialDirectory = System.IO.Path.GetDirectoryName(currentPath);
-                dialog.FileName = System.IO.Path.GetFileName(currentPath);
+                dialog.InitialDirectory = System.IO.Path.GetDirectoryName(currentPaths[0]);
             }
-            else if (defaultFileName is not null)
+
+            // Show the dialog
+            if (dialog.ShowDialog() == true)
             {
-                dialog.FileName = defaultFileName;
+                // Return the selected files
+                return dialog.FileNames;
+            }
+
+            return null;
+        }
+
+        private static IEnumerable<string> BrowseOutputCsvFiles(string[] inputFiles, string? defaultFileNameTemplate = null)
+        {
+            foreach (var inputFile in inputFiles)
+            {
+                var outputFile = BrowseOutputCsvFile(inputFile, defaultFileNameTemplate);
+                if (outputFile is null)
+                {
+                    yield break;
+                }
+                yield return outputFile;
+            }
+        }
+
+        private static string? BrowseOutputCsvFile(string inputFile, string? defaultFileNameTemplate = null)
+        {
+            // Create a new save file dialog
+            var dialog = new SaveFileDialog
+            {
+                Title = $"Select output file (input file: {System.IO.Path.GetFileName(inputFile)})",
+                Filter = CsvFilesFilter,
+                InitialDirectory = System.IO.Path.GetDirectoryName(inputFile)
+            };
+
+            if (defaultFileNameTemplate is not null)
+            {
+                dialog.FileName = string.Format(defaultFileNameTemplate, System.IO.Path.GetFileNameWithoutExtension(inputFile)) + System.IO.Path.GetExtension(inputFile);
             }
 
             // Show the dialog

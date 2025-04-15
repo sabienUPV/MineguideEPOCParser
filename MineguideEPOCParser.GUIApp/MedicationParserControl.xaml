@@ -40,13 +40,13 @@
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
-            <!-- Input file -->
-            <Label Grid.Row="0" Grid.Column="0" Content="Input file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <!-- Input files -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Input files:" VerticalAlignment="Center" HorizontalAlignment="Left" />
             <TextBox Grid.Row="0" Grid.Column="2" x:Name="InputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
             <Button Grid.Row="0" Grid.Column="4" x:Name="BrowseInputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseInputFileButton_Click" />
 
-            <!-- Output file -->
-            <Label Grid.Row="2" Grid.Column="0" Content="Output file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <!-- Output files -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Output files:" VerticalAlignment="Center" HorizontalAlignment="Left" />
             <TextBox Grid.Row="2" Grid.Column="2" x:Name="OutputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
             <Button Grid.Row="2" Grid.Column="4" x:Name="BrowseOutputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseOutputFileButton_Click" />
 
@@ -110,7 +110,10 @@
             <TextBlock Grid.Column="2" x:Name="ProgressPercentageTextBlock" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Center" />
 
             <!-- Progress rows processed text -->
-            <TextBlock Grid.Column="4" x:Name="ProgressRowsProcessedTextBlock" Text="Rows processed: 0" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <StackPanel Grid.Column="4" Orientation="Vertical" VerticalAlignment="Center">
+                <TextBlock x:Name="ProgressRowsProcessedTextBlock" Text="Rows processed: 0" HorizontalAlignment="Left" />
+                <TextBlock x:Name="ProgressFilesProcessedTextBlock" Text="Files processed: 0" Margin="0 5 0 0" HorizontalAlignment="Left" Visibility="Collapsed" />
+            </StackPanel>
 
             <!-- Timer -->
             <TextBlock Grid.Column="6" x:Name="TimerTextBlock" Text="00:00:00" VerticalAlignment="Center" HorizontalAlignment="Left"/>
