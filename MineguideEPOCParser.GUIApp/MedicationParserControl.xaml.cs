@@ -277,7 +277,7 @@ namespace MineguideEPOCParser.GUIApp
                                 // Update the output file name to include a number representing the system prompt
                                 var outputFileName = Path.GetFileNameWithoutExtension(outputFile);
                                 var outputFileExtension = Path.GetExtension(outputFile);
-                                var outputFileNameWithPrompt = $"{outputFileName}-{promptsProcessed + 1}{outputFileExtension}";
+                                var outputFileNameWithPrompt = $"{outputFileName}-prompt-{promptsProcessed + 1}{outputFileExtension}";
 
                                 var outputFileWithPrompt = Path.Combine(Path.GetDirectoryName(outputFile) ?? string.Empty, outputFileNameWithPrompt);
 
