@@ -5,6 +5,14 @@ namespace MineguideEPOCParser.Core
 {
     public class MedicationExtractingParser : DataParser<MedicationExtractingParserConfiguration>
     {
+        public const string SystemPrompt = """
+        You are meant to parse any medical data sent to you in SPANISH.
+        Follow STRICTLY these instructions by order priority:
+        - ONLY return the names of any medication you find AS IS, don't say anything more.
+        - If the text is blank, don't say anything, just send a blank message.
+        - The JSON format should be: { ""Medicamentos"": [ ] }     
+        """;
+
         /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.
         /// </summary>
@@ -22,7 +30,7 @@ namespace MineguideEPOCParser.Core
 				}
 
                 // Llama a la API para extraer los medicamentos
-                var medications = await ApiClient.CallToApi<MedicationsList>(t, "medicamento-parser-dev", null, Logger, cancellationToken);
+                var medications = await ApiClient.CallToApi<MedicationsList>(t, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
 
                 if (medications == null)
                 {
