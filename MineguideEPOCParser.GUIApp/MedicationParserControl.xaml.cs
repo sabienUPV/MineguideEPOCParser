@@ -394,25 +394,27 @@ namespace MineguideEPOCParser.GUIApp
 
         private static IEnumerable<string> BrowseOutputCsvFiles(string[] inputFiles, string? defaultFileNameTemplate = null)
         {
+            string? lastOutputFile = null;
             foreach (var inputFile in inputFiles)
             {
-                var outputFile = BrowseOutputCsvFile(inputFile, defaultFileNameTemplate);
+                var outputFile = BrowseOutputCsvFile(inputFile, System.IO.Path.GetDirectoryName(lastOutputFile), defaultFileNameTemplate);
                 if (outputFile is null)
                 {
                     yield break;
                 }
                 yield return outputFile;
+                lastOutputFile = outputFile;
             }
         }
 
-        private static string? BrowseOutputCsvFile(string inputFile, string? defaultFileNameTemplate = null)
+        private static string? BrowseOutputCsvFile(string inputFile, string? lastOutputDir = null, string? defaultFileNameTemplate = null)
         {
             // Create a new save file dialog
             var dialog = new SaveFileDialog
             {
                 Title = $"Select output file (input file: {System.IO.Path.GetFileName(inputFile)})",
                 Filter = CsvFilesFilter,
-                InitialDirectory = System.IO.Path.GetDirectoryName(inputFile)
+                InitialDirectory = lastOutputDir ?? System.IO.Path.GetDirectoryName(inputFile)
             };
 
             if (defaultFileNameTemplate is not null)
