@@ -135,7 +135,8 @@ namespace MineguideEPOCParser.GUIApp
 
             // Create a new logger
             var logger = new LoggerConfiguration()
-                //.MinimumLevel.ControlledBy(LoggingLevelSwitch) // always log verbose to file, switch now only controls the log level in the UI
+                .MinimumLevel.Verbose() // always log verbose to file, switch now only controls the log level in the UI
+                //.MinimumLevel.ControlledBy(LoggingLevelSwitch)
                 .WriteTo.RichTextBox(LogRichTextBox, levelSwitch: LoggingLevelSwitch)
                 .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
                 .CreateLogger();
