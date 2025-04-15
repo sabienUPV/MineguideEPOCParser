@@ -5,7 +5,7 @@ namespace MineguideEPOCParser.Core
 {
     public class MedicationExtractingParser : DataParser<MedicationExtractingParserConfiguration>
     {
-        public const string SystemPrompt = """
+        public const string DefaultSystemPrompt = """
         You are meant to parse any medical data sent to you in SPANISH.
         Follow STRICTLY these instructions by order priority:
         - ONLY return the names of any medication you find AS IS, don't say anything more.
@@ -30,7 +30,7 @@ namespace MineguideEPOCParser.Core
 				}
 
                 // Llama a la API para extraer los medicamentos
-                var medications = await ApiClient.CallToApi<MedicationsList>(t, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
+                var medications = await ApiClient.CallToApi<MedicationsList>(t, "llama3.1:latest", Configuration.SystemPrompt, Logger, cancellationToken);
 
                 if (medications == null)
                 {
@@ -85,5 +85,7 @@ namespace MineguideEPOCParser.Core
     public class MedicationExtractingParserConfiguration : DataParserConfiguration
 	{
 		public bool DecodeHtmlFromInput { get; set; }
-	}
+
+        public string SystemPrompt { get; set; } = MedicationExtractingParser.DefaultSystemPrompt;
+    }
 }

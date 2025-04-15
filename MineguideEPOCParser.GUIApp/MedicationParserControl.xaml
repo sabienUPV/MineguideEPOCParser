@@ -38,6 +38,8 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="10" />
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
             <!-- Input files -->
@@ -50,9 +52,14 @@
             <TextBox Grid.Row="2" Grid.Column="2" x:Name="OutputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
             <Button Grid.Row="2" Grid.Column="4" x:Name="BrowseOutputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseOutputFileButton_Click" />
 
+            <!-- Prompts file -->
+            <Label Grid.Row="4" Grid.Column="0" Content="Prompts file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="4" Grid.Column="2" x:Name="PromptsFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Button Grid.Row="4" Grid.Column="4" x:Name="BrowsePromptsFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowsePromptsFileButton_Click" />
+
             <!-- File culture -->
-            <Label Grid.Row="4" Grid.Column="0" Content="File culture:" VerticalAlignment="Center" HorizontalAlignment="Left" />
-            <ComboBox Grid.Row="4" Grid.Column="2" x:Name="FileCultureComboBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
+            <Label Grid.Row="6" Grid.Column="0" Content="File culture:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <ComboBox Grid.Row="6" Grid.Column="2" x:Name="FileCultureComboBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
                 <ComboBoxItem Content="es-ES" IsSelected="True" />
                 <ComboBoxItem Content="en-US" />
                 <ComboBoxItem Content="en-GB" />
@@ -70,17 +77,17 @@
             </ComboBox>
 
             <!-- Row count -->
-            <Label Grid.Row="6" Grid.Column="0" Content="Row count:" VerticalAlignment="Center" HorizontalAlignment="Left" />
-            <TextBox Grid.Row="6" Grid.Column="2" x:Name="RowCountTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Label Grid.Row="8" Grid.Column="0" Content="Row count:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="8" Grid.Column="2" x:Name="RowCountTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
 
             <!-- Overwrite column -->
-            <CheckBox Grid.Row="8" Grid.Column="2" x:Name="OverwriteColumnCheckBox" Content="Overwrite column" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <CheckBox Grid.Row="10" Grid.Column="2" x:Name="OverwriteColumnCheckBox" Content="Overwrite column" VerticalAlignment="Center" HorizontalAlignment="Left" />
 
             <!-- Decode HTML from Input -->
-            <CheckBox Grid.Row="10" Grid.Column="2" x:Name="DecodeHtmlCheckBox" Content="Decode HTML from Input" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <CheckBox Grid.Row="12" Grid.Column="2" x:Name="DecodeHtmlCheckBox" Content="Decode HTML from Input" VerticalAlignment="Center" HorizontalAlignment="Left" />
 
             <!-- Parse button -->
-            <Button Grid.Row="12" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
+            <Button Grid.Row="14" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
         </Grid>
 
         <!-- Progress bar, cancel button and log viewer -->
@@ -113,6 +120,7 @@
             <StackPanel Grid.Column="4" Orientation="Vertical" VerticalAlignment="Center">
                 <TextBlock x:Name="ProgressRowsProcessedTextBlock" Text="Rows processed: 0" HorizontalAlignment="Left" />
                 <TextBlock x:Name="ProgressFilesProcessedTextBlock" Text="Files processed: 0" Margin="0 5 0 0" HorizontalAlignment="Left" Visibility="Collapsed" />
+                <TextBlock x:Name="ProgressPromptsProcessedTextBlock" Text="Prompts processed: 0" Margin="0 5 0 0" HorizontalAlignment="Left" Visibility="Collapsed" />
             </StackPanel>
 
             <!-- Timer -->

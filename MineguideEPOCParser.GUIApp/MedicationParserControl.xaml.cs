@@ -1,8 +1,11 @@
-﻿using Microsoft.Win32;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
+using Microsoft.Win32;
 using MineguideEPOCParser.Core;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -251,46 +254,64 @@ namespace MineguideEPOCParser.GUIApp
                     int filesProcessed = 0;
                     foreach (var (inputFile, outputFile) in inputFiles.Zip(outputFiles))
                     {
-                        var logger = CreateLogger(inputFile, outputFile);
-
-                        var configuration = new MedicationExtractingParserConfiguration()
+                        // If we are using custom system prompts from a CSV file,
+                        // we need to parse the inputs file for each system prompt
+                        if (PromptsFileTextBox.Text is string promptsFile && !string.IsNullOrEmpty(promptsFile))
                         {
-                            CultureName = cultureName,
-                            InputFile = inputFile,
-                            OutputFile = outputFile,
-                            Count = isRowCountValid ? rowCount : null,
-                            OverwriteColumn = overwriteColumn,
-                            DecodeHtmlFromInput = decodeHtml,
-                        };
+                            ProgressPromptsProcessedTextBlock.Visibility = Visibility.Visible;
 
-                        try
-                        {
-                            MedicationParser = new MedicationExtractingParser()
+                            var csvConfig = new CsvConfiguration(new CultureInfo(cultureName));
+
+                            using var reader = new StreamReader(promptsFile);
+                            using var csvReader = new CsvReader(reader, csvConfig);
+
+                            // Read the prompts file
+                            var promptsRecords = csvReader.GetRecords<string>().ToList();
+
+                            ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: 0/{promptsRecords.Count}";
+
+                            // Parse for each system prompt in the prompts file
+                            int promptsProcessed = 0;
+                            foreach (var systemPrompt in promptsRecords)
                             {
-                                Configuration = configuration,
-                                Logger = logger,
-                                Progress = Progress,
-                            };
+                                // Update the output file name to include a number representing the system prompt
+                                var outputFileName = Path.GetFileNameWithoutExtension(outputFile);
+                                var outputFileExtension = Path.GetExtension(outputFile);
+                                var outputFileNameWithPrompt = $"{outputFileName}-{promptsProcessed + 1}{outputFileExtension}";
 
-                            logger.Information($"### Starting parsing for input file: {inputFile}");
+                                var outputFileWithPrompt = Path.Combine(Path.GetDirectoryName(outputFile) ?? string.Empty, outputFileNameWithPrompt);
 
-                            await MedicationParser.ParseData(CancellationTokenSource.Token);
+                                // Use the custom system prompt
+                                await ParseMedicationData(
+                                    inputFile,
+                                    outputFileWithPrompt,
+                                    cultureName,
+                                    isRowCountValid ? rowCount : null,
+                                    overwriteColumn,
+                                    decodeHtml,
+                                    systemPrompt,
+                                    CancellationTokenSource.Token).ConfigureAwait(false);
 
-                            filesProcessed++;
-                            ProgressFilesProcessedTextBlock.Text = $"Files processed: {filesProcessed}/{inputFiles.Length}";
-                        }
-                        finally
-                        {
-                            // Dispose the logger
-                            if (logger is IAsyncDisposable asyncDisposableLogger)
-                            {
-                                await asyncDisposableLogger.DisposeAsync().ConfigureAwait(false);
+                                ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: {++promptsProcessed}/{promptsRecords.Count}";
                             }
-                            else if (logger is IDisposable disposableLogger)
-                            {
-                                disposableLogger.Dispose();
-                            }
                         }
+                        else
+                        {
+                            ProgressPromptsProcessedTextBlock.Visibility = Visibility.Collapsed;
+
+                            // Use the default system prompt
+                            await ParseMedicationData(
+                                inputFile,
+                                outputFile,
+                                cultureName,
+                                isRowCountValid ? rowCount : null,
+                                overwriteColumn,
+                                decodeHtml,
+                                null,
+                                CancellationTokenSource.Token).ConfigureAwait(false);
+                        }
+
+                        ProgressFilesProcessedTextBlock.Text = $"Files processed: {++filesProcessed}/{inputFiles.Length}";
                     }
                 }
                 finally
@@ -332,6 +353,50 @@ namespace MineguideEPOCParser.GUIApp
 
         }
 
+        private async Task ParseMedicationData(string inputFile, string outputFile, string cultureName, int? rowCount, bool overwriteColumn, bool decodeHtml, string? systemPrompt, CancellationToken token = default)
+        {
+            var logger = CreateLogger(inputFile, outputFile);
+
+            var configuration = new MedicationExtractingParserConfiguration()
+            {
+                CultureName = cultureName,
+                InputFile = inputFile,
+                OutputFile = outputFile,
+                Count = rowCount,
+                OverwriteColumn = overwriteColumn,
+                DecodeHtmlFromInput = decodeHtml,
+                SystemPrompt = systemPrompt ?? MedicationExtractingParser.DefaultSystemPrompt,
+            };
+
+            try
+            {
+                MedicationParser = new MedicationExtractingParser()
+                {
+                    Configuration = configuration,
+                    Logger = logger,
+                    Progress = Progress,
+                };
+
+                logger.Information($"### Starting parsing for input file: {inputFile}");
+
+                logger.Debug($"# Using system prompt:\n{configuration.SystemPrompt}");
+
+                await MedicationParser.ParseData(token);
+            }
+            finally
+            {
+                // Dispose the logger
+                if (logger is IAsyncDisposable asyncDisposableLogger)
+                {
+                    await asyncDisposableLogger.DisposeAsync().ConfigureAwait(false);
+                }
+                else if (logger is IDisposable disposableLogger)
+                {
+                    disposableLogger.Dispose();
+                }
+            }
+        }
+
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             // Cancel the parsing
@@ -364,6 +429,11 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             OutputFileTextBox.Text = string.Join(FileInTextSeparator, BrowseOutputCsvFiles(inputFiles, "{0}-OUTPUT"));
+        }
+
+        private void BrowsePromptsFileButton_Click(object sender, RoutedEventArgs e)
+        {
+            PromptsFileTextBox.Text = BrowsePromptsCsvFile(PromptsFileTextBox.Text) ?? string.Empty;
         }
 
         const string CsvFilesFilter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*";
@@ -421,6 +491,31 @@ namespace MineguideEPOCParser.GUIApp
             if (defaultFileNameTemplate is not null)
             {
                 dialog.FileName = string.Format(defaultFileNameTemplate, System.IO.Path.GetFileNameWithoutExtension(inputFile)) + System.IO.Path.GetExtension(inputFile);
+            }
+
+            // Show the dialog
+            if (dialog.ShowDialog() == true)
+            {
+                // Return the selected file
+                return dialog.FileName;
+            }
+
+            return null;
+        }
+
+        private static string? BrowsePromptsCsvFile(string currentPath)
+        {
+            // Create a new open file dialog
+            var dialog = new OpenFileDialog()
+            {
+                Title = "Select prompts file",
+                Filter = CsvFilesFilter,
+            };
+
+            // Setup the dialog with the current path
+            if (System.IO.Path.GetDirectoryName(currentPath) is string currentDir)
+            {
+                dialog.InitialDirectory = currentDir;
             }
 
             // Show the dialog
