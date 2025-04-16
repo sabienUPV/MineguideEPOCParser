@@ -285,7 +285,7 @@ namespace MineguideEPOCParser.GUIApp
                                     isRowCountValid ? rowCount : null,
                                     overwriteColumn,
                                     decodeHtml,
-                                    systemPrompt,
+                                    systemPrompt.SystemPrompt,
                                     promptNumber,
                                     CancellationTokenSource.Token).ConfigureAwait(false);
 
