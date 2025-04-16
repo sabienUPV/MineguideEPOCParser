@@ -286,10 +286,12 @@ namespace MineguideEPOCParser.GUIApp
                             int promptsProcessed = 0;
                             foreach (var systemPrompt in promptsList)
                             {
+                                var promptNumber = promptsProcessed + 1;
+
                                 // Update the output file name to include a number representing the system prompt
                                 var outputFileName = Path.GetFileNameWithoutExtension(outputFile);
                                 var outputFileExtension = Path.GetExtension(outputFile);
-                                var outputFileNameWithPrompt = $"{outputFileName}-prompt-{promptsProcessed + 1}{outputFileExtension}";
+                                var outputFileNameWithPrompt = $"{outputFileName}-prompt-{promptNumber}{outputFileExtension}";
 
                                 var outputFileWithPrompt = Path.Combine(Path.GetDirectoryName(outputFile) ?? string.Empty, outputFileNameWithPrompt);
 
@@ -302,6 +304,7 @@ namespace MineguideEPOCParser.GUIApp
                                     overwriteColumn,
                                     decodeHtml,
                                     systemPrompt,
+                                    promptNumber,
                                     CancellationTokenSource.Token).ConfigureAwait(false);
 
                                 ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: {++promptsProcessed}/{promptsList.Count}";
@@ -319,6 +322,7 @@ namespace MineguideEPOCParser.GUIApp
                                 isRowCountValid ? rowCount : null,
                                 overwriteColumn,
                                 decodeHtml,
+                                null,
                                 null,
                                 CancellationTokenSource.Token).ConfigureAwait(false);
                         }
@@ -365,7 +369,7 @@ namespace MineguideEPOCParser.GUIApp
 
         }
 
-        private async Task ParseMedicationData(string inputFile, string outputFile, string cultureName, int? rowCount, bool overwriteColumn, bool decodeHtml, string? systemPrompt, CancellationToken token = default)
+        private async Task ParseMedicationData(string inputFile, string outputFile, string cultureName, int? rowCount, bool overwriteColumn, bool decodeHtml, string? systemPrompt, int? systemPromptNumber = null, CancellationToken token = default)
         {
             var logger = CreateLogger(inputFile, outputFile);
 
@@ -391,7 +395,14 @@ namespace MineguideEPOCParser.GUIApp
 
                 logger.Information($"### Starting parsing for input file: {inputFile}");
 
-                logger.Debug($"# Using system prompt:\n{configuration.SystemPrompt}");
+                if (systemPromptNumber is null)
+                {
+                    logger.Debug("# Using system prompt:\n{SystemPrompt}", configuration.SystemPrompt);
+                }
+                else
+                {
+                    logger.Debug("# Using system prompt [{PromptNumber}]:\n{SystemPrompt}", systemPromptNumber, configuration.SystemPrompt);
+                }
 
                 await MedicationParser.ParseData(token);
             }
