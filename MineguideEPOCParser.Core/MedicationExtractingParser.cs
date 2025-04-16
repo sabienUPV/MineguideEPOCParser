@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Newtonsoft.Json;
+using System.Net;
 using System.Runtime.CompilerServices;
 
 namespace MineguideEPOCParser.Core
@@ -69,6 +70,7 @@ namespace MineguideEPOCParser.Core
 
     public class MedicationsList
     {
+        [JsonRequired]
         public required string[] Medicamentos { get; set; }
 
         public override string ToString() => string.Join(',', Medicamentos);
