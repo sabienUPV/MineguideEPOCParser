@@ -278,6 +278,7 @@ namespace MineguideEPOCParser.GUIApp
                                 var outputFileWithPrompt = Path.Combine(Path.GetDirectoryName(outputFile) ?? string.Empty, outputFileNameWithPrompt);
 
                                 // Use the custom system prompt
+                                // TODO: Set in configuration whether to use JSON format or not
                                 await ParseMedicationData(
                                     inputFile,
                                     outputFileWithPrompt,
