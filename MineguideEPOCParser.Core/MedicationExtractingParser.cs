@@ -1,11 +1,12 @@
-﻿using Newtonsoft.Json;
-using System.Net;
+﻿using System.Net;
 using System.Runtime.CompilerServices;
 
 namespace MineguideEPOCParser.Core
 {
     public class MedicationExtractingParser : DataParser<MedicationExtractingParserConfiguration>
     {
+        public const string DefaultModel = "llama3.1:latest";
+
         /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.
         /// </summary>
@@ -23,7 +24,8 @@ namespace MineguideEPOCParser.Core
 				}
 
                 // Llama a la API para extraer los medicamentos
-                var medications = await ApiClient.CallToApi<MedicationsList>(t, "llama3.1:latest", Configuration.SystemPrompt, Logger, cancellationToken);
+                // TODO: Use either CallToApiJson OR CallToApiText depending on the configuration
+                var medications = await ApiClient.CallToApiJson<MedicationsList>(t, DefaultModel, Configuration.SystemPrompt, Logger, cancellationToken);
 
                 if (medications == null)
                 {
@@ -39,38 +41,47 @@ namespace MineguideEPOCParser.Core
                 }
 
                 // Devuelve cada medicamento en una fila, ordenados alfabéticamente
-                foreach (var medication in medications.Medicamentos.Order())
+                foreach (var newRow in CreateNewRowsForEachMedication(row, t, medications.Medicamentos, inputColumnIndex))
                 {
-                    // Duplicate the row for each medication, including the medication
-                    string[] newRow;
-
-                    if (Configuration.OverwriteColumn)
-                    {
-                        // If we are overwriting, replace the input column with the medication
-                        newRow = row.Select((value, index) => index == inputColumnIndex ? medication : value).ToArray();
-
-                        // Note: If we are overwriting, the 'T' column is being replaced with the medication name,
-                        // so we don't need to replace the multiline text with a single line text,
-                        // because we are replacing the whole column
-                    }
-                    else
-                    {
-                        // If we are not overwriting the column, add the medication to the end
-                        newRow = Utilities.ArrayCopyAndAdd(row, medication);
-
-                        // In the 'T' column, replace the multiline original text with a single line text
-                        newRow[inputColumnIndex] = t;
-                    }
-
                     yield return newRow;
                 }
+            }
+        }
+
+        private IEnumerable<string[]> CreateNewRowsForEachMedication(string[] row, string t, string[] medications, int inputColumnIndex)
+        {
+            // Devuelve cada medicamento en una fila, ordenados alfabéticamente
+            foreach (var medication in medications.Order())
+            {
+                // Duplicate the row for each medication, including the medication
+                string[] newRow;
+
+                if (Configuration.OverwriteColumn)
+                {
+                    // If we are overwriting, replace the input column with the medication
+                    newRow = row.Select((value, index) => index == inputColumnIndex ? medication : value).ToArray();
+
+                    // Note: If we are overwriting, the 'T' column is being replaced with the medication name,
+                    // so we don't need to replace the multiline text with a single line text,
+                    // because we are replacing the whole column
+                }
+                else
+                {
+                    // If we are not overwriting the column, add the medication to the end
+                    newRow = Utilities.ArrayCopyAndAdd(row, medication);
+
+                    // In the 'T' column, replace the multiline original text with a single line text
+                    newRow[inputColumnIndex] = t;
+                }
+
+                yield return newRow;
             }
         }
     }
 
     public class MedicationsList
     {
-        [JsonRequired]
+        [Newtonsoft.Json.JsonRequired]
         public required string[] Medicamentos { get; set; }
 
         public override string ToString() => string.Join(',', Medicamentos);
@@ -89,5 +100,7 @@ namespace MineguideEPOCParser.Core
         public bool DecodeHtmlFromInput { get; set; }
 
         public string SystemPrompt { get; set; } = DefaultSystemPrompt;
+
+        public bool UseJsonFormat { get; set; } = true;
     }
 }

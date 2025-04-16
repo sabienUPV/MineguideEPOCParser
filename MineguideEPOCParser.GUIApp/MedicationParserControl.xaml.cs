@@ -260,25 +260,7 @@ namespace MineguideEPOCParser.GUIApp
                         {
                             ProgressPromptsProcessedTextBlock.Visibility = Visibility.Visible;
 
-                            var csvConfig = new CsvConfiguration(new CultureInfo(cultureName))
-                            {
-                                HasHeaderRecord = false,
-                            };
-
-                            using var reader = new StreamReader(promptsFile);
-                            using var csvReader = new CsvReader(reader, csvConfig);
-
-                            // Read the prompts file
-                            var promptsList = new List<string>();
-                            while (await csvReader.ReadAsync())
-                            {
-                                // Read the system prompt from the first column
-                                var systemPrompt = csvReader.GetField(0);
-                                if (!string.IsNullOrEmpty(systemPrompt))
-                                {
-                                    promptsList.Add(systemPrompt);
-                                }
-                            }
+                            var promptsList = SystemPromptUtils.ParseFromCsvFile(promptsFile, cultureName);
 
                             ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: 0/{promptsList.Count}";
 

@@ -16,6 +16,25 @@
         /// </summary>
         public bool OverwriteColumn { get; set; } = false;
 
+        /// <summary>
+        /// Whether to include a retry policy when the API returns an invalid response (i.e: invalid JSON).
+        /// </summary>
+        public bool RetryOnInvalidApiResponse { get; set; } = true;
+
+        /// <summary>
+        /// <para>
+        /// If true, the parser will skip the row if the API response is invalid (and, if applicable, the retry policy is exhausted).
+        /// </para>
+        /// <para>
+        /// If false, the parser will include the raw API response in the output file in a single row
+        /// (this can be useful for debugging or testing purposes, such as when we want to compare how different system prompts affect the API response).
+        /// </para>
+        /// </summary>
+        public bool SkipOnInvalidApiResponse { get; set; } = true;
+
+        /// <summary>
+        /// [Optional] Limit the number of rows to process.
+        /// </summary>
         public int? Count { get; set; }
 
         public DataParserConfiguration()

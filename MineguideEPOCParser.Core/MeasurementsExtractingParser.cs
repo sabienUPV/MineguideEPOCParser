@@ -62,7 +62,7 @@ namespace MineguideEPOCParser.Core
                 foreach (var textToSearch in subTextsToSearch)
                 {
                     // Call the API to extract the measurements
-                    var measurementsData = await ApiClient.CallToApi<MeasurementsData>(textToSearch, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
+                    var measurementsData = await ApiClient.CallToApiJson<MeasurementsData>(textToSearch, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
                     if (measurementsData == null)
                     {
                         Logger?.Warning($"No measurements found in the subtext: {textToSearch}");
