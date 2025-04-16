@@ -5,14 +5,6 @@ namespace MineguideEPOCParser.Core
 {
     public class MedicationExtractingParser : DataParser<MedicationExtractingParserConfiguration>
     {
-        public const string DefaultSystemPrompt = """
-        You are meant to parse any medical data sent to you in SPANISH.
-        Follow STRICTLY these instructions by order priority:
-        - ONLY return the names of any medication you find AS IS, don't say anything more.
-        - If the text is blank, don't say anything, just send a blank message.
-        - The JSON format should be: { ""Medicamentos"": [ ] }     
-        """;
-
         /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.
         /// </summary>
@@ -84,8 +76,16 @@ namespace MineguideEPOCParser.Core
 
     public class MedicationExtractingParserConfiguration : DataParserConfiguration
 	{
-		public bool DecodeHtmlFromInput { get; set; }
+        public const string DefaultSystemPrompt = """
+        You are meant to parse any medical data sent to you in SPANISH.
+        Follow STRICTLY these instructions by order priority:
+        - ONLY return the names of any medication you find AS IS, don't say anything more.
+        - If the text is blank, don't say anything, just send a blank message.
+        - The JSON format should be: { ""Medicamentos"": [ ] }     
+        """;
 
-        public string SystemPrompt { get; set; } = MedicationExtractingParser.DefaultSystemPrompt;
+        public bool DecodeHtmlFromInput { get; set; }
+
+        public string SystemPrompt { get; set; } = DefaultSystemPrompt;
     }
 }

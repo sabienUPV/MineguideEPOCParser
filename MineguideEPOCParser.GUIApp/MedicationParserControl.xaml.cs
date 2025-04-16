@@ -377,7 +377,7 @@ namespace MineguideEPOCParser.GUIApp
                 Count = rowCount,
                 OverwriteColumn = overwriteColumn,
                 DecodeHtmlFromInput = decodeHtml,
-                SystemPrompt = systemPrompt ?? MedicationExtractingParser.DefaultSystemPrompt,
+                SystemPrompt = systemPrompt ?? MedicationExtractingParserConfiguration.DefaultSystemPrompt,
             };
 
             try
