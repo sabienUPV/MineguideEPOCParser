@@ -78,7 +78,7 @@ namespace MineguideEPOCParser.Core
         {
             log?.Information("Calling API...");
 
-            log?.Verbose("Request:\n{Request}", JsonSerializer.Serialize(generateRequest));
+            log?.Verbose("Request:\n{@Request}", generateRequest);
             var request = new HttpRequestMessage()
             {
                 Method = HttpMethod.Post,
@@ -99,7 +99,15 @@ namespace MineguideEPOCParser.Core
 
             response.EnsureSuccessStatusCode();
 
-            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>(cancellationToken);
+            var jsonOptions = new System.Text.Json.JsonSerializerOptions
+            {
+                // ollama's output properties are in snake_case
+                // (https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion)
+                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower,
+                PropertyNameCaseInsensitive = true,
+            };
+
+            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>(jsonOptions, cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
             if (apiResponse == null)
@@ -108,6 +116,7 @@ namespace MineguideEPOCParser.Core
             }
 
             log?.Debug("Raw API Response:\n{Response}", apiResponse.Response);
+            log?.Verbose("Raw API Response with metadata: {@FullResponse}", apiResponse);
 
             return apiResponse;
         }
@@ -208,10 +217,25 @@ namespace MineguideEPOCParser.Core
 			public float? Temperature { get; set; }
         }
 
+        /// <summary>
+        /// <see href="https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion"/>
+        /// </summary>
 		private class ApiResponse
 		{
             [System.Text.Json.Serialization.JsonRequired]
 			public required string Response { get; init; }
-		}
+
+            // Other properties, might be interesting for analyzing logs later
+            public string? Model { get; set; }
+            public string? CreatedAt { get; set; }
+            public bool? Done { get; set; }
+            public long? TotalDuration { get; set; }
+            public long? LoadDuration { get; set; }
+            public int? PromptEvalCount { get; set; }
+            public long? PromptEvalDuration { get; set; }
+            public int? EvalCount { get; set; }
+            public long? EvalDuration { get; set; }
+            public int[]? Context { get; set; }
+        }
 	}
 }
