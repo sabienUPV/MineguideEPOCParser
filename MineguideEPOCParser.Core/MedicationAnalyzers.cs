@@ -80,7 +80,7 @@ namespace MineguideEPOCParser.Core
                 {
                     Medication = med,
                     ExactMatch = isExactMatch,
-                    SimilarityScore = Math.Round(similarityScore * 100, 1),
+                    SimilarityScore = isExactMatch ? 100 : Math.Round(similarityScore * 100, 1),
                     BestMatch = closestMatch,
                     LevenshteinDistance = isExactMatch ? 0 : bestDistance,
                     MatchType = matchType
