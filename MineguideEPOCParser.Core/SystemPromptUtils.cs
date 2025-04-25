@@ -8,10 +8,7 @@ namespace MineguideEPOCParser.Core
     {
         public static List<SystemPromptObject> ParseFromCsvFile(string promptsFile, string cultureName)
         {
-            var csvConfig = new CsvConfiguration(new CultureInfo(cultureName))
-            {
-                HasHeaderRecord = false,
-            };
+            var csvConfig = new CsvConfiguration(new CultureInfo(cultureName));
 
             using var reader = new StreamReader(promptsFile);
             using var csvReader = new CsvReader(reader, csvConfig);
