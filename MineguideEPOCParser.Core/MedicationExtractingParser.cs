@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using Serilog;
+using System.Net;
 using System.Runtime.CompilerServices;
 
 namespace MineguideEPOCParser.Core
@@ -40,6 +41,17 @@ namespace MineguideEPOCParser.Core
                 {
                     Logger?.Warning("No medications found in the text: {Text}", t);
                     continue;
+                }
+                else
+                {
+                    Logger?.Information("Extracted {MedicationCount} medications from text (text length: {TextLength})", medications.Length, t.Length);
+                    Logger?.Debug("Medications: {@Medications}", medications); // The @ tells Serilog to serialize the object
+
+                    // Optional: Log each medication individually for better filtering
+                    foreach (var med in medications)
+                    {
+                        Logger?.Verbose("Found medication: {Medication}", med);
+                    }
                 }
 
                 if (!Configuration.OverwriteColumn)

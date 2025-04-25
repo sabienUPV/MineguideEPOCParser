@@ -87,7 +87,13 @@ namespace MineguideEPOCParser.Core
             };
             request.Headers.Add("X-API-Key", ApiKey);
 
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
             var response = await client.SendAsync(request, cancellationToken);
+
+            stopwatch.Stop();
+
+            log?.Information("API call completed in {ProcessingTimeMs} ms", stopwatch.ElapsedMilliseconds);
 
             cancellationToken.ThrowIfCancellationRequested();
 

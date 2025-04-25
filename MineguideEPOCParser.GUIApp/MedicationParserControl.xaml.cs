@@ -3,6 +3,7 @@ using MineguideEPOCParser.Core;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
+using Serilog.Formatting.Compact;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -112,37 +113,71 @@ namespace MineguideEPOCParser.GUIApp
             TimerTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
         }
 
-        /// <summary>
-        /// Create a new logger that writes to a TextBox
-        /// </summary>
-        private Logger CreateLogger(string inputFile, string outputFile)
+        private Logger CreateExecutionLogger(out string executionId)
         {
+            executionId = Guid.NewGuid().ToString("N");
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string executionLogBaseName = $"MineguideEPOCParser_{timestamp}_{executionId}";
+            string executionLogFolder = Path.Combine("logs", executionLogBaseName);
+            
+            // Create execution-specific log directory
+            Directory.CreateDirectory(executionLogFolder);
+
+            // Create log level switch for RichTextBox
             LoggingLevelSwitch ??= new LoggingLevelSwitch
             {
                 // Take the default log level from the control
                 MinimumLevel = GetLogLevelFromComboBox()
             };
 
+            // Create a new logger
+            var baseLogger = new LoggerConfiguration()
+                .MinimumLevel.Verbose() // always log verbose to file
+                .Enrich.WithProperty("ExecutionId", executionId)
+                .Enrich.WithProperty("ExecutionTimestamp", timestamp)
+                // Central JSON log for this specific execution
+                .WriteTo.File(new CompactJsonFormatter(),
+                             Path.Combine(executionLogFolder, $"{executionLogBaseName}.json"))
+                // Execution-wide text log for quick viewing
+                .WriteTo.File(Path.Combine(executionLogFolder, $"{executionLogBaseName}.log"))
+                .WriteTo.RichTextBox(LogRichTextBox, levelSwitch: LoggingLevelSwitch) // UI logging
+                .CreateLogger();
+
+            return baseLogger;
+        }
+
+        private static Logger CreateFileLogger(string executionId, ILogger baseLogger, string inputFile, string outputFile)
+        {
+            var fileExecutionId = Guid.NewGuid().ToString("N");
+            var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
             // Get input file name without extension
             var inputFileName = Path.GetFileNameWithoutExtension(inputFile);
 
-            // Get directory from output file path
-            var outputDirectory = Path.GetDirectoryName(outputFile);
+            string executionFileLogBaseName = $"MineguideEPOCParser_{timestamp}_{executionId}_{inputFileName}";
+            string executionFileLogFolder = Path.Combine("logs", executionFileLogBaseName);
 
-            // If the output directory is empty, use the current directory
-            var logFileDirectory = string.IsNullOrEmpty(outputDirectory) ? "." : outputDirectory;
-
-            var logFilePath = Path.Combine(logFileDirectory, $"MineguideEPOCParser-{inputFileName}-.log");
+            // Create file-specific log directory for this execution
+            Directory.CreateDirectory(executionFileLogFolder);
 
             // Create a new logger
-            var logger = new LoggerConfiguration()
-                .MinimumLevel.Verbose() // always log verbose to file, switch now only controls the log level in the UI
-                //.MinimumLevel.ControlledBy(LoggingLevelSwitch)
-                .WriteTo.RichTextBox(LogRichTextBox, levelSwitch: LoggingLevelSwitch)
-                .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
+            var fileLogger = new LoggerConfiguration()
+                .MinimumLevel.Verbose() // always log verbose
+                .Enrich.WithProperty("ExecutionId", executionId)
+                .Enrich.WithProperty("FileExecutionId", fileExecutionId)
+                .Enrich.WithProperty("FileExecutionTimestamp", timestamp)
+                .Enrich.WithProperty("InputFile", inputFile)
+                .Enrich.WithProperty("InputFileName", inputFileName)
+                .Enrich.WithProperty("OutputFile", outputFile)
+                // File-specific JSON log for analysis
+                .WriteTo.File(new CompactJsonFormatter(),
+                             Path.Combine(executionFileLogFolder, $"{executionFileLogBaseName}.json"))
+                // File-specific text log for quick viewing
+                .WriteTo.File(Path.Combine(executionFileLogFolder, $"{executionFileLogBaseName}.log"))
+                .WriteTo.Logger(baseLogger) // Also write to the base logger (this passes up all properties too)
                 .CreateLogger();
 
-            return logger;
+            return fileLogger;
         }
 
         private LogEventLevel GetLogLevelFromComboBox()
@@ -234,8 +269,10 @@ namespace MineguideEPOCParser.GUIApp
             // Create a new cancellation token source
             CancellationTokenSource = new CancellationTokenSource();
 
-            // Parse the medication
+            // Notify the UI the medication is starting being parsed
             IsParsing = true;
+
+            var baseLogger = CreateExecutionLogger(out var executionId);
 
             // Run timer
             StartTimer();
@@ -252,6 +289,8 @@ namespace MineguideEPOCParser.GUIApp
                     int filesProcessed = 0;
                     foreach (var (inputFile, outputFile) in inputFiles.Zip(outputFiles))
                     {
+                        var fileLogger = CreateFileLogger(executionId, baseLogger, inputFile, outputFile);
+
                         // If we are using custom system prompts from a CSV file,
                         // we need to parse the inputs file for each system prompt
                         if (PromptsFileTextBox.Text is string promptsFile && !string.IsNullOrEmpty(promptsFile))
@@ -277,14 +316,14 @@ namespace MineguideEPOCParser.GUIApp
 
                                 // Use the custom system prompt
                                 await ParseMedicationData(
+                                    fileLogger,
                                     inputFile,
                                     outputFileWithPrompt,
                                     cultureName,
                                     isRowCountValid ? rowCount : null,
                                     overwriteColumn,
                                     decodeHtml,
-                                    systemPrompt,
-                                    promptNumber,
+                                    (systemPrompt, promptNumber),
                                     CancellationTokenSource.Token).ConfigureAwait(false);
 
                                 ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: {++promptsProcessed}/{promptsList.Count}";
@@ -296,13 +335,13 @@ namespace MineguideEPOCParser.GUIApp
 
                             // Use the default system prompt
                             await ParseMedicationData(
+                                fileLogger,
                                 inputFile,
                                 outputFile,
                                 cultureName,
                                 isRowCountValid ? rowCount : null,
                                 overwriteColumn,
                                 decodeHtml,
-                                null,
                                 null,
                                 CancellationTokenSource.Token).ConfigureAwait(false);
                         }
@@ -349,9 +388,18 @@ namespace MineguideEPOCParser.GUIApp
 
         }
 
-        private async Task ParseMedicationData(string inputFile, string outputFile, string cultureName, int? rowCount, bool overwriteColumn, bool decodeHtml, SystemPromptObject? systemPrompt, int? systemPromptNumber = null, CancellationToken token = default)
+        private async Task ParseMedicationData(ILogger fileLogger, string inputFile, string outputFile, string cultureName, int? rowCount, bool overwriteColumn, bool decodeHtml, (SystemPromptObject Data, int Number)? systemPromptData, CancellationToken token = default)
         {
-            var logger = CreateLogger(inputFile, outputFile);
+            // Create logger specific to the current prompt
+            ILogger logger = fileLogger;
+
+            if (systemPromptData is not null)
+            {
+                logger = logger
+                    .ForContext("SystemPrompt", systemPromptData.Value.Data.SystemPrompt)
+                    .ForContext("SystemPromptFormat", systemPromptData.Value.Data.Format)
+                    .ForContext("SystemPromptNumber", systemPromptData.Value.Number);
+            }
 
             var configuration = new MedicationExtractingParserConfiguration()
             {
@@ -363,10 +411,11 @@ namespace MineguideEPOCParser.GUIApp
                 DecodeHtmlFromInput = decodeHtml,
             };
 
-            if (systemPrompt is not null)
+            if (systemPromptData is not null)
             {
-                configuration.SystemPrompt = systemPrompt.SystemPrompt;
-                configuration.UseJsonFormat = systemPrompt.UsesJsonFormat;
+                var data = systemPromptData.Value.Data;
+                configuration.SystemPrompt = data.SystemPrompt;
+                configuration.UseJsonFormat = data.UsesJsonFormat;
             }
 
             try
@@ -380,13 +429,13 @@ namespace MineguideEPOCParser.GUIApp
 
                 logger.Information("### Starting parsing for input file: {InputFile}", inputFile);
 
-                if (systemPromptNumber is null)
+                if (systemPromptData is null)
                 {
                     logger.Debug("# Using system prompt:\n{SystemPrompt}", configuration.SystemPrompt);
                 }
                 else
                 {
-                    logger.Debug("# Using system prompt [{PromptNumber}]:\n{SystemPrompt}", systemPromptNumber, configuration.SystemPrompt);
+                    logger.Debug("# Using system prompt [{PromptNumber}]:\n{SystemPrompt}", systemPromptData.Value.Number, configuration.SystemPrompt);
                 }
 
                 await MedicationParser.ParseData(token);
