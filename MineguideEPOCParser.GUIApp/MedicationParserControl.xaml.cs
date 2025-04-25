@@ -113,12 +113,12 @@ namespace MineguideEPOCParser.GUIApp
             TimerTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
         }
 
-        private Logger CreateExecutionLogger(out string executionId)
+        private Logger CreateExecutionLogger(out string executionId, string baseFolderForLogs)
         {
             executionId = Guid.NewGuid().ToString("N");
             string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             string executionLogBaseName = $"MineguideEPOCParser_{timestamp}_{executionId}";
-            string executionLogFolder = Path.Combine("logs", executionLogBaseName);
+            string executionLogFolder = Path.Combine(baseFolderForLogs, "logs", executionLogBaseName);
             
             // Create execution-specific log directory
             Directory.CreateDirectory(executionLogFolder);
@@ -153,9 +153,10 @@ namespace MineguideEPOCParser.GUIApp
 
             // Get input file name without extension
             var inputFileName = Path.GetFileNameWithoutExtension(inputFile);
+            var outputFolder = Path.GetDirectoryName(outputFile) ?? string.Empty;
 
             string executionFileLogBaseName = $"MineguideEPOCParser_{timestamp}_{executionId}_{inputFileName}";
-            string executionFileLogFolder = Path.Combine("logs", executionFileLogBaseName);
+            string executionFileLogFolder = Path.Combine(outputFolder, "logs", executionFileLogBaseName);
 
             // Create file-specific log directory for this execution
             Directory.CreateDirectory(executionFileLogFolder);
@@ -272,7 +273,10 @@ namespace MineguideEPOCParser.GUIApp
             // Notify the UI the medication is starting being parsed
             IsParsing = true;
 
-            var baseLogger = CreateExecutionLogger(out var executionId);
+            // Get main base folder for logs from the first output's folder
+            var baseFolderForLogs = Path.GetDirectoryName(outputFiles[0]) ?? string.Empty;
+
+            var baseLogger = CreateExecutionLogger(out var executionId, baseFolderForLogs);
 
             // Run timer
             StartTimer();
