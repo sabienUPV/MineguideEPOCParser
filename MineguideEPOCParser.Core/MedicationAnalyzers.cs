@@ -82,7 +82,7 @@ namespace MineguideEPOCParser.Core
                     ExactMatch = isExactMatch,
                     SimilarityScore = Math.Round(similarityScore * 100, 1),
                     BestMatch = closestMatch,
-                    LevenshteinDistance = bestDistance,
+                    LevenshteinDistance = isExactMatch ? 0 : bestDistance,
                     MatchType = matchType
                 });
             }
