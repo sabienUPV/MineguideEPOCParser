@@ -21,10 +21,10 @@ namespace MineguideEPOCParser.Core
 
         public class SystemPromptObject
         {
-            public string? SystemPrompt { get; set; }
-            public string? Format { get; set; }
+            public required string SystemPrompt { get; set; }
+            public required string Format { get; set; }
 
-            public bool IsJsonFormat => !string.IsNullOrEmpty(Format) && Format.Equals("json", StringComparison.OrdinalIgnoreCase);
+            public bool UsesJsonFormat => !string.IsNullOrEmpty(Format) && Format.Equals("json", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

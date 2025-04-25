@@ -1,15 +1,13 @@
-﻿using CsvHelper;
-using CsvHelper.Configuration;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using MineguideEPOCParser.Core;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
-using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
+using static MineguideEPOCParser.Core.SystemPromptUtils;
 
 namespace MineguideEPOCParser.GUIApp
 {
@@ -278,7 +276,6 @@ namespace MineguideEPOCParser.GUIApp
                                 var outputFileWithPrompt = Path.Combine(Path.GetDirectoryName(outputFile) ?? string.Empty, outputFileNameWithPrompt);
 
                                 // Use the custom system prompt
-                                // TODO: Set in configuration whether to use JSON format or not
                                 await ParseMedicationData(
                                     inputFile,
                                     outputFileWithPrompt,
@@ -286,7 +283,7 @@ namespace MineguideEPOCParser.GUIApp
                                     isRowCountValid ? rowCount : null,
                                     overwriteColumn,
                                     decodeHtml,
-                                    systemPrompt.SystemPrompt,
+                                    systemPrompt,
                                     promptNumber,
                                     CancellationTokenSource.Token).ConfigureAwait(false);
 
@@ -352,7 +349,7 @@ namespace MineguideEPOCParser.GUIApp
 
         }
 
-        private async Task ParseMedicationData(string inputFile, string outputFile, string cultureName, int? rowCount, bool overwriteColumn, bool decodeHtml, string? systemPrompt, int? systemPromptNumber = null, CancellationToken token = default)
+        private async Task ParseMedicationData(string inputFile, string outputFile, string cultureName, int? rowCount, bool overwriteColumn, bool decodeHtml, SystemPromptObject? systemPrompt, int? systemPromptNumber = null, CancellationToken token = default)
         {
             var logger = CreateLogger(inputFile, outputFile);
 
@@ -364,8 +361,13 @@ namespace MineguideEPOCParser.GUIApp
                 Count = rowCount,
                 OverwriteColumn = overwriteColumn,
                 DecodeHtmlFromInput = decodeHtml,
-                SystemPrompt = systemPrompt ?? MedicationExtractingParserConfiguration.DefaultSystemPrompt,
             };
+
+            if (systemPrompt is not null)
+            {
+                configuration.SystemPrompt = systemPrompt.SystemPrompt;
+                configuration.UseJsonFormat = systemPrompt.UsesJsonFormat;
+            }
 
             try
             {

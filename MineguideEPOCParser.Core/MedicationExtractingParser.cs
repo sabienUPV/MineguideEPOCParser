@@ -24,8 +24,17 @@ namespace MineguideEPOCParser.Core
 				}
 
                 // Llama a la API para extraer los medicamentos
-                // TODO: Use either CallToApiJson OR CallToApiText depending on the configuration
-                var medications = await ApiClient.CallToApiJson<MedicationsList>(t, DefaultModel, Configuration.SystemPrompt, Logger, cancellationToken);
+                string[]? medications;
+                if (Configuration.UseJsonFormat)
+                {
+                    var medicationsJson = await ApiClient.CallToApiJson<MedicationsList>(t, DefaultModel, Configuration.SystemPrompt, Logger, cancellationToken);
+                    medications = medicationsJson?.Medicamentos;
+                }
+                else
+                {
+                    var medicationsText = await ApiClient.CallToApiText(t, DefaultModel, Configuration.SystemPrompt, Logger, cancellationToken);
+                    medications = medicationsText?.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
 
                 if (medications == null)
                 {
@@ -41,7 +50,7 @@ namespace MineguideEPOCParser.Core
                 }
 
                 // Devuelve cada medicamento en una fila, ordenados alfabéticamente
-                foreach (var newRow in CreateNewRowsForEachMedication(row, t, medications.Medicamentos, inputColumnIndex))
+                foreach (var newRow in CreateNewRowsForEachMedication(row, t, medications, inputColumnIndex))
                 {
                     yield return newRow;
                 }
@@ -96,11 +105,13 @@ namespace MineguideEPOCParser.Core
         - If the text is blank, don't say anything, just send a blank message.
         - The JSON format should be: { ""Medicamentos"": [ ] }     
         """;
+        public const bool DefaultSystemPromptUsesJsonFormat = true;
+
 
         public bool DecodeHtmlFromInput { get; set; }
 
         public string SystemPrompt { get; set; } = DefaultSystemPrompt;
 
-        public bool UseJsonFormat { get; set; } = true;
+        public bool UseJsonFormat { get; set; } = DefaultSystemPromptUsesJsonFormat;
     }
 }
