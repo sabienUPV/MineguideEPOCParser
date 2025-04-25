@@ -1,0 +1,103 @@
+﻿using Serilog;
+
+namespace MineguideEPOCParser.Core
+{
+    public static class MedicationAnalyzers
+    {
+        /// <summary>
+        /// Analyze how extracted medications match the text and log the results
+        /// </summary>
+        /// <param name="t">The original text to analyze</param>
+        /// <param name="medications">Array of extracted medication names</param>
+        /// <param name="logger">Optional Serilog logger</param>
+        /// <returns>Analysis statistics including match count and percentage</returns>
+        public static (int matchCount, double matchPercentage, List<dynamic> details) AnalyzeMedicationMatches(
+            string t, string[] medications, ILogger? logger)
+        {
+            int medicationsInText = 0;
+            var medicationDetails = new List<dynamic>();
+
+            foreach (var med in medications)
+            {
+                // Skip empty medications
+                if (string.IsNullOrWhiteSpace(med)) continue;
+
+                // Case-insensitive exact match check
+                bool isExactMatch = t.Contains(med, StringComparison.OrdinalIgnoreCase);
+
+                // Levenshtein distance matching
+                int bestDistance = int.MaxValue;
+                string? closestMatch = null;
+                double similarityScore = 0;
+
+                // Only check for fuzzy matches if no exact match and medication name is meaningful
+                if (!isExactMatch && med.Length > 3)
+                {
+                    // Split text into words
+                    var words = t.Split([' ', ',', '.', ';', ':', '\n', '\r', '\t'],
+                        StringSplitOptions.RemoveEmptyEntries);
+
+                    // Check each word for similarity
+                    foreach (var word in words)
+                    {
+                        // Skip very short words
+                        if (word.Length < 3) continue;
+
+                        // Calculate Levenshtein distance
+                        int distance = Fastenshtein.Levenshtein.Distance(med.ToLower(), word.ToLower());
+
+                        // Calculate similarity as percentage (higher is better)
+                        double similarity = 1.0 - ((double)distance / Math.Max(med.Length, word.Length));
+
+                        // Keep track of the best match
+                        if (similarity > similarityScore)
+                        {
+                            similarityScore = similarity;
+                            bestDistance = distance;
+                            closestMatch = word;
+                        }
+                    }
+                }
+
+                // Determine match type with threshold
+                string matchType = "None";
+                if (isExactMatch)
+                {
+                    matchType = "Exact";
+                    medicationsInText++;
+                }
+                else if (similarityScore >= 0.8) // 80% similarity threshold
+                {
+                    matchType = "Strong Similarity";
+                    medicationsInText++;
+                }
+                else if (similarityScore >= 0.6) // 60% similarity threshold
+                {
+                    matchType = "Moderate Similarity";
+                }
+
+                medicationDetails.Add(new
+                {
+                    Medication = med,
+                    ExactMatch = isExactMatch,
+                    SimilarityScore = Math.Round(similarityScore * 100, 1),
+                    BestMatch = closestMatch,
+                    LevenshteinDistance = bestDistance,
+                    MatchType = matchType
+                });
+            }
+
+            // Calculate match percentage for reporting
+            double matchPercentage = medications.Length > 0
+                ? (double)medicationsInText / medications.Length * 100
+                : 0;
+
+            logger?.Debug("Medications present in text (exact or strong similarity): {MedicationsInText}/{MedicationsFound} ({MatchPercentage:F1}%)",
+                medicationsInText, medications.Length, matchPercentage);
+            logger?.Verbose("Medication match details: {@MedicationDetails}", medicationDetails);
+
+            // Return statistics for potential further processing
+            return (medicationsInText, matchPercentage, medicationDetails);
+        }
+    }
+}
