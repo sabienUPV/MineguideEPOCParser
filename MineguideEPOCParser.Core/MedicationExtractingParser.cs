@@ -47,11 +47,19 @@ namespace MineguideEPOCParser.Core
                     Logger?.Information("Extracted {MedicationCount} medications from text (text length: {TextLength})", medications.Length, t.Length);
                     Logger?.Debug("Medications: {@Medications}", medications); // The @ tells Serilog to serialize the object
 
-                    // Optional: Log each medication individually for better filtering
+                    int medicationsInText = 0;
                     foreach (var med in medications)
                     {
-                        Logger?.Verbose("Found medication: {Medication}", med);
+                        bool isMedicationInText = t.Contains(med);
+                        Logger?.Verbose("Found medication: {Medication}. Is medication in text as-is: {IsMedicationInText}", med, isMedicationInText);
+
+                        if (isMedicationInText)
+                        {
+                            medicationsInText++;
+                        }
                     }
+
+                    Logger?.Debug("Medications present in text as-is: {MedicationsInText}/{MedicationsFound}", medicationsInText, medications.Length);
                 }
 
                 if (!Configuration.OverwriteColumn)
