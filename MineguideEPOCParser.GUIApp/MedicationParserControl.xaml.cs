@@ -113,12 +113,14 @@ namespace MineguideEPOCParser.GUIApp
             TimerTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
         }
 
-        private Logger CreateExecutionLogger(out string executionId, string baseFolderForLogs)
+        private const string LogsFolderName = "logs";
+        private static string GetExecutionLogBaseNameFromTimestamp(string timestamp) => $"MineguideEPOCParser_{timestamp}";
+
+        private Logger CreateExecutionLogger(out string timestamp, string baseFolderForLogs)
         {
-            executionId = Guid.NewGuid().ToString("N");
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string executionLogBaseName = $"MineguideEPOCParser_{timestamp}_{executionId}";
-            string executionLogFolder = Path.Combine(baseFolderForLogs, "logs", executionLogBaseName);
+            timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            string executionLogBaseName = GetExecutionLogBaseNameFromTimestamp(timestamp);
+            string executionLogFolder = Path.Combine(baseFolderForLogs, LogsFolderName, executionLogBaseName);
             
             // Create execution-specific log directory
             Directory.CreateDirectory(executionLogFolder);
@@ -133,7 +135,6 @@ namespace MineguideEPOCParser.GUIApp
             // Create a new logger
             var baseLogger = new LoggerConfiguration()
                 .MinimumLevel.Verbose() // always log verbose to file
-                .Enrich.WithProperty("ExecutionId", executionId)
                 .Enrich.WithProperty("ExecutionTimestamp", timestamp)
                 // Central JSON log for this specific execution
                 .WriteTo.File(new CompactJsonFormatter(),
@@ -146,17 +147,17 @@ namespace MineguideEPOCParser.GUIApp
             return baseLogger;
         }
 
-        private static Logger CreateFileLogger(string executionId, ILogger baseLogger, string inputFile, string outputFile)
+        private static Logger CreateFileLogger(string executionTimestamp, ILogger baseLogger, string inputFile, string outputFile)
         {
-            var fileExecutionId = Guid.NewGuid().ToString("N");
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
             // Get input file name without extension
             var inputFileName = Path.GetFileNameWithoutExtension(inputFile);
             var outputFolder = Path.GetDirectoryName(outputFile) ?? string.Empty;
 
-            string executionFileLogBaseName = $"MineguideEPOCParser_{timestamp}_{executionId}_{inputFileName}";
-            string executionFileLogFolder = Path.Combine(outputFolder, "logs", executionFileLogBaseName);
+            string executionLogBaseName = GetExecutionLogBaseNameFromTimestamp(executionTimestamp);
+            string executionFileLogBaseName = $"MineguideEPOCParser_{timestamp}_{inputFileName}";
+            string executionFileLogFolder = Path.Combine(outputFolder, LogsFolderName, executionLogBaseName, executionFileLogBaseName);
 
             // Create file-specific log directory for this execution
             Directory.CreateDirectory(executionFileLogFolder);
@@ -164,8 +165,7 @@ namespace MineguideEPOCParser.GUIApp
             // Create a new logger
             var fileLogger = new LoggerConfiguration()
                 .MinimumLevel.Verbose() // always log verbose
-                .Enrich.WithProperty("ExecutionId", executionId)
-                .Enrich.WithProperty("FileExecutionId", fileExecutionId)
+                .Enrich.WithProperty("ExecutionTimestamp", executionTimestamp)
                 .Enrich.WithProperty("FileExecutionTimestamp", timestamp)
                 .Enrich.WithProperty("InputFile", inputFile)
                 .Enrich.WithProperty("InputFileName", inputFileName)
@@ -276,7 +276,7 @@ namespace MineguideEPOCParser.GUIApp
             // Get main base folder for logs from the first output's folder
             var baseFolderForLogs = Path.GetDirectoryName(outputFiles[0]) ?? string.Empty;
 
-            var baseLogger = CreateExecutionLogger(out var executionId, baseFolderForLogs);
+            var baseLogger = CreateExecutionLogger(out var executionTimestamp, baseFolderForLogs);
 
             // Run timer
             StartTimer();
@@ -293,7 +293,7 @@ namespace MineguideEPOCParser.GUIApp
                     int filesProcessed = 0;
                     foreach (var (inputFile, outputFile) in inputFiles.Zip(outputFiles))
                     {
-                        var fileLogger = CreateFileLogger(executionId, baseLogger, inputFile, outputFile);
+                        var fileLogger = CreateFileLogger(executionTimestamp, baseLogger, inputFile, outputFile);
 
                         // If we are using custom system prompts from a CSV file,
                         // we need to parse the inputs file for each system prompt
