@@ -38,7 +38,7 @@ namespace MineguideEPOCParser.Core
 
                 if (medications == null)
                 {
-                    Logger?.Warning($"No medications found in the text: {t}");
+                    Logger?.Warning("No medications found in the text: {Text}", t);
                     continue;
                 }
 

@@ -378,7 +378,7 @@ namespace MineguideEPOCParser.GUIApp
                     Progress = Progress,
                 };
 
-                logger.Information($"### Starting parsing for input file: {inputFile}");
+                logger.Information("### Starting parsing for input file: {InputFile}", inputFile);
 
                 if (systemPromptNumber is null)
                 {
