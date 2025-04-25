@@ -316,7 +316,7 @@ namespace MineguideEPOCParser.GUIApp
                     _dispatcherTimer?.Stop();
 
                     // Update the timer text block
-                    UpdateTimerTextBlock();
+                    Dispatcher.Invoke(UpdateTimerTextBlock);
                 }
 
                 MessageBox.Show($"Parsing has been completed successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -332,7 +332,7 @@ namespace MineguideEPOCParser.GUIApp
             finally
             {
                 // Reset the flag
-                IsParsing = false;
+                Dispatcher.Invoke(() => IsParsing = false);
 
                 // Dispose the cancellation token source
                 CancellationTokenSource.Dispose();
