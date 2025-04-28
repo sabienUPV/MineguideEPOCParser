@@ -8,14 +8,13 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
-using static MineguideEPOCParser.Core.SystemPromptUtils;
 
 namespace MineguideEPOCParser.GUIApp
 {
     /// <summary>
     /// Lógica de interacción para MedicationParserControl.xaml
     /// </summary>
-    public partial class MedicationParserControl : UserControl, IDisposable
+    public sealed partial class MedicationParserControl : UserControl, IAsyncDisposable
     {
         // Dependency property IsParsing
         public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
@@ -69,6 +68,7 @@ namespace MineguideEPOCParser.GUIApp
         private CancellationTokenSource? CancellationTokenSource { get; set; }
 
         // Logging
+        private ILogger? ExecutionLogger { get; set; }
         private LoggingLevelSwitch? LoggingLevelSwitch { get; set; }
 
         // Progress reporting
@@ -100,7 +100,7 @@ namespace MineguideEPOCParser.GUIApp
             void DispatcherTimerTick(object? sender, EventArgs e)
             {
                 _elapsedTime = _elapsedTime.Add(TimeSpan.FromSeconds(1));
-                UpdateTimerTextBlock();
+                UpdateTimerTextBlock(isAlwaysRunningInUIThread: true); // Using DispatcherTimer ensures us that we are in the UI thread
             }
 
             _dispatcherTimer.Tick += DispatcherTimerTick;
@@ -108,9 +108,10 @@ namespace MineguideEPOCParser.GUIApp
             _dispatcherTimer.Start();
         }
 
-        private void UpdateTimerTextBlock()
+        private void UpdateTimerTextBlock(bool isAlwaysRunningInUIThread = false)
         {
-            TimerTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss");
+            PerformNonCriticalUIAction(() => TimerTextBlock.Text = _elapsedTime.ToString(@"hh\:mm\:ss"),
+                "Error updating timer text block in UI", isAlwaysRunningInUIThread);
         }
 
         private const string LogsFolderName = "logs";
@@ -201,30 +202,111 @@ namespace MineguideEPOCParser.GUIApp
         {
             Progress = new Progress<ProgressValue>(value =>
             {
-                // Value is between 0 and 1, so multiply by 100 to get percentage
-                var percentage = value.Value * 100;
-
-                // Update the progress bar
-                ProgressBar.Value = percentage;
-
-                // Update the progress percentage text
-                ProgressPercentageTextBlock.Text = $"{percentage:0.00}%";
-
-                // Update the progress rows processed text
-                if (value.RowsProcessed.HasValue)
+                PerformNonCriticalUIAction(() =>
                 {
-                    ProgressRowsProcessedTextBlock.Text = $"Rows processed: {value.RowsProcessed}";
-                }
+                    // Value is between 0 and 1, so multiply by 100 to get percentage
+                    var percentage = value.Value * 100;
+
+                    // Update the progress bar
+                    ProgressBar.Value = percentage;
+
+                    // Update the progress percentage text
+                    ProgressPercentageTextBlock.Text = $"{percentage:0.00}%";
+
+                    // Update the progress rows processed text
+                    if (value.RowsProcessed.HasValue)
+                    {
+                        ProgressRowsProcessedTextBlock.Text = $"Rows processed: {value.RowsProcessed}";
+                    }
+                }, "Error updating progress in UI");
             });
         }
 
-        public void Dispose()
+        /// <summary>
+        /// Perform a non-critical UI action, such as updating a label or a progress bar, so that if it fails the parsing execution does not stop.
+        /// </summary>
+        /// <param name="action"></param>
+        /// <param name="exceptionLogMessage"></param>
+        /// <param name="isAlwaysRunningInUIThread">
+        /// false by default. If true, we know that this code will ALWAYS be run from the UI thread,
+        /// which means that we don't need to invoke it from the Dispatcher. Only set to true if you know that for sure.
+        /// </param>
+        private void PerformNonCriticalUIAction(Action action, string exceptionLogMessage, bool isAlwaysRunningInUIThread = false)
+        {
+            UIUtilities.PerformNonCriticalUIAction(this, action, ExecutionLogger, exceptionLogMessage, isAlwaysRunningInUIThread);
+        }
+
+        private bool _isDisposed = true;
+        public async ValueTask DisposeAsync()
+        {
+            if (_isDisposed) return;
+
+            await DisposeExecutionResourcesAsync();
+            _isDisposed = true;
+        }
+
+        private async ValueTask DisposeExecutionResourcesAsync()
         {
             // Dispose the cancellation token source
             CancellationTokenSource?.Dispose();
 
-            // Stop the timer
-            _dispatcherTimer?.Stop();
+            // Set the cancellation token source to null
+            CancellationTokenSource = null;
+
+            // Stop the timer and set it to null (needs to be called from UI thread)
+            PerformNonCriticalUIAction(() =>
+            {
+                _dispatcherTimer?.Stop();
+                _dispatcherTimer = null;
+            }, "Error trying to stop the UI timer while disposing it");
+
+            // Set the parser to null
+            MedicationParser = null;
+
+            // Dispose the execution logger
+            await DisposeExecutionLoggerAsync();
+        }
+
+        private async ValueTask DisposeExecutionLoggerAsync()
+        {
+            // We save the execution logger first
+            // to a local variable and set the property to null
+            // so that, if disposing it throws an Exception,
+            // the DisposeLoggerAsync method doesn't try to log to the ExecutionLogger
+            // while being partially disposed
+            var executionLogger = ExecutionLogger;
+
+            // If the execution logger is already null, we don't need to dispose it
+            if (executionLogger is null) return;
+
+            // Set the execution logger to null to make sure no one tries to call it while disposing (e.g. in the DisposeLoggerAsync method)
+            ExecutionLogger = null;
+
+            // Dispose the execution logger
+            await DisposeLoggerAsync(executionLogger);
+        }
+
+        private async ValueTask DisposeLoggerAsync(ILogger logger)
+        {
+            try
+            {
+                // Dispose the logger
+                if (logger is IAsyncDisposable asyncDisposableLogger)
+                {
+                    await asyncDisposableLogger.DisposeAsync();
+                }
+                else if (logger is IDisposable disposableLogger)
+                {
+                    disposableLogger.Dispose();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Prevent any non-critical exceptions from stopping execution (like disposing the logger)
+                // because we need the parsing to continue
+                // Log the exception if we can
+                ExecutionLogger?.Error(ex, "Error while trying to dispose a logger");
+            }
         }
 
         private async void ParseButton_Click(object sender, RoutedEventArgs e)
@@ -246,6 +328,10 @@ namespace MineguideEPOCParser.GUIApp
                 MessageBox.Show("The number of input and output files must be the same.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
+
+            // Get prompts file (if set)
+            string promptsFile = PromptsFileTextBox.Text;
+            bool hasPromptsFile = !string.IsNullOrEmpty(promptsFile);
 
             // Get the culture name from the combo box
             string cultureName = FileCultureComboBox.Text;
@@ -276,7 +362,7 @@ namespace MineguideEPOCParser.GUIApp
             // Get main base folder for logs from the first output's folder
             var baseFolderForLogs = Path.GetDirectoryName(outputFiles[0]) ?? string.Empty;
 
-            var baseLogger = CreateExecutionLogger(out var executionTimestamp, baseFolderForLogs);
+            ExecutionLogger = CreateExecutionLogger(out var executionTimestamp, baseFolderForLogs);
 
             // Run timer
             StartTimer();
@@ -285,25 +371,42 @@ namespace MineguideEPOCParser.GUIApp
             {
                 try
                 {
-                    // Only show the progress files processed text block if there are multiple input files being processed
-                    ProgressFilesProcessedTextBlock.Visibility = inputFiles.Length > 1 ? Visibility.Visible : Visibility.Collapsed;
-                    ProgressFilesProcessedTextBlock.Text = $"Files processed: 0/{inputFiles.Length}";
+                    PerformNonCriticalUIAction(() =>
+                    {
+                        // Only show the progress files processed text block if there are multiple input files being processed
+                        if (inputFiles.Length > 1)
+                        {
+                            ProgressFilesProcessedTextBlock.Visibility = Visibility.Visible;
+                            ProgressFilesProcessedTextBlock.Text = $"Files processed: 0/{inputFiles.Length}";
+                        }
+                        else
+                        {
+                            ProgressFilesProcessedTextBlock.Visibility = Visibility.Collapsed;
+                        }
+                    }, "Error setting up ProgressFilesProcessedTextBlock in UI");
 
                     // Parse for each input and output file
                     int filesProcessed = 0;
                     foreach (var (inputFile, outputFile) in inputFiles.Zip(outputFiles))
                     {
-                        var fileLogger = CreateFileLogger(executionTimestamp, baseLogger, inputFile, outputFile);
+                        var fileLogger = CreateFileLogger(executionTimestamp, ExecutionLogger, inputFile, outputFile);
 
                         // If we are using custom system prompts from a CSV file,
                         // we need to parse the inputs file for each system prompt
-                        if (PromptsFileTextBox.Text is string promptsFile && !string.IsNullOrEmpty(promptsFile))
+                        if (hasPromptsFile)
                         {
-                            ProgressPromptsProcessedTextBlock.Visibility = Visibility.Visible;
-
                             var promptsList = SystemPromptUtils.ParseFromCsvFile(promptsFile, cultureName);
+                            int promptsCount = promptsList.Count;
+                            if (promptsCount == 0)
+                            {
+                                throw new InvalidOperationException("The prompts file is empty.");
+                            }
 
-                            ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: 0/{promptsList.Count}";
+                            PerformNonCriticalUIAction(() =>
+                            {
+                                ProgressPromptsProcessedTextBlock.Visibility = Visibility.Visible;
+                                ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: 0/{promptsCount}";
+                            }, "Error setting up ProgressPromptsProcessedTextBlock in UI");
 
                             // Parse for each system prompt in the prompts file
                             int promptsProcessed = 0;
@@ -328,14 +431,22 @@ namespace MineguideEPOCParser.GUIApp
                                     overwriteColumn,
                                     decodeHtml,
                                     (systemPrompt, promptNumber),
-                                    CancellationTokenSource.Token).ConfigureAwait(false);
+                                    CancellationTokenSource.Token);
 
-                                ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: {++promptsProcessed}/{promptsList.Count}";
+                                promptsProcessed++;
+
+                                PerformNonCriticalUIAction(() =>
+                                {
+                                    ProgressPromptsProcessedTextBlock.Text = $"Prompts processed: {promptsProcessed}/{promptsCount}";
+                                }, "Error updating ProgressPromptsProcessedTextBlock in UI");
                             }
                         }
                         else
                         {
-                            ProgressPromptsProcessedTextBlock.Visibility = Visibility.Collapsed;
+                            PerformNonCriticalUIAction(() =>
+                            {
+                                ProgressPromptsProcessedTextBlock.Visibility = Visibility.Collapsed;
+                            }, "Error hiding ProgressPromptsProcessedTextBlock in UI");
 
                             // Use the default system prompt
                             await ParseMedicationData(
@@ -347,52 +458,55 @@ namespace MineguideEPOCParser.GUIApp
                                 overwriteColumn,
                                 decodeHtml,
                                 null,
-                                CancellationTokenSource.Token).ConfigureAwait(false);
+                                CancellationTokenSource.Token);
                         }
 
-                        ProgressFilesProcessedTextBlock.Text = $"Files processed: {++filesProcessed}/{inputFiles.Length}";
+                        filesProcessed++;
+
+                        PerformNonCriticalUIAction(() =>
+                        {
+                            ProgressFilesProcessedTextBlock.Text = $"Files processed: {filesProcessed}/{inputFiles.Length}";
+                        }, "Error updating ProgressFilesProcessedTextBlock in UI");
                     }
                 }
                 finally
                 {
-                    // Stop the timer
-                    _dispatcherTimer?.Stop();
+                    PerformNonCriticalUIAction(() =>
+                    {
+                        // Stop the timer (needs to be called from UI thread)
+                        _dispatcherTimer?.Stop();
 
-                    // Update the timer text block
-                    Dispatcher.Invoke(UpdateTimerTextBlock);
+                        // Update the timer text block
+                        UpdateTimerTextBlock(isAlwaysRunningInUIThread: true);
+                    }, "Error trying to stop the UI timer after parsing");
                 }
 
+                // Log the success
+                ExecutionLogger?.Information("Parsing has been completed successfully.");
                 MessageBox.Show($"Parsing has been completed successfully.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (OperationCanceledException)
             {
+                // Log the cancellation
+                ExecutionLogger?.Warning("Parsing was cancelled by the user");
                 MessageBox.Show($"Parsing was cancelled.\nThe information that was already parsed has been written to the output file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
+                // Log the exception (we consider it "Fatal" because it halts the entire parsing process)
+                ExecutionLogger?.Fatal(ex, "A fatal error occurred while parsing the medication");
                 MessageBox.Show($"An error occurred while parsing the medication:\n\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
                 // Reset the flag
-                Dispatcher.Invoke(() => IsParsing = false);
+                PerformNonCriticalUIAction(() => IsParsing = false, "Error while trying to update parsing state in UI");
 
-                // Dispose the cancellation token source
-                CancellationTokenSource.Dispose();
-
-                // Set the cancellation token source to null
-                CancellationTokenSource = null;
-
-                // Set the timer to null
-                _dispatcherTimer = null;
-
-                // Set the parser to null
-                MedicationParser = null;
+                await DisposeExecutionResourcesAsync();
             }
-
         }
 
-        private async Task ParseMedicationData(ILogger fileLogger, string inputFile, string outputFile, string cultureName, int? rowCount, bool overwriteColumn, bool decodeHtml, (SystemPromptObject Data, int Number)? systemPromptData, CancellationToken token = default)
+        private async Task ParseMedicationData(ILogger fileLogger, string inputFile, string outputFile, string cultureName, int? rowCount, bool overwriteColumn, bool decodeHtml, (SystemPromptUtils.SystemPromptObject Data, int Number)? systemPromptData, CancellationToken token = default)
         {
             // Create logger specific to the current prompt
             ILogger logger = fileLogger;
@@ -447,14 +561,7 @@ namespace MineguideEPOCParser.GUIApp
             finally
             {
                 // Dispose the logger
-                if (logger is IAsyncDisposable asyncDisposableLogger)
-                {
-                    await asyncDisposableLogger.DisposeAsync().ConfigureAwait(false);
-                }
-                else if (logger is IDisposable disposableLogger)
-                {
-                    disposableLogger.Dispose();
-                }
+                await DisposeLoggerAsync(logger);
             }
         }
 
@@ -462,15 +569,6 @@ namespace MineguideEPOCParser.GUIApp
         {
             // Cancel the parsing
             CancellationTokenSource?.Cancel();
-
-            // Stop the timer
-            _dispatcherTimer?.Stop();
-
-            // Update the timer text block
-            UpdateTimerTextBlock();
-
-            // Set the timer to null
-            _dispatcherTimer = null;
         }
 
         private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)

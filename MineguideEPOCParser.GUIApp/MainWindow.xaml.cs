@@ -11,5 +11,10 @@ namespace MineguideEPOCParser.GUIApp
         {
             InitializeComponent();
         }
-	}
+
+        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            await MedicationParserCtrl.DisposeAsync();
+        }
+    }
 }

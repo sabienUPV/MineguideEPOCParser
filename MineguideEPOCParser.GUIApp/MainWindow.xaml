@@ -6,10 +6,11 @@
         xmlns:local="clr-namespace:MineguideEPOCParser.GUIApp"
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        Closing="Window_Closing"
         Title="Mineguide EPOC Parser" Height="618" Width="1000">
     <TabControl Margin="10">
         <TabItem Header="Medication Parser">
-            <local:MedicationParserControl />
+            <local:MedicationParserControl x:Name="MedicationParserCtrl" />
         </TabItem>
         <TabItem Header="Medication Mapper and Grouping to Group Mapper">
             <local:MedicationMapperGroupingControl />
