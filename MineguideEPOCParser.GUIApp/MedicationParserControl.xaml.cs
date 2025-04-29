@@ -154,7 +154,7 @@ namespace MineguideEPOCParser.GUIApp
             // Get input file name without extension
             var inputFileName = Path.GetFileNameWithoutExtension(inputFile);
 
-            string executionFileLogBaseName = $"{timestamp}_MineguideEPOCParser_output_{inputFileName}";
+            string executionFileLogBaseName = $"{timestamp}_output_{inputFileName}";
             string executionFileLogFolder = Path.Combine(outputFolder, LogsFolderName, executionFileLogBaseName);
 
             // Create file-specific log directory for this execution
@@ -602,7 +602,7 @@ namespace MineguideEPOCParser.GUIApp
                 return;
             }
 
-            OutputFileTextBox.Text = string.Join(FileInTextSeparator, BrowseOutputCsvFiles(inputFiles, "{0}-OUTPUT"));
+            OutputFileTextBox.Text = string.Join(FileInTextSeparator, BrowseOutputCsvFiles(inputFiles, "output_{0}"));
         }
 
         private void BrowsePromptsFileButton_Click(object sender, RoutedEventArgs e)
