@@ -115,13 +115,12 @@ namespace MineguideEPOCParser.GUIApp
         }
 
         private const string LogsFolderName = "logs";
-        private static string GetExecutionLogBaseNameFromTimestamp(string timestamp) => $"MineguideEPOCParser_{timestamp}";
-
+        private static string GetExecutionBaseNameFromTimestamp(string timestamp) => $"{timestamp}_MineguideEPOCParser_output";
         private Logger CreateExecutionLogger(out string timestamp, string baseFolderForLogs)
         {
             timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string executionLogBaseName = GetExecutionLogBaseNameFromTimestamp(timestamp);
-            string executionLogFolder = Path.Combine(baseFolderForLogs, LogsFolderName, executionLogBaseName);
+            string executionLogBaseName = GetExecutionBaseNameFromTimestamp(timestamp);
+            string executionLogFolder = Path.Combine(baseFolderForLogs, executionLogBaseName, LogsFolderName);
             
             // Create execution-specific log directory
             Directory.CreateDirectory(executionLogFolder);
@@ -156,9 +155,9 @@ namespace MineguideEPOCParser.GUIApp
             var inputFileName = Path.GetFileNameWithoutExtension(inputFile);
             var outputFolder = Path.GetDirectoryName(outputFile) ?? string.Empty;
 
-            string executionLogBaseName = GetExecutionLogBaseNameFromTimestamp(executionTimestamp);
-            string executionFileLogBaseName = $"MineguideEPOCParser_{timestamp}_{inputFileName}";
-            string executionFileLogFolder = Path.Combine(outputFolder, LogsFolderName, executionLogBaseName, executionFileLogBaseName);
+            string executionLogBaseName = GetExecutionBaseNameFromTimestamp(executionTimestamp);
+            string executionFileLogBaseName = $"{timestamp}_MineguideEPOCParser_output_{inputFileName}";
+            string executionFileLogFolder = Path.Combine(outputFolder, executionLogBaseName, LogsFolderName, executionFileLogBaseName);
 
             // Create file-specific log directory for this execution
             Directory.CreateDirectory(executionFileLogFolder);
@@ -364,6 +363,8 @@ namespace MineguideEPOCParser.GUIApp
 
             ExecutionLogger = CreateExecutionLogger(out var executionTimestamp, baseFolderForLogs);
 
+            var baseFolderName = GetExecutionBaseNameFromTimestamp(executionTimestamp);
+
             // Run timer
             StartTimer();
 
@@ -414,12 +415,12 @@ namespace MineguideEPOCParser.GUIApp
                             {
                                 var promptNumber = promptsProcessed + 1;
 
-                                // Update the output file name to include a number representing the system prompt
+                                // Update the output file name to include the timestamp and a number representing the system prompt
                                 var outputFileName = Path.GetFileNameWithoutExtension(outputFile);
                                 var outputFileExtension = Path.GetExtension(outputFile);
-                                var outputFileNameWithPrompt = $"{outputFileName}-prompt-{promptNumber}{outputFileExtension}";
+                                var outputFileNameWithPrompt = $"{executionTimestamp}_{outputFileName}_prompt-{promptNumber}{outputFileExtension}";
 
-                                var outputFileWithPrompt = Path.Combine(Path.GetDirectoryName(outputFile) ?? string.Empty, outputFileNameWithPrompt);
+                                var outputFileWithPrompt = Path.Combine(Path.GetDirectoryName(outputFile) ?? string.Empty, baseFolderName, outputFileNameWithPrompt);
 
                                 // Use the custom system prompt
                                 await ParseMedicationData(
