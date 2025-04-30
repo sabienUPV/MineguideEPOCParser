@@ -7,6 +7,8 @@ using Serilog.Formatting.Compact;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace MineguideEPOCParser.GUIApp
@@ -708,6 +710,35 @@ namespace MineguideEPOCParser.GUIApp
             if (LoggingLevelSwitch is not null)
             {
                 LoggingLevelSwitch.MinimumLevel = GetLogLevelFromComboBox();
+            }
+        }
+
+        private void LogRichTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            // Limit the number of inlines in the log to 100
+            if (LogRichTextBox.Document.Blocks.LastBlock is Paragraph paragraph)
+            {
+                if (paragraph.Inlines.Count > 100)
+                {
+                    // Keep the last 100 inlines
+                    var inlinesToKeep = paragraph.Inlines.Skip(paragraph.Inlines.Count - 100).ToList();
+
+                    // Clear and rebuild
+                    paragraph.Inlines.Clear();
+
+                    // Add notification
+                    paragraph.Inlines.Add(new Run("[log limited to the last 100 entries] ")
+                    {
+                        Foreground = Brushes.Gray,
+                        FontStyle = FontStyles.Italic
+                    });
+
+                    // Add the kept inlines
+                    foreach (var inline in inlinesToKeep)
+                    {
+                        paragraph.Inlines.Add(inline);
+                    }
+                }
             }
         }
 

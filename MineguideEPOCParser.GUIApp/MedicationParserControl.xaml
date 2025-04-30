@@ -164,7 +164,8 @@
                         Foreground="LightGray"
                         FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
                         VerticalScrollBarVisibility="Auto"
-                        MinHeight="100" />
+                        MinHeight="100"
+                        TextChanged="LogRichTextBox_TextChanged" />
                 </Grid>
             </Expander>
         </Grid>
