@@ -12,7 +12,22 @@ namespace MineguideEPOCParser.Core
     {
         public required TConfiguration Configuration { get; set; }
 
-        public ILogger? Logger { get; set; }
+        protected ILogger? _baseLogger; // Base logger for the parser, used for general logging
+        protected ILogger? _currentLogger; // Enriched logger for the current operation (e.g., row number, etc.)
+        public ILogger? Logger
+        {
+            get => _currentLogger ?? _baseLogger;
+            set => _baseLogger = value;
+        }
+
+        protected void SetRowLogger(int rowNumber, string[] row)
+        {
+            // Create a logger that includes the row number in its context
+            _currentLogger = _baseLogger?
+                .ForContext("RowNumber", rowNumber)
+                .ForContext("Row", row, destructureObjects: true);
+        }
+
         public IProgress<ProgressValue>? Progress { get; set; }
 
         /// <summary>
@@ -226,8 +241,10 @@ namespace MineguideEPOCParser.Core
 
                 var row = csv.Parser.Record;
 
+                SetRowLogger(rowsRead, row);
+
                 Logger?.Information("Read row {RowNumber}", rowsRead);
-                Logger?.Verbose("{Row}", string.Join(",", row));
+                Logger?.Verbose("{@Row}", row);
 
                 yield return row;
 
