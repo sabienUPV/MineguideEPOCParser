@@ -18,6 +18,10 @@ Podemos ir a la carpeta con los logs, y usar este comando para que ingeste los l
 
 Accede a: <http://localhost:5341>
 
+### Query para ver todos los medicamentos extraídos
+
+`select distinct(Medications) from stream where Medications <> null`
+
 # Enlaces sobre Seq
 
 <https://hub.docker.com/r/datalust/seq>
