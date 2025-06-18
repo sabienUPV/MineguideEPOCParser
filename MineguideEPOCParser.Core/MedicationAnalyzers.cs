@@ -11,11 +11,11 @@ namespace MineguideEPOCParser.Core
         /// <param name="medications">Array of extracted medication names</param>
         /// <param name="logger">Optional Serilog logger</param>
         /// <returns>Analysis statistics including match count and percentage</returns>
-        public static (int matchCount, double matchPercentage, List<dynamic> details) AnalyzeMedicationMatches(
+        public static (int matchCount, double matchPercentage, Dictionary<string, MedicationDetails> details) AnalyzeMedicationMatches(
             string t, string[] medications, ILogger? logger)
         {
             int medicationsInText = 0;
-            var medicationDetails = new List<dynamic>();
+            var medicationDetails = new Dictionary<string, MedicationDetails>();
 
             foreach (var med in medications)
             {
@@ -76,11 +76,11 @@ namespace MineguideEPOCParser.Core
                     matchType = "Moderate Similarity";
                 }
 
-                medicationDetails.Add(new
+                medicationDetails.Add(med, new MedicationDetails
                 {
                     Medication = med,
                     ExactMatch = isExactMatch,
-                    SimilarityScore = isExactMatch ? 100 : Math.Round(similarityScore * 100, 1),
+                    SimilarityScore = similarityScore,
                     BestMatch = closestMatch,
                     LevenshteinDistance = isExactMatch ? 0 : bestDistance,
                     MatchType = matchType
@@ -99,5 +99,19 @@ namespace MineguideEPOCParser.Core
             // Return statistics for potential further processing
             return (medicationsInText, matchPercentage, medicationDetails);
         }
+
+        public record MedicationDetails
+        {
+            public required string Medication { get; init; }
+            public bool ExactMatch { get; init; }
+            public double SimilarityScore { get; init; }
+            public string SimilarityScorePercentage => GetSimilarityScorePercentage(System.Globalization.CultureInfo.InvariantCulture);
+            public string? BestMatch { get; init; }
+            public int LevenshteinDistance { get; init; }
+            public required string MatchType { get; init; }
+
+            public string GetSimilarityScorePercentage(IFormatProvider? provider)
+                => SimilarityScore.ToString("P2", provider);
+        };
     }
 }

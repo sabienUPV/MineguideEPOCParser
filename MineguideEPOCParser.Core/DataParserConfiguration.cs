@@ -3,6 +3,8 @@
     public class DataParserConfiguration
     {
         public required string CultureName { get; set; }
+        public System.Globalization.CultureInfo Culture => new(CultureName);
+
         public required string InputFile { get; set; }
         public required string OutputFile { get; set; }
 
