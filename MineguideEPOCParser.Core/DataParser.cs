@@ -20,6 +20,14 @@ namespace MineguideEPOCParser.Core
             set => _baseLogger = value;
         }
 
+        protected int CurrentRowNumber { get; set; } = -1;
+
+        protected void SetRowInfo(int rowNumber, string[] row)
+        {
+            CurrentRowNumber = rowNumber;
+            SetRowLogger(rowNumber, row);
+        }
+
         protected void SetRowLogger(int rowNumber, string[] row)
         {
             // Create a logger that includes the row number in its context
@@ -241,7 +249,7 @@ namespace MineguideEPOCParser.Core
 
                 var row = csv.Parser.Record;
 
-                SetRowLogger(rowsRead, row);
+                SetRowInfo(rowsRead, row);
 
                 Logger?.Information("Read row {RowNumber}", rowsRead);
                 Logger?.Verbose("{@Row}", row);

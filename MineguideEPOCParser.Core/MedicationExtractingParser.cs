@@ -7,7 +7,13 @@ namespace MineguideEPOCParser.Core
     {
         public const string DefaultModel = "llama3.1:latest";
 
-        public override int OutputColumnsCount => 7; // Medication name, and 6 additional columns for analysis (from MedicationAnalyzers.MedicationDetails)
+        /// <summary>
+        /// <inheritdoc />
+        /// <para>
+        /// (In this case: Medication name, input row number, and 6 additional columns for analysis (from <see cref="MedicationAnalyzers.MedicationDetails"/>))
+        /// </para>
+        /// </summary>
+        public override int OutputColumnsCount => 8;
 
         /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.
@@ -121,6 +127,7 @@ namespace MineguideEPOCParser.Core
             return
             [
                 medication,
+                CurrentRowNumber.ToString(),
                 details.ExactMatch.ToString(),
                 details.SimilarityScore.ToString(),
                 details.GetSimilarityScorePercentage(Configuration.Culture),
@@ -149,7 +156,8 @@ namespace MineguideEPOCParser.Core
         - The JSON format should be: { ""Medicamentos"": [ ] }     
         """;
         public const bool DefaultSystemPromptUsesJsonFormat = true;
-
+        
+        public const string InputRowNumberHeaderName = "InputRowNumber";
 
         public bool DecodeHtmlFromInput { get; set; }
 
@@ -159,6 +167,7 @@ namespace MineguideEPOCParser.Core
 
         protected override (string inputHeader, string[] outputHeaders) GetDefaultColumns()
             => (THeaderName, [MedicationHeaderName,
+                InputRowNumberHeaderName,
                 nameof(MedicationAnalyzers.MedicationDetails.ExactMatch),
                 nameof(MedicationAnalyzers.MedicationDetails.SimilarityScore), 
                 nameof(MedicationAnalyzers.MedicationDetails.SimilarityScorePercentage), 
