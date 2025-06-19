@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
@@ -291,6 +290,9 @@ namespace MineguideEPOCParser.GUIApp
         private async Task OnMedicationClicked(MedicationMatch match)
         {
             await SnomedSearchRobust(match.Text);
+            await Task.Delay(500); // Wait for search to complete
+            await SnomedClickFirstResult();
+
             //// Show validation dialog or inline editor
             //var result = MessageBox.Show(
             //    $"Validate medication: '{match.Text}'\n\nOriginal: {match.OriginalMedication}\nPosition: {match.StartIndex}\n\nIs this correct?",
@@ -391,6 +393,61 @@ namespace MineguideEPOCParser.GUIApp
             catch (Exception ex)
             {
                 MessageBox.Show($"Error executing search: {ex.Message}");
+            }
+        }
+
+        private async Task SnomedClickFirstResult()
+        {
+            // Simpler 2-liner approach, left as a comment in case we want to make it simpler without the checks later
+            // const firstResultSlotName = document.querySelector('vaadin-grid').shadowRoot.querySelector('tbody#items tr:first-child slot').name
+            // document.querySelector('vaadin-grid-cell-content[slot=""' + firstResultSlotName + '""]').click()
+
+            var js = @"
+        (function() {
+            console.log('Attempting to click first search result');           
+
+            var grid = document.querySelector('vaadin-grid');
+            if (!grid) {
+                console.log('No grid found (vaadin-grid)');
+                return 'NOT_FOUND';
+            }
+            var shadow = grid.shadowRoot;
+            if (!shadow) {
+                console.log('No shadowRoot found in vaadin-grid');
+                return 'NOT_FOUND';
+            }
+            var row = shadow.querySelector('tbody#items tr:first-child');
+            if (!row) {
+                console.log('First row in tbody#items not found - maybe there are no results');
+                return 'NOT_FOUND';
+            }
+            var slot = row.querySelector('slot');
+            if (!slot || !slot.name) {
+                console.log('slot not found, or found without name attribute');
+                return 'NOT_FOUND';
+            }
+            var cellContent = document.querySelector('vaadin-grid-cell-content[slot=""' + slot.name + '""]');
+            if (!cellContent)
+            {
+                console.log('No vaadin-grid-cell-content found for slot: ' + slot.name);
+                return 'NOT_FOUND';
+            }
+            cellContent.click();
+            return 'SUCCESS';
+        })();
+        ";
+
+            try
+            {
+                var result = await myWebView.CoreWebView2.ExecuteScriptAsync(js);
+                if (result == "\"NOT_FOUND\"")
+                {
+                    MessageBox.Show("Could not find the first search result to click.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error clicking first result: {ex.Message}");
             }
         }
     }
