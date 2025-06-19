@@ -24,5 +24,8 @@
         <TabItem Header="Measurements Parser">
             <local:MeasurementsParserControl />
         </TabItem>
+        <TabItem Header="Medication Manual Validator">
+            <local:MedicationManualValidatorControl />
+        </TabItem>
     </TabControl>
 </Window>

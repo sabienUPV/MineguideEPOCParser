@@ -1,0 +1,32 @@
+﻿<UserControl x:Class="MineguideEPOCParser.GUIApp.MedicationManualValidatorControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:MineguideEPOCParser.GUIApp"
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+             mc:Ignorable="d"
+             DataContext="{Binding RelativeSource={RelativeSource Self}}"
+             d:DesignHeight="450" d:DesignWidth="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="10" />
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <RichTextBox Grid.Row="0" x:Name="myRichTextBox" IsDocumentEnabled="True" IsReadOnly="True" />
+        <DockPanel Grid.Row="0" Grid.Column="1" Margin="10">
+            <TextBlock x:Name="myWebViewLoadingText" DockPanel.Dock="Top" Text="Loading SNOMED..." />
+            <wv2:WebView2 x:Name="myWebView" Source="https://snomedsns.es/search" Margin="10" />
+        </DockPanel>
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+            <Button x:Name="btnLoadOne" Content="Load Version 1" Margin="5"/>
+            <Button x:Name="btnLoadTwo" Content="Load Version 2" Margin="5"/>
+            <Button x:Name="btnLoadThree" Content="Load Version 3" Margin="5"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
