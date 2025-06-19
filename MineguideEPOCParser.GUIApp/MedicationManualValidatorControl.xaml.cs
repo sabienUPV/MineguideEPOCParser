@@ -290,7 +290,6 @@ namespace MineguideEPOCParser.GUIApp
         private async Task OnMedicationClicked(MedicationMatch match)
         {
             await SnomedSearchRobust(match.Text);
-            await Task.Delay(500); // Wait for search to complete
             await SnomedClickFirstResult();
 
             //// Show validation dialog or inline editor
@@ -398,56 +397,124 @@ namespace MineguideEPOCParser.GUIApp
 
         private async Task SnomedClickFirstResult()
         {
+            // Example to show what this does:
             // Simpler 2-liner approach, left as a comment in case we want to make it simpler without the checks later
             // const firstResultSlotName = document.querySelector('vaadin-grid').shadowRoot.querySelector('tbody#items tr:first-child slot').name
             // document.querySelector('vaadin-grid-cell-content[slot=""' + firstResultSlotName + '""]').click()
 
             var js = @"
         (function() {
-            console.log('Attempting to click first search result');           
-
+            console.log('Setting up listener for grid updates');
+    
             var grid = document.querySelector('vaadin-grid');
             if (!grid) {
                 console.log('No grid found (vaadin-grid)');
-                return 'NOT_FOUND';
+                return 'GRID_NOT_FOUND';
             }
-            var shadow = grid.shadowRoot;
-            if (!shadow) {
-                console.log('No shadowRoot found in vaadin-grid');
-                return 'NOT_FOUND';
+    
+            // Function to attempt clicking the first result
+            function clickFirstResult() {
+                console.log('Grid updated, attempting to click first result');
+        
+                var shadow = grid.shadowRoot;
+                if (!shadow) {
+                    console.log('No shadowRoot found in vaadin-grid');
+                    return false;
+                }
+        
+                var row = shadow.querySelector('tbody#items tr:first-child');
+                if (!row) {
+                    console.log('First row in tbody#items not found - no results');
+                    return false;
+                }
+        
+                var slot = row.querySelector('slot');
+                if (!slot || !slot.name) {
+                    console.log('slot not found, or found without name attribute');
+                    return false;
+                }
+        
+                var cellContent = document.querySelector('vaadin-grid-cell-content[slot=""' + slot.name + '""]');
+                if (!cellContent) {
+                    console.log('No vaadin-grid-cell-content found for slot: ' + slot.name);
+                    return false;
+                }
+
+                if (!cellContent.innerText || cellContent.innerText.trim() === '') {
+                    console.log('First result cell is empty');
+                    return false;
+                }
+
+                console.log('result text: ' + cellContent.innerText);
+
+                cellContent.click();
+                console.log('Successfully clicked first result');
+                return true;
             }
-            var row = shadow.querySelector('tbody#items tr:first-child');
-            if (!row) {
-                console.log('First row in tbody#items not found - maybe there are no results');
-                return 'NOT_FOUND';
+    
+            // Set up a MutationObserver to watch for ANY changes in the grid
+            var observer = new MutationObserver(function(mutations) {
+                console.log('Grid mutation detected, starting polling for content');
+
+                var attempts = 0;
+                var maxAttempts = 25;
+
+                function pollForContent() {
+                    attempts++;
+                    console.log('Polling attempt', attempts);
+
+                    if (clickFirstResult()) {
+                        observer.disconnect(); // Stop observing after successful click
+                        console.log('SUCCESS - clicked first result');
+                        return; // SUCCESS
+                    } else if (attempts < maxAttempts) {
+                        setTimeout(pollForContent, 200);
+                    } else {
+                        console.log('Polling timeout - content did not load within 5 seconds');
+                        // Could optionally disconnect observer here or let it keep trying on future mutations
+                    }
+                }
+
+                // Start polling with initial delay
+                setTimeout(pollForContent, 100);
+            });
+    
+            // Start observing the grid for any changes
+            observer.observe(grid, {
+                childList: true,
+                subtree: true
+            });
+    
+            // Also observe the shadow DOM if accessible
+            if (grid.shadowRoot) {
+                observer.observe(grid.shadowRoot, {
+                    childList: true,
+                    subtree: true
+                });
             }
-            var slot = row.querySelector('slot');
-            if (!slot || !slot.name) {
-                console.log('slot not found, or found without name attribute');
-                return 'NOT_FOUND';
-            }
-            var cellContent = document.querySelector('vaadin-grid-cell-content[slot=""' + slot.name + '""]');
-            if (!cellContent)
-            {
-                console.log('No vaadin-grid-cell-content found for slot: ' + slot.name);
-                return 'NOT_FOUND';
-            }
-            cellContent.click();
-            return 'SUCCESS';
+    
+            // Set a timeout to clean up the observer
+            setTimeout(function() {
+                observer.disconnect();
+            }, 10000); // 10 second timeout
+    
+            return 'LISTENER_SETUP';
         })();
         ";
 
             try
             {
                 var result = await myWebView.CoreWebView2.ExecuteScriptAsync(js);
-                if (result == "\"NOT_FOUND\"")
+
+                if (result == "\"GRID_NOT_FOUND\"")
                 {
-                    MessageBox.Show("Could not find the first search result to click.");
+                    MessageBox.Show("Could not find the search grid.");
+                    return;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error clicking first result: {ex.Message}");
+                MessageBox.Show($"Error setting up search listener: {ex.Message}");
             }
         }
     }
