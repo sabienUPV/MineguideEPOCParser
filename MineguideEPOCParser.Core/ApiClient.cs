@@ -14,7 +14,7 @@ namespace MineguideEPOCParser.Core
 {
 	public static class ApiClient
 	{
-		private const string ApiUrl = "https://mineguide-epoc.itaca.upv.es:11434/api/generate";
+		private const string ApiUrl = "https://mineguide.itaca.upv.es:11434/api/generate";
         private const string ApiKey = "32868ebff04b45108ae1637756df5778";
 
 		public static async Task<TOutput?> CallToApiJson<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
