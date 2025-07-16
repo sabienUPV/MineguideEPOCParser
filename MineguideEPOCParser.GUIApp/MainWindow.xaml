@@ -27,5 +27,8 @@
         <TabItem Header="Medication Manual Validator">
             <local:MedicationManualValidatorControl />
         </TabItem>
+        <TabItem Header="Random Sampler Parser">
+            <local:RandomSamplerParserControl />
+        </TabItem>
     </TabControl>
 </Window>
