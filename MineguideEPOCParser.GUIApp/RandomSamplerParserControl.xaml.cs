@@ -74,6 +74,9 @@ namespace MineguideEPOCParser.GUIApp
             // Create a new progress object
             CreateProgress();
 
+            // Set the default value for the sample size text box
+            SampleSizeTextBox.Text = RandomSamplerParserConfiguration.DefaultSampleSize.ToString();
+
 #if DEBUG
             // Setup test autocompletions
             SetupTestAutocompletions();
