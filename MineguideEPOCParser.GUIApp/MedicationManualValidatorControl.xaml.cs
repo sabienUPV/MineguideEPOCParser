@@ -47,44 +47,44 @@ namespace MineguideEPOCParser.GUIApp
             public required string OriginalMedication { get; set; } // The medication from your array
         }
 
-        public void HighlightMedications(RichTextBox richTextBox, string text, string[] medications)
+        // Enhanced version with clickable highlights for validation
+        public void HighlightMedicationsClickable(RichTextBox richTextBox, string text, string[] medications,
+            Func<MedicationMatch, Task> onMedicationClick)
         {
-            // First, find all medication occurrences and their positions
             var matches = FindAllMedicationMatches(text, medications);
-
-            // Sort by position in text
             var sortedMatches = matches.OrderBy(m => m.StartIndex).ToList();
 
-            // Clear existing content
             richTextBox.Document.Blocks.Clear();
             var paragraph = new Paragraph();
-
             var currentIndex = 0;
 
             foreach (var match in sortedMatches)
             {
-                // Add normal text before this medication
+                // Add normal text
                 if (match.StartIndex > currentIndex)
                 {
                     var normalText = text.Substring(currentIndex, match.StartIndex - currentIndex);
                     paragraph.Inlines.Add(new Run(normalText));
                 }
 
-                // Add highlighted medication
-                var medicationRun = new Run(match.Text)
+                // Create clickable hyperlink for medication
+                var hyperlink = new Hyperlink(new Run(match.Text))
                 {
-                    FontWeight = FontWeights.Bold,
+                    Foreground = new SolidColorBrush(Colors.DarkGreen),
                     Background = new SolidColorBrush(Colors.LightGreen),
-                    Foreground = new SolidColorBrush(Colors.DarkGreen)
+                    FontWeight = FontWeights.Bold,
+                    TextDecorations = null // Remove underline for cleaner look
                 };
 
-                paragraph.Inlines.Add(medicationRun);
+                // Capture the match in the closure
+                var currentMatch = match;
+                hyperlink.Click += async (s, e) => await onMedicationClick(currentMatch);
 
-                // Update current position
+                paragraph.Inlines.Add(hyperlink);
                 currentIndex = match.StartIndex + match.Length;
             }
 
-            // Add remaining text after last medication
+            // Add remaining text
             if (currentIndex < text.Length)
             {
                 var remainingText = text.Substring(currentIndex);
@@ -143,120 +143,6 @@ namespace MineguideEPOCParser.GUIApp
             });
         }
 
-        // Enhanced version with clickable highlights for validation
-        public void HighlightMedicationsClickable(RichTextBox richTextBox, string text, string[] medications,
-            Func<MedicationMatch, Task> onMedicationClick)
-        {
-            var matches = FindAllMedicationMatches(text, medications);
-            var sortedMatches = matches.OrderBy(m => m.StartIndex).ToList();
-
-            richTextBox.Document.Blocks.Clear();
-            var paragraph = new Paragraph();
-            var currentIndex = 0;
-
-            foreach (var match in sortedMatches)
-            {
-                // Add normal text
-                if (match.StartIndex > currentIndex)
-                {
-                    var normalText = text.Substring(currentIndex, match.StartIndex - currentIndex);
-                    paragraph.Inlines.Add(new Run(normalText));
-                }
-
-                // Create clickable hyperlink for medication
-                var hyperlink = new Hyperlink(new Run(match.Text))
-                {
-                    Foreground = new SolidColorBrush(Colors.DarkGreen),
-                    Background = new SolidColorBrush(Colors.LightGreen),
-                    FontWeight = FontWeights.Bold,
-                    TextDecorations = null // Remove underline for cleaner look
-                };
-
-                // Capture the match in the closure
-                var currentMatch = match;
-                hyperlink.Click += async (s, e) => await onMedicationClick(currentMatch);
-
-                paragraph.Inlines.Add(hyperlink);
-                currentIndex = match.StartIndex + match.Length;
-            }
-
-            // Add remaining text
-            if (currentIndex < text.Length)
-            {
-                var remainingText = text.Substring(currentIndex);
-                paragraph.Inlines.Add(new Run(remainingText));
-            }
-
-            richTextBox.Document.Blocks.Add(paragraph);
-        }
-
-        // Version with green box styling using InlineUIContainer
-        public void HighlightMedicationsWithBoxes(RichTextBox richTextBox, string text, string[] medications,
-            Func<MedicationMatch, Task>? onMedicationClick = null)
-        {
-            var matches = FindAllMedicationMatches(text, medications);
-            var sortedMatches = matches.OrderBy(m => m.StartIndex).ToList();
-
-            richTextBox.Document.Blocks.Clear();
-            var paragraph = new Paragraph();
-            var currentIndex = 0;
-
-            foreach (var match in sortedMatches)
-            {
-                // Add normal text
-                if (match.StartIndex > currentIndex)
-                {
-                    var normalText = text.Substring(currentIndex, match.StartIndex - currentIndex);
-                    paragraph.Inlines.Add(new Run(normalText));
-                }
-
-                // Create bordered medication highlight
-                var textBlock = new TextBlock
-                {
-                    Text = match.Text,
-                    FontWeight = FontWeights.Bold,
-                    Foreground = new SolidColorBrush(Colors.DarkGreen),
-                    Cursor = onMedicationClick != null ? System.Windows.Input.Cursors.Hand : System.Windows.Input.Cursors.Arrow
-                };
-
-                var border = new Border
-                {
-                    BorderBrush = new SolidColorBrush(Colors.Green),
-                    BorderThickness = new Thickness(1.5),
-                    CornerRadius = new CornerRadius(3),
-                    Background = new SolidColorBrush(Color.FromArgb(80, 0, 255, 0)),
-                    Padding = new Thickness(3, 1, 3, 1),
-                    Margin = new Thickness(1, 0, 1, 0),
-                    Child = textBlock
-                };
-
-                // Add click handler if provided
-                if (onMedicationClick != null)
-                {
-                    var currentMatch = match;
-                    border.MouseLeftButtonUp += async (s, e) =>
-                    {
-                        await onMedicationClick(currentMatch);
-                        e.Handled = true;
-                    };
-                }
-
-                var container = new InlineUIContainer(border);
-                paragraph.Inlines.Add(container);
-
-                currentIndex = match.StartIndex + match.Length;
-            }
-
-            // Add remaining text
-            if (currentIndex < text.Length)
-            {
-                var remainingText = text.Substring(currentIndex);
-                paragraph.Inlines.Add(new Run(remainingText));
-            }
-
-            richTextBox.Document.Blocks.Add(paragraph);
-        }
-
         // Usage examples
 
         private const string sampleText = "Patient needs Lisinopril 10mg, then Aspirin 81mg daily, and also Metformin 500mg twice daily.";
@@ -264,27 +150,13 @@ namespace MineguideEPOCParser.GUIApp
 
         private void InitializeValidateMedicationExtraction()
         {
-            btnLoadOne.Click += (s, e) => HighlightMedicationsOption();
-            btnLoadTwo.Click += (s, e) => HighlightMedicationsClickableOption();
-            btnLoadThree.Click += (s, e) => HighlightMedicationsWithBoxesOption();
+            btnLoad.Click += LoadMedications;
         }
 
-        private void HighlightMedicationsOption()
-        {
-            // Option 1: Simple highlighting
-            HighlightMedications(myRichTextBox, sampleText, extractedMedications);
-        }
-
-        private void HighlightMedicationsClickableOption()
+        private void LoadMedications(object? sender, RoutedEventArgs args)
         {
             // Option 2: Clickable for validation
             HighlightMedicationsClickable(myRichTextBox, sampleText, extractedMedications, OnMedicationClicked);
-        }
-
-        private void HighlightMedicationsWithBoxesOption()
-        {
-            // Option 3: Green boxes with click handling
-            HighlightMedicationsWithBoxes(myRichTextBox, sampleText, extractedMedications, OnMedicationClicked);
         }
 
         private async Task OnMedicationClicked(MedicationMatch match)

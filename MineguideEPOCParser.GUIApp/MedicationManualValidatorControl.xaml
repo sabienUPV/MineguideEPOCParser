@@ -24,9 +24,11 @@
             <wv2:WebView2 x:Name="myWebView" Source="https://snomedsns.es/search" Margin="10" />
         </DockPanel>
         <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-            <Button x:Name="btnLoadOne" Content="Load Version 1" Margin="5"/>
-            <Button x:Name="btnLoadTwo" Content="Load Version 2" Margin="5"/>
-            <Button x:Name="btnLoadThree" Content="Load Version 3" Margin="5"/>
+            <Button x:Name="btnLoad" Content="Load" Margin="5" Click="LoadMedications" />
+            <Button x:Name="btnPrevious" Content="Previous" Margin="5"/>
+            <Button x:Name="btnAdd" Content="Add medication" Margin="5"/>
+            <Button x:Name="btnRemove" Content="Remove medication" Margin="5"/>
+            <Button x:Name="btnNext" Content="Next" Margin="5"/>
         </StackPanel>
     </Grid>
 </UserControl>
