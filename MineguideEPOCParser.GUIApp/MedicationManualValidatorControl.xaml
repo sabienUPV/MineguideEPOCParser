@@ -29,6 +29,7 @@
             <Button x:Name="BtnAdd" Content="Add medication" Margin="5"/>
             <Button x:Name="BtnRemove" Content="Remove medication" Margin="5"/>
             <Button x:Name="BtnNext" Content="Next" Margin="5"/>
+            <Button x:Name="BtnStop" Content="Stop" Margin="5" Click="StopMedicationValidation" />
         </StackPanel>
     </Grid>
 </UserControl>

@@ -167,18 +167,51 @@ namespace MineguideEPOCParser.GUIApp
             HighlightMedicationsClickable(MyRichTextBox, sampleText, extractedMedications, OnMedicationClicked);
         }
 
+        private void StopMedicationValidation(object sender, RoutedEventArgs e)
+        {
+            StopMedicationValidation();
+        }
+
+        private void StopMedicationValidation()
+        {
+            // Clear the RichTextBox and reset matches
+            MyRichTextBox.Document.Blocks.Clear();
+            CurrrentMedicationMatches = null;
+            _currentMedicationFocusIndex = -1; // Reset focus index
+        }
+
         private int _currentMedicationFocusIndex = -1;
         private void MyRichTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            // If there are no matches (maybe the user hasn't loaded anything yet), do nothing
-            if (CurrrentMedicationMatches == null || CurrrentMedicationMatches.Count <= 0)
+            // If Ctrl+L is pressed, trigger the load button
+            if (e.Key == Key.L && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                BtnLoad.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                e.Handled = true;
+                return;
+            }
+
+            // If medication matches have not been loaded, do nothing
+            if (CurrrentMedicationMatches == null)
             {
                 return;
             }
 
-            // If Tab key is pressed, navigate between medication matches
-            if (e.Key == Key.Tab)
+            // If Ctrl+Escape is pressed, clear the RichTextBox and reset matches
+            if (e.Key == Key.Escape && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
+                StopMedicationValidation();
+                e.Handled = true; // Prevent default ctrl+escape behavior
+                return;
+            }
+            // If Tab key is pressed, navigate between medication matches
+            else if (e.Key == Key.Tab)
+            {
+                if (CurrrentMedicationMatches.Count == 0)
+                {
+                    return; // No matches to navigate
+                }
+
                 // Check if the Shift key is being held down (Shift+Tab)
                 if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
                 {
@@ -195,6 +228,7 @@ namespace MineguideEPOCParser.GUIApp
                 var match = CurrrentMedicationMatches[_currentMedicationFocusIndex];
                 match.Hyperlink?.Focus();
                 e.Handled = true; // Prevent default tab behavior
+                return;
             }
             // Click hyperlink with Space key
             else if (e.Key == Key.Space)
@@ -205,7 +239,33 @@ namespace MineguideEPOCParser.GUIApp
                     var match = CurrrentMedicationMatches[_currentMedicationFocusIndex];
                     match.Hyperlink?.DoClick();
                     e.Handled = true; // Prevent default space behavior
+                    return;
                 }
+            }
+            // Handle other keys for actions (clicking buttons)
+            else if (e.Key == Key.A)
+            {
+                BtnAdd.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                e.Handled = true;
+                return;
+            }
+            else if (e.Key == Key.R)
+            {
+                BtnRemove.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                e.Handled = true;
+                return;
+            }
+            else if (e.Key == Key.P)
+            {
+                BtnPrevious.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                e.Handled = true;
+                return;
+            }
+            else if (e.Key == Key.N)
+            {
+                BtnNext.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                e.Handled = true;
+                return;
             }
         }
 
