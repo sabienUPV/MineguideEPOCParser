@@ -52,8 +52,8 @@
                 CultureName = conf.CultureName,
                 InputFile = conf.InputFile,
                 OutputFile = conf.OutputFile,
-                Count = conf.Count,
-                OverwriteColumn = conf.OverwriteColumn,
+                RowLimit = conf.RowLimit,
+                OverwriteInputColumn = conf.OverwriteInputColumn,
                 DecodeHtmlFromInput = conf.DecodeHtmlFromInput,
             };
         }

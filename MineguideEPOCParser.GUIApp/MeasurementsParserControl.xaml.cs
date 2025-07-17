@@ -262,8 +262,8 @@ namespace MineguideEPOCParser.GUIApp
                 CultureName = cultureName,
                 InputFile = inputFile,
                 OutputFile = outputFile,
-                Count = isRowCountValid ? rowCount : null,
-                OverwriteColumn = overwriteColumn,
+                RowLimit = isRowCountValid ? rowCount : null,
+                OverwriteInputColumn = overwriteColumn,
                 DecodeHtmlFromInput = decodeHtml,
             };
 

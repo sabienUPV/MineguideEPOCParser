@@ -39,7 +39,7 @@ namespace MineguideEPOCParser.Core
                     continue;
                 }
 
-                if (!Configuration.OverwriteColumn)
+                if (!Configuration.OverwriteInputColumn)
                 {
                     // In the 'T' column, replace the multiline original text with a single line text
                     // (only if we are not overwriting it)
@@ -52,7 +52,7 @@ namespace MineguideEPOCParser.Core
                     // Duplicate the row for each measurement, including said measurement in it
                     string[] newRow;
 
-                    if (Configuration.OverwriteColumn)
+                    if (Configuration.OverwriteInputColumn)
                     {
                         newRow = row.Select((x, i) => i == inputColumnIndex ? measurement : x).ToArray();
                     }

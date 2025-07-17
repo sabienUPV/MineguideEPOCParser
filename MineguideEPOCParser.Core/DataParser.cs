@@ -58,7 +58,7 @@ namespace MineguideEPOCParser.Core
 
                 var csvConfig = new CsvConfiguration(new CultureInfo(Configuration.CultureName))
                 {
-                    CountBytes = Progress is not null && Configuration.Count is null,
+                    CountBytes = Progress is not null && Configuration.RowLimit is null,
                 };
 
                 await DoPreProcessing(cancellationToken);
@@ -67,7 +67,7 @@ namespace MineguideEPOCParser.Core
                 using var reader = new StreamReader(Configuration.InputFile);
                 using var csvReader = new CsvReader(reader, csvConfig);
 
-                var dataRead = await ReadData(csvReader, reader, Configuration.Count, cancellationToken);
+                var dataRead = await ReadData(csvReader, reader, Configuration.RowLimit, cancellationToken);
 
                 // Generate new headers
                 string[]? newHeaders = GenerateNewHeaders(dataRead);
@@ -112,7 +112,7 @@ namespace MineguideEPOCParser.Core
             }
 
             // Ensure the output headers are unique (their names might already exist in the input headers)
-            var finalOutputHeaders = Configuration.OutputHeaderNames.Select(outputHeader =>
+            var finalOutputHeaders = Configuration.OutputExtraHeaderNames.Select(outputHeader =>
             {
                 var finalOutputHeader = Utilities.ArrayEnsureUniqueHeader(dataRead.Headers, outputHeader);
 
@@ -127,7 +127,7 @@ namespace MineguideEPOCParser.Core
             IEnumerable<string> headersEnumerable;
 
             // If we are "overwriting" the input column, replace it with the output columns
-            if (Configuration.OverwriteColumn)
+            if (Configuration.OverwriteInputColumn)
             {
                 headersEnumerable = GenerateNewHeadersWithOverwrite(dataRead.Headers, finalOutputHeaders);
             }
@@ -144,7 +144,7 @@ namespace MineguideEPOCParser.Core
         {
             foreach (var h in headers)
             {
-                if (h == Configuration.InputHeaderName)
+                if (h == Configuration.InputColumnHeaderName)
                 {
                     foreach (var outputHeader in finalOutputHeaders)
                     {
@@ -188,7 +188,7 @@ namespace MineguideEPOCParser.Core
 
                     if (inputColumnIndex < 0)
                     {
-                        throw new InvalidOperationException($"{Configuration.InputHeaderName} column was not found");
+                        throw new InvalidOperationException($"{Configuration.InputColumnHeaderName} column was not found");
                     }
 
                     rowsEnumerable = ReadDataFromCsv(csv, sr, count, cancellationToken);
@@ -297,7 +297,7 @@ namespace MineguideEPOCParser.Core
         /// <param name="headerArray"></param>
         /// <exception cref="Exception"></exception>
         protected int GetInputColumnIndex(string[] headerArray)
-            => GetColumnIndex(headerArray, Configuration.InputHeaderName);
+            => GetColumnIndex(headerArray, Configuration.InputColumnHeaderName);
 
         /// <summary>
         /// Get the index of the column whose header is the one provided

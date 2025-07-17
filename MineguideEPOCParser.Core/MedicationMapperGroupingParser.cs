@@ -65,7 +65,7 @@ namespace MineguideEPOCParser.Core
 
                 // Replace or add the group or groups to the row
                 string[] newRow;
-                if (Configuration.OverwriteColumn)
+                if (Configuration.OverwriteInputColumn)
                 {
                     // If we are overwriting, replace the medication name(s) with the group name(s)
                     newRow = row.Select((value, index) => index == inputColumnIndex ? groups : value).ToArray();

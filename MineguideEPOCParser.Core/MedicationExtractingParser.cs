@@ -57,7 +57,7 @@ namespace MineguideEPOCParser.Core
                     (_, _, medicationDetails) = MedicationAnalyzers.AnalyzeMedicationMatches(t, medications, Logger); // Analyze how extracted medications match the text and log the results
                 }
 
-                if (!Configuration.OverwriteColumn)
+                if (!Configuration.OverwriteInputColumn)
                 {
                     // In the 'T' column, replace the multiline original text with a single line text
                     // (only if we are not overwriting it)
@@ -80,7 +80,7 @@ namespace MineguideEPOCParser.Core
                 // Duplicate the row for each medication, including the medication
                 string[] newRow;
 
-                if (Configuration.OverwriteColumn)
+                if (Configuration.OverwriteInputColumn)
                 {
                     // If we are overwriting, replace the input column with the medication
                     if (medicationDetails is null)
