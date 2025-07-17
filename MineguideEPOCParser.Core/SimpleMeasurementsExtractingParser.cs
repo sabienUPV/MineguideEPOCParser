@@ -12,7 +12,7 @@ namespace MineguideEPOCParser.Core
         /// <summary>
         /// Use Regex to extract the FEV1 (%) measurements from the text in the input column.
         /// </summary>
-        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] headers, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {

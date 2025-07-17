@@ -44,8 +44,8 @@
             (InputTargetColumnHeaderName, OutputAdditionalHeaderNames) = GetDefaultColumns();
         }
 
-        public const string THeaderName = "T";
-        public const string MedicationHeaderName = "Medication";
-        protected virtual (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (THeaderName, [MedicationHeaderName]);
+        public const string DefaultTHeaderName = "T";
+        public const string DefaultMedicationHeaderName = "Medication";
+        protected virtual (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [DefaultMedicationHeaderName]);
     }
 }

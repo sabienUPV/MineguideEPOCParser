@@ -18,7 +18,7 @@ namespace MineguideEPOCParser.Core
         /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.
         /// </summary>
-        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] headers, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {
@@ -166,7 +166,7 @@ namespace MineguideEPOCParser.Core
         public bool UseJsonFormat { get; set; } = DefaultSystemPromptUsesJsonFormat;
 
         protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns()
-            => (THeaderName, [MedicationHeaderName,
+            => (DefaultTHeaderName, [DefaultMedicationHeaderName,
                 InputRowNumberHeaderName,
                 nameof(MedicationAnalyzers.MedicationDetails.ExactMatch),
                 nameof(MedicationAnalyzers.MedicationDetails.SimilarityScore), 

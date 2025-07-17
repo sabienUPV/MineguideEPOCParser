@@ -73,7 +73,7 @@ namespace MineguideEPOCParser.Core
                 string[]? newHeaders = GenerateNewHeaders(dataRead);
 
                 // Apply transformations
-                var newRows = ApplyTransformations(dataRead.Rows, dataRead.InputTargetColumnIndex, cancellationToken);
+                var newRows = ApplyTransformations(dataRead.Rows, dataRead.InputTargetColumnIndex, dataRead.Headers, cancellationToken);
 
                 // Write
                 await using var writer = new StreamWriter(Configuration.OutputFile, false, Encoding.UTF8);
@@ -169,7 +169,7 @@ namespace MineguideEPOCParser.Core
             return Task.CompletedTask;
         }
 
-        protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, CancellationToken cancellationToken = default);
+        protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] headers, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Este método se encarga de leer el archivo csv y devolver un objeto 'DataReadContent'
