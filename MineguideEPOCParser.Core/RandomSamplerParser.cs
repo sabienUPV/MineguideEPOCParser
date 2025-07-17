@@ -17,7 +17,7 @@ namespace MineguideEPOCParser.Core
 
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
             IAsyncEnumerable<string[]> rows,
-            int inputColumnIndex,
+            int inputTargetColumnIndex,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             // Use a dictionary to ensure unique keys efficiently

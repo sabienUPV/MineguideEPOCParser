@@ -8,15 +8,15 @@
         public required string InputFile { get; set; }
         public required string OutputFile { get; set; }
 
-        public string InputColumnHeaderName { get; set; }
-        public string[] OutputExtraHeaderNames { get; set; }
+        public string InputTargetColumnHeaderName { get; set; }
+        public string[] OutputAdditionalHeaderNames { get; set; }
 
-        public int NumberOfOutputColumns => OutputExtraHeaderNames?.Length ?? 0;
+        public int NumberOfOutputAdditionalHeaders => OutputAdditionalHeaderNames?.Length ?? 0;
 
         /// <summary>
-        /// If true, the input column will be overwritten with the output column(s), renaming the header, instead of adding a new column.
+        /// If true, the input target column will be overwritten with the output column(s), renaming the header, instead of adding a new column.
         /// </summary>
-        public bool OverwriteInputColumn { get; set; } = false;
+        public bool OverwriteInputTargetColumn { get; set; } = false;
 
         /// <summary>
         /// Whether to include a retry policy when the API returns an invalid response (i.e: invalid JSON).
@@ -41,11 +41,11 @@
 
         public DataParserConfiguration()
         {
-            (InputColumnHeaderName, OutputExtraHeaderNames) = GetDefaultColumns();
+            (InputTargetColumnHeaderName, OutputAdditionalHeaderNames) = GetDefaultColumns();
         }
 
         public const string THeaderName = "T";
         public const string MedicationHeaderName = "Medication";
-        protected virtual (string inputHeader, string[] outputHeaders) GetDefaultColumns() => (THeaderName, [MedicationHeaderName]);
+        protected virtual (string inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (THeaderName, [MedicationHeaderName]);
     }
 }

@@ -45,12 +45,12 @@ namespace MineguideEPOCParser.Core
             return groups.SelectMany(g => g.Value.Select(m => (m, g.Key))).ToDictionary(p => p.m, p => p.Key);
         }
 
-        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {
                 // Get the medication name
-                var t = row[inputColumnIndex];
+                var t = row[inputTargetColumnIndex];
 
                 // Split the medication name by "+" to handle multiple medications in a single cell
                 var medications = t.Split(MedicationSeparator);
@@ -65,10 +65,10 @@ namespace MineguideEPOCParser.Core
 
                 // Replace or add the group or groups to the row
                 string[] newRow;
-                if (Configuration.OverwriteInputColumn)
+                if (Configuration.OverwriteInputTargetColumn)
                 {
                     // If we are overwriting, replace the medication name(s) with the group name(s)
-                    newRow = row.Select((value, index) => index == inputColumnIndex ? groups : value).ToArray();
+                    newRow = row.Select((value, index) => index == inputTargetColumnIndex ? groups : value).ToArray();
                 }
                 else
                 {
@@ -86,6 +86,6 @@ namespace MineguideEPOCParser.Core
         public required string InputGroupingFile { get; set; }
 
         public const string ReplacementHeaderName = "NewName";
-        protected override (string inputHeader, string[] outputHeaders) GetDefaultColumns() => (ReplacementHeaderName, [ReplacementHeaderName]);
+        protected override (string inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (ReplacementHeaderName, [ReplacementHeaderName]);
     }
 }

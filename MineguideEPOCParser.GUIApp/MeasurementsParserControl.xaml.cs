@@ -263,7 +263,7 @@ namespace MineguideEPOCParser.GUIApp
                 InputFile = inputFile,
                 OutputFile = outputFile,
                 RowLimit = isRowCountValid ? rowCount : null,
-                OverwriteInputColumn = overwriteColumn,
+                OverwriteInputTargetColumn = overwriteColumn,
                 DecodeHtmlFromInput = decodeHtml,
             };
 

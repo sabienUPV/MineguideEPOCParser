@@ -13,17 +13,17 @@ namespace MineguideEPOCParser.Core
         /// (In this case: Medication name, input row number, and 6 additional columns for analysis (from <see cref="MedicationAnalyzers.MedicationDetails"/>))
         /// </para>
         /// </summary>
-        public override int OutputColumnsCount => 8;
+        public override int NumberOfOutputAdditionalColumns => 8;
 
         /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.
         /// </summary>
-        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {
                 // Recoge la columna que contiene los medicamentos
-                var t = row[inputColumnIndex];
+                var t = row[inputTargetColumnIndex];
 
                 // If the input text is HTML encoded, decode it
                 if (Configuration.DecodeHtmlFromInput)
@@ -57,7 +57,7 @@ namespace MineguideEPOCParser.Core
                     (_, _, medicationDetails) = MedicationAnalyzers.AnalyzeMedicationMatches(t, medications, Logger); // Analyze how extracted medications match the text and log the results
                 }
 
-                if (!Configuration.OverwriteInputColumn)
+                if (!Configuration.OverwriteInputTargetColumn)
                 {
                     // In the 'T' column, replace the multiline original text with a single line text
                     // (only if we are not overwriting it)
@@ -65,14 +65,14 @@ namespace MineguideEPOCParser.Core
                 }
 
                 // Devuelve cada medicamento en una fila, ordenados alfabéticamente
-                foreach (var newRow in CreateNewRowsForEachMedication(row, t, medications, inputColumnIndex, medicationDetails))
+                foreach (var newRow in CreateNewRowsForEachMedication(row, t, medications, inputTargetColumnIndex, medicationDetails))
                 {
                     yield return newRow;
                 }
             }
         }
 
-        private IEnumerable<string[]> CreateNewRowsForEachMedication(string[] row, string t, string[] medications, int inputColumnIndex, Dictionary<string, MedicationAnalyzers.MedicationDetails>? medicationDetails)
+        private IEnumerable<string[]> CreateNewRowsForEachMedication(string[] row, string t, string[] medications, int inputTargetColumnIndex, Dictionary<string, MedicationAnalyzers.MedicationDetails>? medicationDetails)
         {
             // Devuelve cada medicamento en una fila, ordenados alfabéticamente
             foreach (var medication in medications.Order())
@@ -80,18 +80,18 @@ namespace MineguideEPOCParser.Core
                 // Duplicate the row for each medication, including the medication
                 string[] newRow;
 
-                if (Configuration.OverwriteInputColumn)
+                if (Configuration.OverwriteInputTargetColumn)
                 {
                     // If we are overwriting, replace the input column with the medication
                     if (medicationDetails is null)
                     {
-                        newRow = Utilities.ArrayCopyAndReplace(row, inputColumnIndex, medication);
+                        newRow = Utilities.ArrayCopyAndReplace(row, inputTargetColumnIndex, medication);
                     }
                     else
                     {
                         newRow = Utilities.ArrayCopyAndReplace(
                             row,
-                            inputColumnIndex,
+                            inputTargetColumnIndex,
                             CreateNewColumnValuesFromMedicationAndDetails(medication, medicationDetails[medication])
                         );
                     }
@@ -115,7 +115,7 @@ namespace MineguideEPOCParser.Core
                     }
 
                     // In the 'T' column, replace the multiline original text with a single line text
-                    newRow[inputColumnIndex] = t;
+                    newRow[inputTargetColumnIndex] = t;
                 }
 
                 yield return newRow;
@@ -165,7 +165,7 @@ namespace MineguideEPOCParser.Core
 
         public bool UseJsonFormat { get; set; } = DefaultSystemPromptUsesJsonFormat;
 
-        protected override (string inputHeader, string[] outputHeaders) GetDefaultColumns()
+        protected override (string inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns()
             => (THeaderName, [MedicationHeaderName,
                 InputRowNumberHeaderName,
                 nameof(MedicationAnalyzers.MedicationDetails.ExactMatch),

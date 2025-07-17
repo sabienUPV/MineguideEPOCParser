@@ -241,7 +241,7 @@ namespace MineguideEPOCParser.GUIApp
                 RowLimit = isRowCountValid ? rowCount : null,
                 // Overwrite the column by default
                 // TODO: Add a checkbox to allow the user to choose whether to overwrite the column or add a new column
-                OverwriteInputColumn = true,
+                OverwriteInputTargetColumn = true,
             };
 
             // Clear the log

@@ -12,12 +12,12 @@ namespace MineguideEPOCParser.Core
         /// <summary>
         /// Use Regex to extract the FEV1 (%) measurements from the text in the input column.
         /// </summary>
-        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {
                 // Recoge la columna que contiene las medidas
-                var t = row[inputColumnIndex];
+                var t = row[inputTargetColumnIndex];
 
                 // If the input text is HTML encoded, decode it
                 if (Configuration.DecodeHtmlFromInput)
@@ -39,7 +39,7 @@ namespace MineguideEPOCParser.Core
                     continue;
                 }
 
-                if (!Configuration.OverwriteInputColumn)
+                if (!Configuration.OverwriteInputTargetColumn)
                 {
                     // In the 'T' column, replace the multiline original text with a single line text
                     // (only if we are not overwriting it)
@@ -52,9 +52,9 @@ namespace MineguideEPOCParser.Core
                     // Duplicate the row for each measurement, including said measurement in it
                     string[] newRow;
 
-                    if (Configuration.OverwriteInputColumn)
+                    if (Configuration.OverwriteInputTargetColumn)
                     {
-                        newRow = row.Select((x, i) => i == inputColumnIndex ? measurement : x).ToArray();
+                        newRow = row.Select((x, i) => i == inputTargetColumnIndex ? measurement : x).ToArray();
                     }
                     else
                     {
@@ -62,7 +62,7 @@ namespace MineguideEPOCParser.Core
                         newRow = [.. row, measurement];
 
                         // In the 'T' column, replace the multiline original text with a single line text
-                        newRow[inputColumnIndex] = t;
+                        newRow[inputTargetColumnIndex] = t;
                     }
 
                     yield return newRow;

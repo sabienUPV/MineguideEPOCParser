@@ -39,9 +39,9 @@ namespace MineguideEPOCParser.Core
         public IProgress<ProgressValue>? Progress { get; set; }
 
         /// <summary>
-        /// Number of output columns that the parser will write to the output file
+        /// Number of output columns that the parser will write to the output file (in addition to the input columns).
         /// </summary>
-        public virtual int OutputColumnsCount => 1;
+        public virtual int NumberOfOutputAdditionalColumns => 1;
 
         /// <summary>
         /// Reads the medication from the input CSV file, lazily,
@@ -73,7 +73,7 @@ namespace MineguideEPOCParser.Core
                 string[]? newHeaders = GenerateNewHeaders(dataRead);
 
                 // Apply transformations
-                var newRows = ApplyTransformations(dataRead.Rows, dataRead.InputColumnIndex, cancellationToken);
+                var newRows = ApplyTransformations(dataRead.Rows, dataRead.InputTargetColumnIndex, cancellationToken);
 
                 // Write
                 await using var writer = new StreamWriter(Configuration.OutputFile, false, Encoding.UTF8);
@@ -106,13 +106,13 @@ namespace MineguideEPOCParser.Core
         protected string[] GenerateNewHeaders(DataReadContent dataRead)
         {
             // Ensure that the number of output headers is correct
-            if (Configuration.NumberOfOutputColumns != OutputColumnsCount)
+            if (Configuration.NumberOfOutputAdditionalHeaders != NumberOfOutputAdditionalColumns)
             {
-                throw new InvalidOperationException($"The number of output headers ({Configuration.NumberOfOutputColumns}) does not match the expected number of output columns ({OutputColumnsCount}).");
+                throw new InvalidOperationException($"The number of output additional headers found in the configuration ({Configuration.NumberOfOutputAdditionalHeaders}) does not match with the expected number of output additional columns according to the parser ({NumberOfOutputAdditionalColumns}).");
             }
 
             // Ensure the output headers are unique (their names might already exist in the input headers)
-            var finalOutputHeaders = Configuration.OutputExtraHeaderNames.Select(outputHeader =>
+            var finalOutputHeaders = Configuration.OutputAdditionalHeaderNames.Select(outputHeader =>
             {
                 var finalOutputHeader = Utilities.ArrayEnsureUniqueHeader(dataRead.Headers, outputHeader);
 
@@ -127,7 +127,7 @@ namespace MineguideEPOCParser.Core
             IEnumerable<string> headersEnumerable;
 
             // If we are "overwriting" the input column, replace it with the output columns
-            if (Configuration.OverwriteInputColumn)
+            if (Configuration.OverwriteInputTargetColumn)
             {
                 headersEnumerable = GenerateNewHeadersWithOverwrite(dataRead.Headers, finalOutputHeaders);
             }
@@ -144,7 +144,7 @@ namespace MineguideEPOCParser.Core
         {
             foreach (var h in headers)
             {
-                if (h == Configuration.InputColumnHeaderName)
+                if (h == Configuration.InputTargetColumnHeaderName)
                 {
                     foreach (var outputHeader in finalOutputHeaders)
                     {
@@ -164,7 +164,7 @@ namespace MineguideEPOCParser.Core
             return Task.CompletedTask;
         }
 
-        protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputColumnIndex, CancellationToken cancellationToken = default);
+        protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Este método se encarga de leer el archivo csv y devolver un objeto 'DataReadContent'
@@ -175,7 +175,7 @@ namespace MineguideEPOCParser.Core
         {
             string[]? headerArray = null;
             IAsyncEnumerable<string[]>? rowsEnumerable = null;
-            int inputColumnIndex = -1;
+            int inputTargetColumnIndex = -1;
 
             try
             {
@@ -184,11 +184,11 @@ namespace MineguideEPOCParser.Core
                     csv.ReadHeader();
                     headerArray = csv.HeaderRecord;
 
-                    inputColumnIndex = GetInputColumnIndex(headerArray);
+                    inputTargetColumnIndex = GetInputTargetColumnIndex(headerArray);
 
-                    if (inputColumnIndex < 0)
+                    if (inputTargetColumnIndex < 0)
                     {
-                        throw new InvalidOperationException($"{Configuration.InputColumnHeaderName} column was not found");
+                        throw new InvalidOperationException($"{Configuration.InputTargetColumnHeaderName} column was not found");
                     }
 
                     rowsEnumerable = ReadDataFromCsv(csv, sr, count, cancellationToken);
@@ -234,7 +234,7 @@ namespace MineguideEPOCParser.Core
             {
                 Headers = headerArray,
                 Rows = rowsEnumerable,
-                InputColumnIndex = inputColumnIndex,
+                InputTargetColumnIndex = inputTargetColumnIndex,
             };
 
             return result;
@@ -296,8 +296,8 @@ namespace MineguideEPOCParser.Core
         /// </summary>
         /// <param name="headerArray"></param>
         /// <exception cref="Exception"></exception>
-        protected int GetInputColumnIndex(string[] headerArray)
-            => GetColumnIndex(headerArray, Configuration.InputColumnHeaderName);
+        protected int GetInputTargetColumnIndex(string[] headerArray)
+            => GetColumnIndex(headerArray, Configuration.InputTargetColumnHeaderName);
 
         /// <summary>
         /// Get the index of the column whose header is the one provided
@@ -357,7 +357,7 @@ namespace MineguideEPOCParser.Core
             /// </summary>
             public required IAsyncEnumerable<string[]> Rows { get; init; }
 
-            public int InputColumnIndex { get; init; }
+            public int InputTargetColumnIndex { get; init; }
         }
     }
 }

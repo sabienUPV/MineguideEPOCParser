@@ -15,17 +15,17 @@ namespace MineguideEPOCParser.Core
         """;
 
         // 4 Output columns: TextSearched, Type, Value, Unit
-        public override int OutputColumnsCount => 4;
+        public override int NumberOfOutputAdditionalColumns => 4;
 
         /// <summary>
         /// Calls the Ollama API to extract the measurements from the text in the input column.
         /// </summary>
-        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {
                 // Recoge la columna que contiene las medidas
-                var t = row[inputColumnIndex];
+                var t = row[inputTargetColumnIndex];
 
                 // If the input text is HTML encoded, decode it
                 if (Configuration.DecodeHtmlFromInput)
@@ -77,7 +77,7 @@ namespace MineguideEPOCParser.Core
                     continue;
                 }
 
-                if (!Configuration.OverwriteInputColumn)
+                if (!Configuration.OverwriteInputTargetColumn)
                 {
                     // In the 'T' column, replace the multiline original text with a single line text
                     // (only if we are not overwriting it)
@@ -100,9 +100,9 @@ namespace MineguideEPOCParser.Core
                         measurement.Unit = DeduceMissingUnit(measurement.Value);
                     }
 
-                    if (Configuration.OverwriteInputColumn)
+                    if (Configuration.OverwriteInputTargetColumn)
                     {
-                        newRow = GenerateNewRowWithOverwrite(row, inputColumnIndex, [allTextSearched, measurement.Type, measurement.Value.ToString(), measurement.Unit]).ToArray();
+                        newRow = GenerateNewRowWithOverwrite(row, inputTargetColumnIndex, [allTextSearched, measurement.Type, measurement.Value.ToString(), measurement.Unit]).ToArray();
                     }
                     else
                     {
@@ -110,7 +110,7 @@ namespace MineguideEPOCParser.Core
                         newRow = row.Append(allTextSearched).Append(measurement.Type).Append(measurement.Value.ToString()).Append(measurement.Unit).ToArray();
 
                         // In the 'T' column, replace the multiline original text with a single line text
-                        newRow[inputColumnIndex] = t;
+                        newRow[inputTargetColumnIndex] = t;
                     }
 
                     yield return newRow;
@@ -386,11 +386,11 @@ namespace MineguideEPOCParser.Core
             return text;
         }
 
-        private static IEnumerable<string> GenerateNewRowWithOverwrite(string[] row, int inputColumnIndex, IEnumerable<string> outputValues)
+        private static IEnumerable<string> GenerateNewRowWithOverwrite(string[] row, int inputTargetColumnIndex, IEnumerable<string> outputValues)
         {
             for (int i = 0; i < row.Length; i++)
             {
-                if (i == inputColumnIndex)
+                if (i == inputTargetColumnIndex)
                 {
                     foreach (var outputValue in outputValues)
                     {
