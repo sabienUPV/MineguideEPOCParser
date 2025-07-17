@@ -7,6 +7,8 @@ namespace MineguideEPOCParser.Core
     /// </summary>
     public class RandomSamplerParser : DataParser<RandomSamplerParserConfiguration>
     {
+        public override int NumberOfOutputAdditionalColumns => 0; // No additional output columns, just sampling the input
+
         private Random? _random;
 
         protected override Task DoPreProcessing(CancellationToken cancellationToken = default)
@@ -51,5 +53,7 @@ namespace MineguideEPOCParser.Core
 
         public int SampleSize { get; set; } = DefaultSampleSize;
         public int Seed { get; set; } = DefaultSeed;
+
+        protected override (string inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (THeaderName, []);
     }
 }
