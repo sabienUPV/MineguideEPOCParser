@@ -87,6 +87,7 @@ namespace MineguideEPOCParser.GUIApp
                 var currentMatch = match;
                 currentMatch.Hyperlink = hyperlink;
                 hyperlink.Click += async (s, e) => await onMedicationClick(currentMatch);
+                hyperlink.PreviewKeyDown += Hyperlink_PreviewKeyDown;
 
                 paragraph.Inlines.Add(hyperlink);
                 currentIndex = match.StartIndex + match.Length;
@@ -100,6 +101,19 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             richTextBox.Document.Blocks.Add(paragraph);
+        }
+
+        private void Hyperlink_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Click hyperlink when pressing space key
+            if (e.Key != Key.Space || sender is not Hyperlink hyperlink)
+            {
+                return;
+            }
+
+            hyperlink?.DoClick();
+
+            e.Handled = true; // Prevent default space behavior
         }
 
         private List<MedicationMatch> FindAllMedicationMatches(string text, string[] medications)
@@ -229,18 +243,6 @@ namespace MineguideEPOCParser.GUIApp
                 match.Hyperlink?.Focus();
                 e.Handled = true; // Prevent default tab behavior
                 return;
-            }
-            // Click hyperlink with Space key
-            else if (e.Key == Key.Space)
-            {
-                // If a medication match is focused, click it
-                if (_currentMedicationFocusIndex >= 0 && _currentMedicationFocusIndex < CurrrentMedicationMatches.Count)
-                {
-                    var match = CurrrentMedicationMatches[_currentMedicationFocusIndex];
-                    match.Hyperlink?.DoClick();
-                    e.Handled = true; // Prevent default space behavior
-                    return;
-                }
             }
             // Handle other keys for actions (clicking buttons)
             else if (e.Key == Key.A)
