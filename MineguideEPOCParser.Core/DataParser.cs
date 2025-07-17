@@ -142,6 +142,11 @@ namespace MineguideEPOCParser.Core
 
         private IEnumerable<string> GenerateNewHeadersWithOverwrite(IEnumerable<string> headers, IEnumerable<string> finalOutputHeaders)
         {
+            if (Configuration.InputTargetColumnHeaderName is null)
+            {
+                throw new InvalidOperationException("Input target column header name is not set in the configuration.");
+            }
+
             foreach (var h in headers)
             {
                 if (h == Configuration.InputTargetColumnHeaderName)
@@ -175,7 +180,7 @@ namespace MineguideEPOCParser.Core
         {
             string[]? headerArray = null;
             IAsyncEnumerable<string[]>? rowsEnumerable = null;
-            int inputTargetColumnIndex = -1;
+            int? inputTargetColumnIndex = -1;
 
             try
             {
@@ -234,7 +239,10 @@ namespace MineguideEPOCParser.Core
             {
                 Headers = headerArray,
                 Rows = rowsEnumerable,
-                InputTargetColumnIndex = inputTargetColumnIndex,
+                // If the index is not set, use -1
+                // (the caller should handle this case
+                // and never use this if they didn't set it in the configuration)
+                InputTargetColumnIndex = inputTargetColumnIndex ?? -1,
             };
 
             return result;
@@ -292,12 +300,21 @@ namespace MineguideEPOCParser.Core
 
         /// <summary>
         /// Este método recoge y devuelve la posición de la columna
-        /// donde se encuentran los medicamentos
+        /// donde se encuentran los medicamentos.
+        /// Si no se encuentra la columna, devuelve -1.
+        /// Si la columna no está especificada en la configuración, devuelve null.
         /// </summary>
         /// <param name="headerArray"></param>
         /// <exception cref="Exception"></exception>
-        protected int GetInputTargetColumnIndex(string[] headerArray)
-            => GetColumnIndex(headerArray, Configuration.InputTargetColumnHeaderName);
+        protected int? GetInputTargetColumnIndex(string[] headerArray)
+        {
+            if (Configuration.InputTargetColumnHeaderName is null)
+            {
+                return null; // No target column specified, we assume the caller doesn't need it.
+            }
+
+            return GetColumnIndex(headerArray, Configuration.InputTargetColumnHeaderName);
+        }
 
         /// <summary>
         /// Get the index of the column whose header is the one provided
@@ -314,7 +331,7 @@ namespace MineguideEPOCParser.Core
                 }
             }
 
-            throw new Exception("No se ha encontrado la columna solicitada.");
+            return -1; // Column not found
         }
 
         protected async Task<int> WriteTransformedData(CsvWriter csv, string[] headers, IAsyncEnumerable<string[]> rows)

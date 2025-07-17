@@ -165,7 +165,7 @@ namespace MineguideEPOCParser.Core
 
         public bool UseJsonFormat { get; set; } = DefaultSystemPromptUsesJsonFormat;
 
-        protected override (string inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns()
+        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns()
             => (THeaderName, [MedicationHeaderName,
                 InputRowNumberHeaderName,
                 nameof(MedicationAnalyzers.MedicationDetails.ExactMatch),

@@ -86,6 +86,6 @@ namespace MineguideEPOCParser.Core
         public required string InputGroupingFile { get; set; }
 
         public const string ReplacementHeaderName = "NewName";
-        protected override (string inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (ReplacementHeaderName, [ReplacementHeaderName]);
+        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (ReplacementHeaderName, [ReplacementHeaderName]);
     }
 }

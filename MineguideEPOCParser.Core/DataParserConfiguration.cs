@@ -8,7 +8,7 @@
         public required string InputFile { get; set; }
         public required string OutputFile { get; set; }
 
-        public string InputTargetColumnHeaderName { get; set; }
+        public string? InputTargetColumnHeaderName { get; set; }
         public string[] OutputAdditionalHeaderNames { get; set; }
 
         public int NumberOfOutputAdditionalHeaders => OutputAdditionalHeaderNames?.Length ?? 0;
@@ -46,6 +46,6 @@
 
         public const string THeaderName = "T";
         public const string MedicationHeaderName = "Medication";
-        protected virtual (string inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (THeaderName, [MedicationHeaderName]);
+        protected virtual (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (THeaderName, [MedicationHeaderName]);
     }
 }

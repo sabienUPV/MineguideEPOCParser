@@ -54,6 +54,6 @@ namespace MineguideEPOCParser.Core
         public int SampleSize { get; set; } = DefaultSampleSize;
         public int Seed { get; set; } = DefaultSeed;
 
-        protected override (string inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (THeaderName, []);
+        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (null, []);
     }
 }
