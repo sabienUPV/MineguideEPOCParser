@@ -195,7 +195,7 @@ namespace MineguideEPOCParser.GUIApp
         }
 
         private int _currentMedicationFocusIndex = -1;
-        private void MyRichTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        private async void MyRichTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             // If Ctrl+L is pressed, trigger the load button
             if (e.Key == Key.L && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
@@ -244,6 +244,18 @@ namespace MineguideEPOCParser.GUIApp
                 e.Handled = true; // Prevent default tab behavior
                 return;
             }
+            else if (e.Key == Key.Space)
+            {
+                // Get selected text
+                var selectedText = MyRichTextBox.Selection.Text;
+                if (!string.IsNullOrWhiteSpace(selectedText))
+                {
+                    // Search text in SNOMED
+                    await SnomedSearchAndClick(selectedText.Trim());
+                    e.Handled = true;
+                }
+                return;
+            }
             // Handle other keys for actions (clicking buttons)
             else if (e.Key == Key.A)
             {
@@ -273,8 +285,7 @@ namespace MineguideEPOCParser.GUIApp
 
         private async Task OnMedicationClicked(MedicationMatch match)
         {
-            await SnomedSearchRobust(match.Text);
-            await SnomedClickFirstResult();
+            await SnomedSearchAndClick(match.Text);
 
             //// Show validation dialog or inline editor
             //var result = MessageBox.Show(
@@ -287,6 +298,12 @@ namespace MineguideEPOCParser.GUIApp
             //    // Show correction dialog or highlight for manual correction
             //    // You could open an inline editor or popup here
             //}
+        }
+
+        private async Task SnomedSearchAndClick(string text)
+        {
+            await SnomedSearchRobust(text);
+            await SnomedClickFirstResult();
         }
 
         // Method 1: More robust JavaScript with multiple fallback strategies
