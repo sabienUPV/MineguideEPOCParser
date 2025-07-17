@@ -197,8 +197,8 @@ namespace MineguideEPOCParser.GUIApp
                 return;
             }
 
-            // If Ctrl+Escape is pressed, clear the RichTextBox and reset matches
-            if (e.Key == Key.Escape && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            // If Ctrl+Shift+S is pressed, clear the RichTextBox and reset matches
+            if (e.Key == Key.S && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift))
             {
                 StopMedicationValidation();
                 e.Handled = true; // Prevent default ctrl+escape behavior
