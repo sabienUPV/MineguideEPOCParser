@@ -14,18 +14,11 @@ namespace MineguideEPOCParser.GUIApp
         public MedicationManualValidatorControl()
         {
             InitializeComponent();
-
-            InitializeValidateMedicationExtraction();
-
-            InitializeWebView();
         }
 
-        private void InitializeWebView()
-        {
-            // Hide loading text when website loads
-            MyWebView.NavigationCompleted += OnNavigationCompleted;
-        }
-
+        /// <summary>
+        /// Hide loading text when website loads
+        /// </summary>
         private void OnNavigationCompleted(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
         {
             if (e.IsSuccess)
@@ -170,21 +163,15 @@ namespace MineguideEPOCParser.GUIApp
         private const string sampleText = "Patient needs Lisinopril 10mg, then Aspirin 81mg daily, and also Metformin 500mg twice daily.";
         private static readonly string[] extractedMedications = ["Aspirin", "Metformin", "Lisinopril"]; // LLM extracted these
 
-        private void InitializeValidateMedicationExtraction()
-        {
-            BtnLoad.Click += LoadMedications;
-        }
+        private void LoadMedications(object? sender, RoutedEventArgs args) => LoadMedications();
 
-        private void LoadMedications(object? sender, RoutedEventArgs args)
+        private void LoadMedications()
         {
             // Option 2: Clickable for validation
             HighlightMedicationsClickable(MyRichTextBox, sampleText, extractedMedications, OnMedicationClicked);
         }
 
-        private void StopMedicationValidation(object sender, RoutedEventArgs e)
-        {
-            StopMedicationValidation();
-        }
+        private void StopMedicationValidation(object sender, RoutedEventArgs e) => StopMedicationValidation();
 
         private void StopMedicationValidation()
         {

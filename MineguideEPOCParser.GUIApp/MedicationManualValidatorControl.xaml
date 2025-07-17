@@ -21,7 +21,7 @@
         <RichTextBox Grid.Row="0" x:Name="MyRichTextBox" IsDocumentEnabled="True" IsReadOnly="True" PreviewKeyDown="MyRichTextBox_PreviewKeyDown" />
         <DockPanel Grid.Row="0" Grid.Column="1" Margin="10">
             <TextBlock x:Name="MyWebViewLoadingText" DockPanel.Dock="Top" Text="Loading SNOMED..." />
-            <wv2:WebView2 x:Name="MyWebView" Source="https://snomedsns.es/search" Margin="10" />
+            <wv2:WebView2 x:Name="MyWebView" Source="https://snomedsns.es/search" Margin="10" NavigationCompleted="OnNavigationCompleted" />
         </DockPanel>
         <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
             <Button x:Name="BtnLoad" Content="Load" Margin="5" Click="LoadMedications" />
