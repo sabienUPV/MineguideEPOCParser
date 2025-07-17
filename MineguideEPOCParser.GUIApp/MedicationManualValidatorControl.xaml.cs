@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace MineguideEPOCParser.GUIApp
@@ -22,21 +23,21 @@ namespace MineguideEPOCParser.GUIApp
         private void InitializeWebView()
         {
             // Hide loading text when website loads
-            myWebView.NavigationCompleted += OnNavigationCompleted;
+            MyWebView.NavigationCompleted += OnNavigationCompleted;
         }
 
         private void OnNavigationCompleted(object? sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationCompletedEventArgs e)
         {
             if (e.IsSuccess)
             {
-                myWebViewLoadingText.Visibility = Visibility.Collapsed;
+                MyWebViewLoadingText.Visibility = Visibility.Collapsed;
             }
             else
             {
-                myWebViewLoadingText.Text = "Failed to load website.";
+                MyWebViewLoadingText.Text = "Failed to load website.";
             }
 
-            myWebView.NavigationCompleted -= OnNavigationCompleted; // Unsubscribe to avoid multiple calls
+            MyWebView.NavigationCompleted -= OnNavigationCompleted; // Unsubscribe to avoid multiple calls
         }
 
         public class MedicationMatch
@@ -45,7 +46,10 @@ namespace MineguideEPOCParser.GUIApp
             public int Length { get; set; }
             public required string Text { get; set; }
             public required string OriginalMedication { get; set; } // The medication from your array
+            public Hyperlink? Hyperlink { get; set; } // Optional hyperlink for clickable highlights
         }
+
+        public List<MedicationMatch>? CurrrentMedicationMatches { get; private set; }
 
         // Enhanced version with clickable highlights for validation
         public void HighlightMedicationsClickable(RichTextBox richTextBox, string text, string[] medications,
@@ -53,6 +57,8 @@ namespace MineguideEPOCParser.GUIApp
         {
             var matches = FindAllMedicationMatches(text, medications);
             var sortedMatches = matches.OrderBy(m => m.StartIndex).ToList();
+
+            CurrrentMedicationMatches = sortedMatches; // Store matches for later use
 
             richTextBox.Document.Blocks.Clear();
             var paragraph = new Paragraph();
@@ -73,11 +79,13 @@ namespace MineguideEPOCParser.GUIApp
                     Foreground = new SolidColorBrush(Colors.DarkGreen),
                     Background = new SolidColorBrush(Colors.LightGreen),
                     FontWeight = FontWeights.Bold,
-                    TextDecorations = null // Remove underline for cleaner look
+                    TextDecorations = null, // Remove underline for cleaner look
+                    Focusable = true,
                 };
 
                 // Capture the match in the closure
                 var currentMatch = match;
+                currentMatch.Hyperlink = hyperlink;
                 hyperlink.Click += async (s, e) => await onMedicationClick(currentMatch);
 
                 paragraph.Inlines.Add(hyperlink);
@@ -150,13 +158,55 @@ namespace MineguideEPOCParser.GUIApp
 
         private void InitializeValidateMedicationExtraction()
         {
-            btnLoad.Click += LoadMedications;
+            BtnLoad.Click += LoadMedications;
         }
 
         private void LoadMedications(object? sender, RoutedEventArgs args)
         {
             // Option 2: Clickable for validation
-            HighlightMedicationsClickable(myRichTextBox, sampleText, extractedMedications, OnMedicationClicked);
+            HighlightMedicationsClickable(MyRichTextBox, sampleText, extractedMedications, OnMedicationClicked);
+        }
+
+        private int _currentMedicationFocusIndex = -1;
+        private void MyRichTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // If there are no matches (maybe the user hasn't loaded anything yet), do nothing
+            if (CurrrentMedicationMatches == null || CurrrentMedicationMatches.Count <= 0)
+            {
+                return;
+            }
+
+            // If Tab key is pressed, navigate between medication matches
+            if (e.Key == Key.Tab)
+            {
+                // Check if the Shift key is being held down (Shift+Tab)
+                if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+                {
+                    // Shift+Tab: go backwards
+                    // (note, we add Count to handle negative index wrap-around)
+                    _currentMedicationFocusIndex = (_currentMedicationFocusIndex - 1 + CurrrentMedicationMatches.Count) % CurrrentMedicationMatches.Count;
+                }
+                else
+                {
+                    // Tab: go forwards
+                    _currentMedicationFocusIndex = (_currentMedicationFocusIndex + 1) % CurrrentMedicationMatches.Count;
+                }
+
+                var match = CurrrentMedicationMatches[_currentMedicationFocusIndex];
+                match.Hyperlink?.Focus();
+                e.Handled = true; // Prevent default tab behavior
+            }
+            // Click hyperlink with Space key
+            else if (e.Key == Key.Space)
+            {
+                // If a medication match is focused, click it
+                if (_currentMedicationFocusIndex >= 0 && _currentMedicationFocusIndex < CurrrentMedicationMatches.Count)
+                {
+                    var match = CurrrentMedicationMatches[_currentMedicationFocusIndex];
+                    match.Hyperlink?.DoClick();
+                    e.Handled = true; // Prevent default space behavior
+                }
+            }
         }
 
         private async Task OnMedicationClicked(MedicationMatch match)
@@ -255,7 +305,7 @@ namespace MineguideEPOCParser.GUIApp
 
             try
             {
-                var result = await myWebView.CoreWebView2.ExecuteScriptAsync(js);
+                var result = await MyWebView.CoreWebView2.ExecuteScriptAsync(js);
                 if (result == "\"NOT_FOUND\"")
                 {
                     MessageBox.Show("Could not find search input on the page. The page structure may have changed.");
@@ -376,7 +426,7 @@ namespace MineguideEPOCParser.GUIApp
 
             try
             {
-                var result = await myWebView.CoreWebView2.ExecuteScriptAsync(js);
+                var result = await MyWebView.CoreWebView2.ExecuteScriptAsync(js);
 
                 if (result == "\"GRID_NOT_FOUND\"")
                 {
