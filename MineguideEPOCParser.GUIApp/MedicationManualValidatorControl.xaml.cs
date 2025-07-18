@@ -44,7 +44,7 @@ namespace MineguideEPOCParser.GUIApp
         }
 
         private string? _currentText;
-        private List<MedicationMatch>? _currrentMedicationMatches;
+        private List<MedicationMatch>? _currentMedicationMatches;
 
         // Enhanced version with clickable highlights for validation
         public void HighlightMedicationsClickable(RichTextBox richTextBox, string text, string[] medications,
@@ -54,7 +54,7 @@ namespace MineguideEPOCParser.GUIApp
             var sortedMatches = matches.OrderBy(m => m.StartIndex).ToList();
 
             _currentText = text; // Store the current text for later use
-            _currrentMedicationMatches = sortedMatches; // Store matches for later use
+            _currentMedicationMatches = sortedMatches; // Store matches for later use
 
             richTextBox.Document.Blocks.Clear();
             var paragraph = new Paragraph();
@@ -111,6 +111,18 @@ namespace MineguideEPOCParser.GUIApp
                 return;
             }
 
+            //If Ctrl+Space is pressed, instead of clicking, we want to select the text
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                // Focus the RichTextBox to ensure selection works
+                MyRichTextBox.Focus();
+                // Select the text of the hyperlink
+                MyRichTextBox.Selection.Select(hyperlink.ContentStart, hyperlink.ContentEnd);
+                e.Handled = true; // Prevent default space behavior
+                return;
+            }
+
+            // Otherwise, click the hyperlink
             hyperlink?.DoClick();
 
             e.Handled = true; // Prevent default space behavior
@@ -253,35 +265,25 @@ namespace MineguideEPOCParser.GUIApp
         // Add medication button click handler
         private void OnAddMedicationClicked(object? sender, RoutedEventArgs e)
         {
-            // Get selected text
-            var selectedText = MyRichTextBox.Selection.Text.Trim();
-            if (string.IsNullOrWhiteSpace(selectedText))
-            {
-                MessageBox.Show("Please select a medication to add.");
-                return;
-            }
+            // Initialize the validated medications list if it is null
+            _validatedMedications ??= [];
+
+            // Get selected medication
+            var selectedMedication = GetSelectedMedication();
             // Add the selected text to the validated medications list
-            _validatedMedications?.Add(selectedText);
+            _validatedMedications.Add(selectedMedication);
 
             // Redraw the RichTextBox with updated highlights
-            if (_validatedMedications != null)
-            {
-                HighlightMedicationsClickable(MyRichTextBox, _currentText ?? string.Empty, _validatedMedications.ToArray(), OnMedicationClicked);
-            }
+            HighlightMedicationsClickable(MyRichTextBox, _currentText ?? string.Empty, _validatedMedications.ToArray(), OnMedicationClicked);
         }
 
         // Remove medication button click handler
         private void OnRemoveMedicationClicked(object? sender, RoutedEventArgs e)
         {
-            // Get selected text
-            var selectedText = MyRichTextBox.Selection.Text.Trim();
-            if (string.IsNullOrWhiteSpace(selectedText))
-            {
-                MessageBox.Show("Please select a medication to remove.");
-                return;
-            }
+            // Get selected medication
+            var selectedMedication = GetSelectedMedication();
             // Remove the selected text from the validated medications list
-            if (_validatedMedications?.Remove(selectedText) == true)
+            if (_validatedMedications?.Remove(selectedMedication) == true)
             {
                 // Redraw the RichTextBox with updated highlights
                 if (_validatedMedications != null)
@@ -291,8 +293,36 @@ namespace MineguideEPOCParser.GUIApp
             }
             else
             {
-                MessageBox.Show($"Medication '{selectedText}' not found in the validated list.");
+                MessageBox.Show($"Medication '{selectedMedication}' not found in the validated list.");
             }
+        }
+
+        private string GetSelectedMedication()
+        {
+            // If a hyperlink is focused, get its text
+            if (_currentMedicationMatches is not null && _currentMedicationFocusIndex >= 0 && _currentMedicationFocusIndex < _currentMedicationMatches.Count)
+            {
+                var match = _currentMedicationMatches[_currentMedicationFocusIndex];
+                if (match.Hyperlink?.IsFocused == true)
+                {
+                    return match.Text.Trim();
+                }
+                else
+                {
+                    // If the hyperlink is not focused but the focus index was set,
+                    // we can safely reset it to optimize future calls
+                    _currentMedicationFocusIndex = -1; // Reset focus index
+                }
+            }
+
+            // If no hyperlink is focused, get selected text from RichTextBox instead
+            var selectedText = MyRichTextBox.Selection.Text.Trim();
+            if (string.IsNullOrWhiteSpace(selectedText))
+            {
+                MessageBox.Show("Please select a medication.");
+                return string.Empty;
+            }
+            return selectedText;
         }
 
         // Call this method when the user clicks "Next" or "Finish" after validation
@@ -314,7 +344,7 @@ namespace MineguideEPOCParser.GUIApp
 
             // Clear the RichTextBox and reset matches
             MyRichTextBox.Document.Blocks.Clear();
-            _currrentMedicationMatches = null;
+            _currentMedicationMatches = null;
             _currentMedicationFocusIndex = -1; // Reset focus index
         }
 
@@ -330,7 +360,7 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             // If medication matches have not been loaded, do nothing
-            if (_currrentMedicationMatches == null)
+            if (_currentMedicationMatches == null)
             {
                 return;
             }
@@ -345,7 +375,7 @@ namespace MineguideEPOCParser.GUIApp
             // If Tab key is pressed, navigate between medication matches
             else if (e.Key == Key.Tab)
             {
-                if (_currrentMedicationMatches.Count == 0)
+                if (_currentMedicationMatches.Count == 0)
                 {
                     return; // No matches to navigate
                 }
@@ -355,15 +385,15 @@ namespace MineguideEPOCParser.GUIApp
                 {
                     // Shift+Tab: go backwards
                     // (note, we add Count to handle negative index wrap-around)
-                    _currentMedicationFocusIndex = (_currentMedicationFocusIndex - 1 + _currrentMedicationMatches.Count) % _currrentMedicationMatches.Count;
+                    _currentMedicationFocusIndex = (_currentMedicationFocusIndex - 1 + _currentMedicationMatches.Count) % _currentMedicationMatches.Count;
                 }
                 else
                 {
                     // Tab: go forwards
-                    _currentMedicationFocusIndex = (_currentMedicationFocusIndex + 1) % _currrentMedicationMatches.Count;
+                    _currentMedicationFocusIndex = (_currentMedicationFocusIndex + 1) % _currentMedicationMatches.Count;
                 }
 
-                var match = _currrentMedicationMatches[_currentMedicationFocusIndex];
+                var match = _currentMedicationMatches[_currentMedicationFocusIndex];
                 match.Hyperlink?.Focus();
                 e.Handled = true; // Prevent default tab behavior
                 return;
