@@ -5,6 +5,8 @@ namespace MineguideEPOCParser.Core
 {
     public class MeasurementsExtractingParser : DataParser<ComplexMeasurementsExtractingParserConfiguration>
     {
+        public const string DefaultModel = "llama3:8b";
+
         public const string SystemPrompt = """
         You are meant to parse any medical data sent to you in SPANISH.
         Follow STRICTLY these instructions by order priority:
@@ -62,7 +64,7 @@ namespace MineguideEPOCParser.Core
                 foreach (var textToSearch in subTextsToSearch)
                 {
                     // Call the API to extract the measurements
-                    var measurementsData = await ApiClient.CallToApiJson<MeasurementsData>(textToSearch, "llama3.1:latest", SystemPrompt, Logger, cancellationToken);
+                    var measurementsData = await ApiClient.CallToApiJson<MeasurementsData>(textToSearch, DefaultModel, SystemPrompt, Logger, cancellationToken);
                     if (measurementsData == null)
                     {
                         Logger?.Warning($"No measurements found in the subtext: {textToSearch}");

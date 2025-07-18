@@ -5,7 +5,7 @@ namespace MineguideEPOCParser.Core
 {
     public class MedicationExtractingParser : DataParser<MedicationExtractingParserConfiguration>
     {
-        public const string DefaultModel = "llama3.1:latest";
+        public const string DefaultModel = "llama3:8b";
 
         /// <summary>
         /// <inheritdoc />
