@@ -22,6 +22,9 @@ namespace MineguideEPOCParser.Core
                 // Skip empty medications
                 if (string.IsNullOrWhiteSpace(med)) continue;
 
+                // Skip duplicate medications
+                if (medicationDetails.ContainsKey(med)) continue;
+
                 // Case-insensitive exact match check
                 bool isExactMatch = t.Contains(med, StringComparison.OrdinalIgnoreCase);
 
@@ -76,7 +79,7 @@ namespace MineguideEPOCParser.Core
                     matchType = "Moderate Similarity";
                 }
 
-                medicationDetails.Add(med, new MedicationDetails
+                medicationDetails[med] = new MedicationDetails
                 {
                     Medication = med,
                     ExactMatch = isExactMatch,
@@ -84,7 +87,7 @@ namespace MineguideEPOCParser.Core
                     BestMatch = closestMatch,
                     LevenshteinDistance = isExactMatch ? 0 : bestDistance,
                     MatchType = matchType
-                });
+                };
             }
 
             // Calculate match percentage for reporting
