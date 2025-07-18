@@ -147,10 +147,10 @@
                     <!-- Select log level -->
                     <Label Grid.Row="0" Grid.Column="0" Content="Log level:" VerticalAlignment="Center" HorizontalAlignment="Left" />
                     <ComboBox Grid.Row="0" Grid.Column="2" x:Name="LogLevelComboBox" SelectionChanged="LogLevelComboBox_SelectionChanged" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
-                        <ComboBoxItem Content="Verbose" IsSelected="True" />
+                        <ComboBoxItem Content="Verbose" />
                         <ComboBoxItem Content="Debug" />
                         <ComboBoxItem Content="Information" />
-                        <ComboBoxItem Content="Warning" />
+                        <ComboBoxItem Content="Warning" IsSelected="True" />
                         <ComboBoxItem Content="Error" />
                         <ComboBoxItem Content="Fatal" />
                     </ComboBox>
@@ -164,8 +164,7 @@
                         Foreground="LightGray"
                         FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
                         VerticalScrollBarVisibility="Auto"
-                        MinHeight="100"
-                        TextChanged="LogRichTextBox_TextChanged" />
+                        MinHeight="100" />
                 </Grid>
             </Expander>
         </Grid>

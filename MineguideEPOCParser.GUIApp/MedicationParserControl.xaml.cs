@@ -118,7 +118,7 @@ namespace MineguideEPOCParser.GUIApp
 
         private static string GetExecutionBaseNameFromTimestamp(string timestamp) => $"{timestamp}_MineguideEPOCParser_output";
 
-        private const string LogsFolderName = "logs";       
+        private const string LogsFolderName = "logs";
         private Logger CreateExecutionLogger(string timestamp, string outputFolder)
         {
             string executionLogFolder = Path.Combine(outputFolder, LogsFolderName);
@@ -188,7 +188,7 @@ namespace MineguideEPOCParser.GUIApp
                 || !Enum.TryParse<LogEventLevel>(selectedItemContent, out var logLevel))
             {
                 // Fallback default log level
-                return LogEventLevel.Verbose;
+                return LogEventLevel.Warning;
             }
 
             return logLevel;
@@ -710,35 +710,6 @@ namespace MineguideEPOCParser.GUIApp
             if (LoggingLevelSwitch is not null)
             {
                 LoggingLevelSwitch.MinimumLevel = GetLogLevelFromComboBox();
-            }
-        }
-
-        private void LogRichTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            // Limit the number of inlines in the log to 100
-            if (LogRichTextBox.Document.Blocks.LastBlock is Paragraph paragraph)
-            {
-                if (paragraph.Inlines.Count > 100)
-                {
-                    // Keep the last 100 inlines
-                    var inlinesToKeep = paragraph.Inlines.Skip(paragraph.Inlines.Count - 100).ToList();
-
-                    // Clear and rebuild
-                    paragraph.Inlines.Clear();
-
-                    // Add notification
-                    paragraph.Inlines.Add(new Run("[log limited to the last 100 entries] ")
-                    {
-                        Foreground = Brushes.Gray,
-                        FontStyle = FontStyles.Italic
-                    });
-
-                    // Add the kept inlines
-                    foreach (var inline in inlinesToKeep)
-                    {
-                        paragraph.Inlines.Add(inline);
-                    }
-                }
             }
         }
 
