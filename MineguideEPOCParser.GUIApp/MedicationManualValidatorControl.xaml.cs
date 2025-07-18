@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using MineguideEPOCParser.Core;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
@@ -160,21 +161,106 @@ namespace MineguideEPOCParser.GUIApp
 
         // Usage examples
 
-        private const string sampleText = "Patient needs Lisinopril 10mg, then Aspirin 81mg daily, and also Metformin 500mg twice daily.";
-        private static readonly string[] extractedMedications = ["Aspirin", "Metformin", "Lisinopril"]; // LLM extracted these
+        public const string DefaultCultureName = "es-ES";
 
-        private void LoadMedications(object? sender, RoutedEventArgs args) => LoadMedications();
-
-        private void LoadMedications()
+        private CancellationTokenSource? _cancellationTokenSource;
+        private async void LoadMedications(object? sender, RoutedEventArgs args) => await LoadMedications();
+        private async Task LoadMedications()
         {
-            // Option 2: Clickable for validation
-            HighlightMedicationsClickable(MyRichTextBox, sampleText, extractedMedications, OnMedicationClicked);
+            // Load input file
+            var inputFile = BrowseInputFile();
+            if (string.IsNullOrEmpty(inputFile))
+            {
+                MessageBox.Show("No input file selected.");
+                return;
+            }
+
+            // Load output file
+            var outputFile = BrowseOutputFile(inputFile);
+            if (string.IsNullOrEmpty(outputFile))
+            {
+                MessageBox.Show("No output file selected.");
+                return;
+            }
+
+            // Create parser configuration
+            var configuration = new MedicationManualValidatorParserConfiguration
+            {
+                CultureName = DefaultCultureName,
+                InputFile = inputFile,
+                OutputFile = outputFile,
+                ValidationFunction = ValidateMedications,
+            };
+
+            // Create cancellation token source
+            _cancellationTokenSource = new CancellationTokenSource();
+
+            // Create parser instance
+            var parser = new MedicationManualValidatorParser()
+            {
+                Configuration = configuration,
+            };
+
+            try
+            {
+                // Start the parser (with cancellation support)
+                await parser.ParseData(_cancellationTokenSource.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                MessageBox.Show($"The validation process was cancelled.\nThe information that was already validated has been written to the output file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
 
-        private void StopMedicationValidation(object sender, RoutedEventArgs e) => StopMedicationValidation();
+        private SemaphoreSlim? _medicationValidationSemaphore;
+        private List<string>? _validatedMedications;
 
-        private void StopMedicationValidation()
+        private async Task<string[]> ValidateMedications(string text, string[] medications, CancellationToken cancellationToken)
         {
+            HighlightMedicationsClickable(MyRichTextBox, text, medications, OnMedicationClicked);
+
+            _validatedMedications = medications.ToList(); // Init validated medications list to a copy of the original
+
+            SemaphoreSlim? semaphore = null;
+            try
+            {
+                semaphore = new SemaphoreSlim(0, 1);
+                _medicationValidationSemaphore = semaphore;
+
+                using (cancellationToken.Register(() => semaphore.Release()))
+                {
+                    await semaphore.WaitAsync(cancellationToken);
+                }
+
+                cancellationToken.ThrowIfCancellationRequested();
+
+                // Return validated medications, or original if not set
+                return _validatedMedications?.ToArray() ?? medications;
+            }
+            finally
+            {
+                semaphore?.Dispose();
+                _medicationValidationSemaphore = null; // Siempre se limpia, incluso si hay excepción
+            }
+        }
+
+        // Call this method when the user clicks "Next" or "Finish" after validation
+        private void OnUserFinishedMedicationValidation(object? sender, RoutedEventArgs e) => OnUserFinishedMedicationValidation();
+        private void OnUserFinishedMedicationValidation()
+        {
+            _medicationValidationSemaphore?.Release();
+        }
+
+        private async void StopMedicationValidation(object sender, RoutedEventArgs e) => await StopMedicationValidation();
+
+        private async Task StopMedicationValidation()
+        {
+            // Cancel any ongoing parsing operation
+            if (_cancellationTokenSource is not null)
+            {
+                await _cancellationTokenSource.CancelAsync();
+            }
+
             // Clear the RichTextBox and reset matches
             MyRichTextBox.Document.Blocks.Clear();
             CurrrentMedicationMatches = null;
@@ -201,7 +287,7 @@ namespace MineguideEPOCParser.GUIApp
             // If Ctrl+Shift+S is pressed, clear the RichTextBox and reset matches
             if (e.Key == Key.S && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift))
             {
-                StopMedicationValidation();
+                await StopMedicationValidation();
                 e.Handled = true; // Prevent default ctrl+escape behavior
                 return;
             }
@@ -256,12 +342,6 @@ namespace MineguideEPOCParser.GUIApp
                 e.Handled = true;
                 return;
             }
-            else if (e.Key == Key.P)
-            {
-                BtnPrevious.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                e.Handled = true;
-                return;
-            }
             else if (e.Key == Key.N)
             {
                 BtnNext.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -270,21 +350,50 @@ namespace MineguideEPOCParser.GUIApp
             }
         }
 
+        private string? BrowseInputFile() => BrowseCsvFile<Microsoft.Win32.OpenFileDialog>();
+
+        private string? BrowseOutputFile(string? inputFile = null)
+        {
+            string? defaultFileName = null;
+            if (inputFile is not null)
+            {
+                defaultFileName = System.IO.Path.GetFileNameWithoutExtension(inputFile) + "_gold.csv";
+            }
+            return BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(defaultFileName: defaultFileName);
+        }
+
+        private static string? BrowseCsvFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
+            where TFileDialog : Microsoft.Win32.FileDialog, new()
+        {
+            // Create a new file dialog
+            var dialog = new TFileDialog()
+            {
+                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
+            };
+
+            if (!string.IsNullOrEmpty(currentPath))
+            {
+                dialog.InitialDirectory = System.IO.Path.GetDirectoryName(currentPath);
+                dialog.FileName = System.IO.Path.GetFileName(currentPath);
+            }
+            else if (defaultFileName is not null)
+            {
+                dialog.FileName = defaultFileName;
+            }
+
+            // Show the dialog
+            if (dialog.ShowDialog() == true)
+            {
+                // Return the selected file
+                return dialog.FileName;
+            }
+
+            return null;
+        }
+
         private async Task OnMedicationClicked(MedicationMatch match)
         {
             await SnomedSearchAndClick(match.Text);
-
-            //// Show validation dialog or inline editor
-            //var result = MessageBox.Show(
-            //    $"Validate medication: '{match.Text}'\n\nOriginal: {match.OriginalMedication}\nPosition: {match.StartIndex}\n\nIs this correct?",
-            //    "Validate Medication",
-            //    MessageBoxButton.YesNoCancel);
-
-            //if (result == MessageBoxResult.No)
-            //{
-            //    // Show correction dialog or highlight for manual correction
-            //    // You could open an inline editor or popup here
-            //}
         }
 
         private async Task SnomedSearchAndClick(string text)

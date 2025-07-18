@@ -48,7 +48,7 @@ namespace MineguideEPOCParser.Core
                 else
                 {
                     // We have reached a new report, yield the current report rows for validation
-                    await foreach(var validatedRow in ValidateMedications(currentReportRows, inputTargetColumnIndex, medicationIndex, cancellationToken))
+                    await foreach (var validatedRow in ValidateMedications(currentReportRows, inputTargetColumnIndex, medicationIndex, cancellationToken))
                     {
                         yield return validatedRow;
                     }
@@ -70,8 +70,10 @@ namespace MineguideEPOCParser.Core
             // Get all medication values from the duplicated report rows
             var medicationValues = currentReportRows.Select(r => r[medicationIndex]).ToArray();
 
-            foreach (var validatedMedication in await Configuration.ValidationFunction(medicationTextToValidate, medicationValues))
+            foreach (var validatedMedication in await Configuration.ValidationFunction(medicationTextToValidate, medicationValues, cancellationToken))
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 // Create a new row for each validated medication
                 var newRow = new string[currentReportRows[0].Length];
                 Array.Copy(currentReportRows[0], newRow, currentReportRows[0].Length);
@@ -80,6 +82,7 @@ namespace MineguideEPOCParser.Core
                 // Yield the new row
                 yield return newRow;
             }
+        }
     }
 
     public class MedicationManualValidatorParserConfiguration : DataParserConfiguration
@@ -89,7 +92,7 @@ namespace MineguideEPOCParser.Core
         public string ReportNumberHeaderName { get; set; } = DefaultReportNumberHeaderName;
         public string MedicationHeaderName { get; set; } = DefaultMedicationHeaderName;
 
-        public required Func<string, string[], Task<string[]>> ValidationFunction { get; set; }
+        public required Func<string, string[], CancellationToken, Task<string[]>> ValidationFunction { get; set; }
 
         protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, []);
     }
