@@ -6,29 +6,20 @@
         xmlns:local="clr-namespace:MineguideEPOCParser.GUIApp"
         mc:Ignorable="d"
         DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        Loaded="Window_Loaded"
         Closing="Window_Closing"
-        Title="Mineguide EPOC Parser" Height="618" Width="1000">
-    <TabControl Margin="10">
-        <TabItem Header="Medication Parser">
-            <local:MedicationParserControl x:Name="MedicationParserCtrl" />
-        </TabItem>
-        <TabItem Header="Medication Mapper and Grouping to Group Mapper">
-            <local:MedicationMapperGroupingControl />
-        </TabItem>
-        <TabItem Header="Medication Grouping To Mapper">
-            <local:MedicationGroupingToMapperControl />
-        </TabItem>
-        <TabItem Header="File Encoding Converter">
-            <local:FileEncodingConverterControl />
-        </TabItem>
-        <TabItem Header="Measurements Parser">
-            <local:MeasurementsParserControl />
-        </TabItem>
-        <TabItem Header="Medication Manual Validator">
-            <local:MedicationManualValidatorControl />
-        </TabItem>
-        <TabItem Header="Random Sampler Parser">
-            <local:RandomSamplerParserControl />
-        </TabItem>
-    </TabControl>
+        Title="Mineguide EPOC Parser" Height="618" Width="1200">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="5" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Menu (dynamically populated) -->
+        <Menu x:Name="MainMenu" Grid.Row="0" />
+
+        <!-- Main content control -->
+        <ContentControl x:Name="MainContentControl" Grid.Row="2" Margin="10" />
+    </Grid>
 </Window>
