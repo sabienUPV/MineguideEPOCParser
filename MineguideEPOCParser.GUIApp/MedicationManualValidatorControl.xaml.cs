@@ -58,12 +58,16 @@ namespace MineguideEPOCParser.GUIApp
             var paragraph = new Paragraph();
             var currentIndex = 0;
 
+            // Tabs might be used as newline replacements in the text so they were single lines for further processing,
+            // so we replace them back with newlines for better readability in the RichTextBox
+            var textToVisualize = text.Replace("\t", "\n");
+
             foreach (var match in sortedMatches)
             {
                 // Add normal text
                 if (match.StartIndex > currentIndex)
                 {
-                    var normalText = text.Substring(currentIndex, match.StartIndex - currentIndex);
+                    var normalText = textToVisualize.Substring(currentIndex, match.StartIndex - currentIndex);
                     paragraph.Inlines.Add(new Run(normalText));
                 }
 
@@ -88,9 +92,9 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             // Add remaining text
-            if (currentIndex < text.Length)
+            if (currentIndex < textToVisualize.Length)
             {
-                var remainingText = text.Substring(currentIndex);
+                var remainingText = textToVisualize.Substring(currentIndex);
                 paragraph.Inlines.Add(new Run(remainingText));
             }
 
