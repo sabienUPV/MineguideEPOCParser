@@ -10,8 +10,8 @@ namespace MineguideEPOCParser.GUIApp
 	{
         private ContentControl? _currentControl;
 
-        private (string Header, Func<ContentControl> Factory)[] _controlFactories = new (string, Func<ContentControl>)[]
-        {
+        private static readonly (string Header, Func<ContentControl> Factory)[] _controlFactories =
+        [
             ("Medication Parser", () => new MedicationParserControl()),
             ("Medication Mapper and Grouping to Group Mapper", () => new MedicationMapperGroupingControl()),
             ("Medication Grouping To Mapper", () => new MedicationGroupingToMapperControl()),
@@ -19,7 +19,7 @@ namespace MineguideEPOCParser.GUIApp
             ("Measurements Parser", () => new MeasurementsParserControl()),
             ("Medication Manual Validator", () => new MedicationManualValidatorControl()),
             ("Random Sampler Parser", () => new RandomSamplerParserControl())
-        };
+        ];
 
         public MainWindow()
         {
