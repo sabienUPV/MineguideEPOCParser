@@ -65,14 +65,21 @@ namespace MineguideEPOCParser.Core
         {
             // Since the rows are grouped by report number, the report text should be the same for all rows,
             // so we can just take the first row to get the medication text.
-            var medicationTextToValidate = currentReportRows.Select(r => r[inputTargetColumnIndex]).First();
+            var medicationTextToValidate = currentReportRows[0][inputTargetColumnIndex];
 
             // Get all medication values from the duplicated report rows
-            var medicationValues = currentReportRows.Select(r => r[inputTargetColumnIndex]).ToArray();
+            var medicationValues = currentReportRows.Select(r => r[medicationIndex]).ToArray();
 
-            // TODO: implement the logic to present the medications to the user for validation.
-            throw new NotImplementedException("Medication validation logic is not implemented yet.");
-        }
+            foreach (var validatedMedication in await Configuration.ValidationFunction(medicationTextToValidate, medicationValues))
+            {
+                // Create a new row for each validated medication
+                var newRow = new string[currentReportRows[0].Length];
+                Array.Copy(currentReportRows[0], newRow, currentReportRows[0].Length);
+                // Set the medication value in the new row
+                newRow[medicationIndex] = validatedMedication;
+                // Yield the new row
+                yield return newRow;
+            }
     }
 
     public class MedicationManualValidatorParserConfiguration : DataParserConfiguration
@@ -81,6 +88,8 @@ namespace MineguideEPOCParser.Core
 
         public string ReportNumberHeaderName { get; set; } = DefaultReportNumberHeaderName;
         public string MedicationHeaderName { get; set; } = DefaultMedicationHeaderName;
+
+        public required Func<string, string[], Task<string[]>> ValidationFunction { get; set; }
 
         protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, []);
     }
