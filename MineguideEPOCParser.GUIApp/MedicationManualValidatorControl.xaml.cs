@@ -86,7 +86,22 @@ namespace MineguideEPOCParser.GUIApp
                 // Capture the match in the closure
                 var currentMatch = match;
                 currentMatch.Hyperlink = hyperlink;
-                hyperlink.Click += async (s, e) => await onMedicationClick(currentMatch);
+                hyperlink.Click += async (s, e) =>
+                {
+                    // If Ctrl+Click is pressed, select the text instead of clicking
+                    if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+                    {
+                        // Focus the RichTextBox to ensure selection works
+                        richTextBox.Focus();
+                        // Select the text of the hyperlink
+                        richTextBox.Selection.Select(hyperlink.ContentStart, hyperlink.ContentEnd);
+                        return; // Do not click the hyperlink
+                    }
+
+                    // Otherwise, invoke the custom medication click handler
+                    // (usually this will trigger a search in SNOMED)
+                    await onMedicationClick(currentMatch);
+                };
                 hyperlink.PreviewKeyDown += Hyperlink_PreviewKeyDown;
 
                 paragraph.Inlines.Add(hyperlink);
