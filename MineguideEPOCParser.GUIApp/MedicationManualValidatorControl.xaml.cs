@@ -483,8 +483,8 @@ namespace MineguideEPOCParser.GUIApp
                 startIndex = -1; // Set start index to -1 to indicate no selection
                 return null;
             }
-            
-            startIndex = MyRichTextBox.Selection.Start.GetOffsetToPosition(MyRichTextBox.Document.ContentStart);
+
+            startIndex = new TextRange(MyRichTextBox.Document.ContentStart, MyRichTextBox.Selection.Start).Text.Length;
             return selectedText;
         }
 
