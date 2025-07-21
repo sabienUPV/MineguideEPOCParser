@@ -55,6 +55,12 @@ namespace MineguideEPOCParser.GUIApp
         private List<MedicationMatchUI>? _currentMedicationMatches;
 
         // Enhanced version with clickable highlights for validation
+        public void RedrawMedicationsText() => 
+            HighlightMedicationsClickable(MyRichTextBox, OnMedicationClicked);
+
+        public void RenderMedicationText(string text, string[] medications)
+            => HighlightMedicationsClickable(MyRichTextBox, text, medications, OnMedicationClicked);
+
         public void HighlightMedicationsClickable(RichTextBox richTextBox, string text, string[] medications,
             Func<MedicationMatchUI, Task> onMedicationClick)
         {
@@ -64,15 +70,34 @@ namespace MineguideEPOCParser.GUIApp
             _currentText = text; // Store the current text for later use
             _currentMedicationMatches = sortedMatches; // Store matches for later use
 
+            HighlightMedicationsClickable(richTextBox, onMedicationClick);
+        }
+
+        public void HighlightMedicationsClickable(RichTextBox richTextBox, Func<MedicationMatchUI, Task> onMedicationClick)
+        {
+            if (_currentText == null)
+            {
+                richTextBox.Document.Blocks.Clear();
+                return; // No text or matches to highlight
+            }
+
+            if (_currentMedicationMatches == null || _currentMedicationMatches.Count == 0)
+            {
+                // Just display the text without highlights
+                richTextBox.Document.Blocks.Clear();
+                richTextBox.Document.Blocks.Add(new Paragraph(new Run(_currentText)));
+                return; // No matches to highlight
+            }
+
             richTextBox.Document.Blocks.Clear();
             var paragraph = new Paragraph();
             var currentIndex = 0;
 
             // Tabs might be used as newline replacements in the text so they were single lines for further processing,
             // so we replace them back with newlines for better readability in the RichTextBox
-            var textToVisualize = text.Replace("\t", "\n");
+            var textToVisualize = _currentText.Replace("\t", "\n");
 
-            foreach (var match in sortedMatches)
+            foreach (var match in _currentMedicationMatches)
             {
                 // Add normal text
                 if (match.StartIndex > currentIndex)
@@ -277,7 +302,7 @@ namespace MineguideEPOCParser.GUIApp
         private SemaphoreSlim? _medicationValidationSemaphore;
         private async Task<string[]> ValidateMedications(string text, string[] medications, CancellationToken cancellationToken)
         {
-            HighlightMedicationsClickable(MyRichTextBox, text, medications, OnMedicationClicked);
+            RenderMedicationText(text, medications);
 
             SemaphoreSlim? semaphore = null;
             try
@@ -328,7 +353,7 @@ namespace MineguideEPOCParser.GUIApp
             _currentMedicationMatches.Add(newMatch);
 
             // Redraw the RichTextBox with updated highlights
-            HighlightMedicationsClickable(MyRichTextBox, _currentText ?? string.Empty, _currentMedicationMatches.Select(m => m.CorrectedMedication).ToArray(), OnMedicationClicked);
+            RedrawMedicationsText();
         }
 
         private void OnCorrectMedicationClicked(object? sender, RoutedEventArgs e)
@@ -378,7 +403,7 @@ namespace MineguideEPOCParser.GUIApp
             // Update the corrected medication
             medicationMatch.CorrectedMedication = input.Trim();
             // Redraw the RichTextBox with updated highlights
-            HighlightMedicationsClickable(MyRichTextBox, _currentText ?? string.Empty, _currentMedicationMatches.Select(m => m.CorrectedMedication).ToArray(), OnMedicationClicked);
+            RedrawMedicationsText();
         }
 
         // Remove medication button click handler
@@ -417,7 +442,7 @@ namespace MineguideEPOCParser.GUIApp
                 // Redraw the RichTextBox with updated highlights
                 if (_currentMedicationMatches != null)
                 {
-                    HighlightMedicationsClickable(MyRichTextBox, _currentText ?? string.Empty, _currentMedicationMatches.Select(m => m.CorrectedMedication).ToArray(), OnMedicationClicked);
+                    RedrawMedicationsText();
                 }
             }
             else
