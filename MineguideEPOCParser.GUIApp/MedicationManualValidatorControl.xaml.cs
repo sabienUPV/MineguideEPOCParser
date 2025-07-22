@@ -259,6 +259,12 @@ namespace MineguideEPOCParser.GUIApp
             {
                 // Start the parser (with cancellation support)
                 await parser.ParseData(_cancellationTokenSource.Token);
+
+                // Show success message
+                MessageBox.Show($"Medication validation completed successfully.\nThe validated medications have been written to: {outputFile}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Clear the RichTextBox and reset matches
+                ResetMedicationValidation();
             }
             catch (OperationCanceledException)
             {
@@ -478,6 +484,10 @@ namespace MineguideEPOCParser.GUIApp
                 await _cancellationTokenSource.CancelAsync();
             }
 
+            ResetMedicationValidation();
+        }
+        private void ResetMedicationValidation()
+        {
             // Clear the RichTextBox and reset matches
             MyRichTextBox.Document.Blocks.Clear();
             _currentMedicationMatches = null;
