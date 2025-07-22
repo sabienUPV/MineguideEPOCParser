@@ -9,7 +9,7 @@ namespace MineguideEPOCParser.Core
     /// </summary>
     public class MedicationManualValidatorParser : DataParser<MedicationManualValidatorParserConfiguration>
     {
-        public override int NumberOfOutputAdditionalColumns => 0; // No additional output columns, just validating the input, possibly adding/removing rows
+        public override int NumberOfOutputAdditionalColumns => 4; // StartIndex, Length, Text, OriginalMedication
 
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
             IAsyncEnumerable<string[]> rows,
@@ -74,11 +74,24 @@ namespace MineguideEPOCParser.Core
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                var reportRow = currentReportRows[0];
+                var reportRowLength = reportRow.Length;
+                
                 // Create a new row for each validated medication
-                var newRow = new string[currentReportRows[0].Length];
-                Array.Copy(currentReportRows[0], newRow, currentReportRows[0].Length);
+                var newRow = new string[reportRowLength + NumberOfOutputAdditionalColumns];
+                Array.Copy(reportRow, newRow, reportRowLength);
+                
                 // Set the medication value in the new row
-                newRow[medicationIndex] = validatedMedication;
+                newRow[medicationIndex] = validatedMedication.CorrectedMedication;
+                
+                // Set the additional columns for the medication match at the end of the row
+                int i = 0;
+                foreach (var value in MedicationManualValidatorParserConfiguration.GetMedicationMatchValues(validatedMedication))
+                {
+                    newRow[reportRowLength + 1 + i] = value;
+                    i++;
+                }
+                
                 // Yield the new row
                 yield return newRow;
             }
@@ -92,8 +105,25 @@ namespace MineguideEPOCParser.Core
         public string ReportNumberHeaderName { get; set; } = DefaultReportNumberHeaderName;
         public string MedicationHeaderName { get; set; } = DefaultMedicationHeaderName;
 
-        public required Func<string, string[], CancellationToken, Task<string[]>> ValidationFunction { get; set; }
+        public required Func<string, string[], CancellationToken, Task<MedicationMatch[]>> ValidationFunction { get; set; }
 
-        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, []);
+        public string BuildMedicationHeader(string header) => $"{MedicationHeaderName}_{header}";
+
+        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [
+            BuildMedicationHeader(nameof(MedicationMatch.StartIndex)),
+            BuildMedicationHeader(nameof(MedicationMatch.Length)),
+            BuildMedicationHeader(nameof(MedicationMatch.Text)),
+            BuildMedicationHeader(nameof(MedicationMatch.OriginalMedication)),
+        ]);
+
+        // We do this here to ensure the order is preserved
+        // in the same way as the headers (which are defined right above, in GetDefaultColumns).
+        public static IEnumerable<string> GetMedicationMatchValues(MedicationMatch match)
+        {
+            yield return match.StartIndex.ToString();
+            yield return match.Length.ToString();
+            yield return match.Text;
+            yield return match.OriginalMedication;
+        }
     }
 }

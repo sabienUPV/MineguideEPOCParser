@@ -67,15 +67,7 @@ namespace MineguideEPOCParser.GUIApp
         private string? _currentText;
         private List<MedicationMatchUI>? _currentMedicationMatches;
 
-        // Enhanced version with clickable highlights for validation
-        public void RedrawMedicationsText() => 
-            HighlightMedicationsClickable(MyRichTextBox, OnMedicationClicked);
-
-        public void RenderMedicationText(string text, string[] medications)
-            => HighlightMedicationsClickable(MyRichTextBox, text, medications, OnMedicationClicked);
-
-        public void HighlightMedicationsClickable(RichTextBox richTextBox, string text, string[] medications,
-            Func<MedicationMatchUI, Task> onMedicationClick)
+        public void LoadAllMedicationMatches(string text, string[] medications)
         {
             var sortedMatches = MedicationMatchHelper.FindAllMedicationMatchesBySimilarity(text, medications)
                 .Select(m => MedicationMatchUI.FromMedicationMatch(m))
@@ -84,9 +76,11 @@ namespace MineguideEPOCParser.GUIApp
 
             _currentText = text; // Store the current text for later use
             _currentMedicationMatches = sortedMatches; // Store matches for later use
-
-            HighlightMedicationsClickable(richTextBox, onMedicationClick);
         }
+
+        // Enhanced version with clickable highlights for validation
+        public void RenderMedicationsText() => 
+            HighlightMedicationsClickable(MyRichTextBox, OnMedicationClicked);
 
         public void HighlightMedicationsClickable(RichTextBox richTextBox, Func<MedicationMatchUI, Task> onMedicationClick)
         {
@@ -273,9 +267,16 @@ namespace MineguideEPOCParser.GUIApp
         }
 
         private SemaphoreSlim? _medicationValidationSemaphore;
-        private async Task<string[]> ValidateMedications(string text, string[] medications, CancellationToken cancellationToken)
+        private async Task<MedicationMatch[]> ValidateMedications(string text, string[] medications, CancellationToken cancellationToken)
         {
-            RenderMedicationText(text, medications);
+            LoadAllMedicationMatches(text, medications);
+
+            if (_currentMedicationMatches is null)
+            {
+                throw new InvalidOperationException("No medication matches loaded. Please load medications first.");
+            }
+
+            RenderMedicationsText();
 
             SemaphoreSlim? semaphore = null;
             try
@@ -290,8 +291,7 @@ namespace MineguideEPOCParser.GUIApp
 
                 cancellationToken.ThrowIfCancellationRequested();
 
-                // Return validated medications, or original if not set
-                return _currentMedicationMatches?.Select(m => m.CorrectedMedication).ToArray() ?? medications;
+                return _currentMedicationMatches.Select(m => m.ToMedicationMatch()).ToArray();
             }
             finally
             {
@@ -326,7 +326,7 @@ namespace MineguideEPOCParser.GUIApp
             _currentMedicationMatches.Add(newMatch);
 
             // Redraw the RichTextBox with updated highlights
-            RedrawMedicationsText();
+            RenderMedicationsText();
         }
 
         private void OnCorrectMedicationClicked(object? sender, RoutedEventArgs e)
@@ -376,7 +376,7 @@ namespace MineguideEPOCParser.GUIApp
             // Update the corrected medication
             medicationMatch.CorrectedMedication = input.Trim();
             // Redraw the RichTextBox with updated highlights
-            RedrawMedicationsText();
+            RenderMedicationsText();
         }
 
         // Remove medication button click handler
@@ -415,7 +415,7 @@ namespace MineguideEPOCParser.GUIApp
                 // Redraw the RichTextBox with updated highlights
                 if (_currentMedicationMatches != null)
                 {
-                    RedrawMedicationsText();
+                    RenderMedicationsText();
                 }
             }
             else
