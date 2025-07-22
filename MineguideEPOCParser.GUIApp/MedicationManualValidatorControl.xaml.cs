@@ -114,6 +114,7 @@ namespace MineguideEPOCParser.GUIApp
                     FontWeight = FontWeights.Bold,
                     TextDecorations = null, // Remove underline for cleaner look
                     Focusable = true,
+                    ToolTip = $"Original: {match.OriginalMedication}\nCorrected: {match.CorrectedMedication}"
                 };
 
                 // Capture the match in the closure
