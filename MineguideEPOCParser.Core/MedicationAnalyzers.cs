@@ -1,4 +1,5 @@
 ﻿using Serilog;
+using System.ComponentModel.DataAnnotations;
 
 namespace MineguideEPOCParser.Core
 {
@@ -63,20 +64,20 @@ namespace MineguideEPOCParser.Core
                 }
 
                 // Determine match type with threshold
-                string matchType = "None";
+                MatchType matchType = MatchType.None;
                 if (isExactMatch)
                 {
-                    matchType = "Exact";
+                    matchType = MatchType.Exact;
                     medicationsInText++;
                 }
                 else if (similarityScore >= 0.8) // 80% similarity threshold
                 {
-                    matchType = "Strong Similarity";
+                    matchType = MatchType.StrongSimilarity;
                     medicationsInText++;
                 }
                 else if (similarityScore >= 0.6) // 60% similarity threshold
                 {
-                    matchType = "Moderate Similarity";
+                    matchType = MatchType.ModerateSimilarity;
                 }
 
                 medicationDetails[med] = new MedicationDetails
@@ -111,10 +112,20 @@ namespace MineguideEPOCParser.Core
             public string SimilarityScorePercentage => GetSimilarityScorePercentage(System.Globalization.CultureInfo.InvariantCulture);
             public string? BestMatch { get; init; }
             public int LevenshteinDistance { get; init; }
-            public required string MatchType { get; init; }
+            public MatchType MatchType { get; init; }
 
             public string GetSimilarityScorePercentage(IFormatProvider? provider)
                 => SimilarityScore.ToString("P2", provider);
         };
+
+        public enum MatchType
+        {
+            None,
+            Exact,
+            [Display(Name = "Strong Similarity")]
+            StrongSimilarity,
+            [Display(Name = "Moderate Similarity")]
+            ModerateSimilarity
+        }
     }
 }
