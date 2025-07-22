@@ -13,5 +13,21 @@
             get => _correctedMedication ?? OriginalMedication;
             set => _correctedMedication = value;
         }
+
+
+        // Comparer by StartIndex
+        public class StartIndexComparer : IComparer<MedicationMatch>
+        {
+            public int Compare(MedicationMatch? x, MedicationMatch? y)
+            {
+                if (ReferenceEquals(x, y)) return 0;
+                if (x is null) return -1;
+                if (y is null) return 1;
+                return x.StartIndex.CompareTo(y.StartIndex);
+            }
+        }
+
+        // Comparer instance
+        public static IComparer<MedicationMatch> Comparer { get; } = new StartIndexComparer();
     }
 }

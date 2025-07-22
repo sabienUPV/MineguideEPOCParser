@@ -329,7 +329,9 @@ namespace MineguideEPOCParser.GUIApp
             };
 
             // Add the selected text to the validated medications list
-            _currentMedicationMatches.Add(newMatch);
+            // (making sure it's still sorted by start index,
+            // since our code assumes that the matches are sorted)
+            _currentMedicationMatches.AddSorted(newMatch, MedicationMatch.Comparer);
 
             // Redraw the RichTextBox with updated highlights
             RenderMedicationsText();

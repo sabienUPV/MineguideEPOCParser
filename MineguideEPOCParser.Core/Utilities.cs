@@ -96,9 +96,9 @@ namespace MineguideEPOCParser.Core
         /// <summary>
         /// <see href="https://stackoverflow.com/a/46294791"/>
         /// </summary>
-        public static void AddSorted<T>(this List<T> list, T value)
+        public static void AddSorted<T>(this List<T> list, T value, IComparer<T>? comparer = null)
         {
-            int x = list.BinarySearch(value);
+            int x = list.BinarySearch(value, comparer);
             list.Insert((x >= 0) ? x : ~x, value);
         }
 
