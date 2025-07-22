@@ -195,6 +195,8 @@ namespace MineguideEPOCParser.GUIApp
             {
                 MessageBox.Show("Medication match not found for the clicked hyperlink.");
             }
+
+            e.Handled = true;
         }
 
         private List<MedicationMatchUI> FindAllMedicationMatches(string text, string[] medications)
