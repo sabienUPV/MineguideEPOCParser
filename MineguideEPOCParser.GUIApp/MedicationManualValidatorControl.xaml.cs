@@ -121,6 +121,9 @@ namespace MineguideEPOCParser.GUIApp
                     paragraph.Inlines.Add(new Run(normalText));
                 }
 
+                var originalMedication = match.OriginalMedication;
+                var isNotExactMatch = !string.IsNullOrWhiteSpace(originalMedication) && originalMedication != match.Text;
+
                 var correctedMedication = match.CorrectedMedication;
                 var isCorrected = !string.IsNullOrWhiteSpace(correctedMedication) && correctedMedication != match.OriginalMedication;
 
@@ -128,7 +131,7 @@ namespace MineguideEPOCParser.GUIApp
                 var hyperlink = new Hyperlink(new Run(match.Text))
                 {
                     Foreground = new SolidColorBrush(Colors.DarkGreen),
-                    Background = new SolidColorBrush(isCorrected ? Colors.YellowGreen : Colors.LightGreen),
+                    Background = new SolidColorBrush(isCorrected ? Colors.LightSkyBlue : isNotExactMatch ? Colors.Yellow : Colors.LightGreen),
                     FontWeight = FontWeights.Bold,
                     TextDecorations = null, // Remove underline for cleaner look
                     Focusable = true,
