@@ -106,11 +106,14 @@ namespace MineguideEPOCParser.GUIApp
                     paragraph.Inlines.Add(new Run(normalText));
                 }
 
+                var correctedMedication = match.CorrectedMedication;
+                var isCorrected = !string.IsNullOrWhiteSpace(correctedMedication) && correctedMedication != match.OriginalMedication;
+
                 // Create clickable hyperlink for medication
                 var hyperlink = new Hyperlink(new Run(match.Text))
                 {
                     Foreground = new SolidColorBrush(Colors.DarkGreen),
-                    Background = new SolidColorBrush(Colors.LightGreen),
+                    Background = new SolidColorBrush(isCorrected ? Colors.YellowGreen : Colors.LightGreen),
                     FontWeight = FontWeights.Bold,
                     TextDecorations = null, // Remove underline for cleaner look
                     Focusable = true,
