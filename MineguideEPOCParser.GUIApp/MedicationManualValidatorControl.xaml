@@ -17,13 +17,46 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="10" />
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="5" />
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <RichTextBox Grid.Row="0" x:Name="MyRichTextBox" IsDocumentEnabled="True" IsReadOnly="True" PreviewKeyDown="MyRichTextBox_PreviewKeyDown" />
         <DockPanel Grid.Row="0" Grid.Column="1" Margin="10">
             <TextBlock x:Name="MyWebViewLoadingText" DockPanel.Dock="Top" Text="Loading SNOMED..." />
             <wv2:WebView2 x:Name="MyWebView" Source="https://snomedsns.es/search" Margin="10" NavigationCompleted="OnNavigationCompleted" />
         </DockPanel>
-        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+
+        <!-- Progress bar, cancel button and log viewer -->
+        <Grid Grid.Row="2" Grid.ColumnSpan="3" VerticalAlignment="Center">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="5" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="auto" />
+                <ColumnDefinition Width="8" />
+                <ColumnDefinition Width="auto" />
+            </Grid.ColumnDefinitions>
+
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <!-- Progress bar -->
+            <ProgressBar Grid.Column="0" x:Name="ProgressBar" Height="20" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
+
+            <!-- Progress percentage text -->
+            <TextBlock Grid.Column="2" x:Name="ProgressPercentageTextBlock" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Center" />
+
+            <!-- Progress rows processed text -->
+            <TextBlock Grid.Column="4" x:Name="ProgressRowsProcessedTextBlock" Text="Rows processed: 0" HorizontalAlignment="Left" />
+        </Grid>
+
+        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
             <Button x:Name="BtnLoad" Content="Load" Margin="5" Click="LoadMedications" IsEnabled="{Binding IsNotParsing}" />
             <Button x:Name="BtnAdd" Content="Add medication" Margin="5" Click="OnAddMedicationClicked" />
             <Button x:Name="BtnCorrect" Content="Correct medication" Margin="5" Click="OnCorrectMedicationClicked" />

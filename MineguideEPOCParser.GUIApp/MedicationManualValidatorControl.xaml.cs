@@ -1,4 +1,5 @@
 ﻿using MineguideEPOCParser.Core;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -51,6 +52,30 @@ namespace MineguideEPOCParser.GUIApp
         public MedicationManualValidatorControl()
         {
             InitializeComponent();
+
+            CreateProgress();
+        }
+
+        public Progress<ProgressValue>? Progress { get; private set; }
+        private void CreateProgress()
+        {
+            Progress = new Progress<ProgressValue>(value =>
+            {
+                // Value is between 0 and 1, so multiply by 100 to get percentage
+                var percentage = value.Value * 100;
+
+                // Update the progress bar
+                ProgressBar.Value = percentage;
+
+                // Update the progress percentage text
+                ProgressPercentageTextBlock.Text = $"{percentage:0.00}%";
+
+                // Update the progress rows processed text
+                if (value.RowsProcessed.HasValue)
+                {
+                    ProgressRowsProcessedTextBlock.Text = $"Rows processed: {value.RowsProcessed}";
+                }
+            });
         }
 
         /// <summary>
@@ -289,6 +314,7 @@ namespace MineguideEPOCParser.GUIApp
             var parser = new MedicationManualValidatorParser()
             {
                 Configuration = configuration,
+                Progress = Progress,
             };
 
             IsParsing = true; // Set parsing state to true
@@ -532,6 +558,11 @@ namespace MineguideEPOCParser.GUIApp
             MyRichTextBox.Document.Blocks.Clear();
             _currentMedicationMatches = null;
             _currentMedicationFocusIndex = -1; // Reset focus index
+
+            // Clear progress bar and text
+            ProgressBar.Value = 0;
+            ProgressPercentageTextBlock.Text = "0%";
+            ProgressRowsProcessedTextBlock.Text = "Rows processed: 0";
 
             IsParsing = false; // Set parsing state to false
         }
