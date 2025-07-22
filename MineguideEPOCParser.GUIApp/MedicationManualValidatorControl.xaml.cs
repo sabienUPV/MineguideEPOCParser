@@ -49,6 +49,19 @@ namespace MineguideEPOCParser.GUIApp
                     CorrectedMedication = this.CorrectedMedication
                 };
             }
+
+            public static MedicationMatchUI FromMedicationMatch(MedicationMatch match, Hyperlink? hyperlink = null)
+            {
+                return new MedicationMatchUI
+                {
+                    StartIndex = match.StartIndex,
+                    Length = match.Length,
+                    Text = match.Text,
+                    OriginalMedication = match.OriginalMedication,
+                    CorrectedMedication = match.CorrectedMedication,
+                    Hyperlink = hyperlink
+                };
+            }
         }
 
         private string? _currentText;
@@ -64,8 +77,10 @@ namespace MineguideEPOCParser.GUIApp
         public void HighlightMedicationsClickable(RichTextBox richTextBox, string text, string[] medications,
             Func<MedicationMatchUI, Task> onMedicationClick)
         {
-            var matches = FindAllMedicationMatches(text, medications);
-            var sortedMatches = matches.OrderBy(m => m.StartIndex).ToList();
+            var sortedMatches = MedicationMatchHelper.FindAllMedicationMatches(text, medications)
+                .Select(m => MedicationMatchUI.FromMedicationMatch(m))
+                .OrderBy(m => m.StartIndex)
+                .ToList();
 
             _currentText = text; // Store the current text for later use
             _currentMedicationMatches = sortedMatches; // Store matches for later use
@@ -202,57 +217,6 @@ namespace MineguideEPOCParser.GUIApp
 
             e.Handled = true;
         }
-
-        private List<MedicationMatchUI> FindAllMedicationMatches(string text, string[] medications)
-        {
-            var matches = new List<MedicationMatchUI>();
-            var textLower = text.ToLower();
-
-            foreach (string medication in medications)
-            {
-                var medicationLower = medication.ToLower();
-                var startIndex = 0;
-
-                while (true)
-                {
-                    var index = textLower.IndexOf(medicationLower, startIndex);
-                    if (index == -1) break;
-
-                    // Check for potential overlaps with existing matches
-                    var actualText = text.Substring(index, medication.Length);
-
-                    if (!HasOverlap(matches, index, medication.Length))
-                    {
-                        matches.Add(new MedicationMatchUI
-                        {
-                            StartIndex = index,
-                            Length = medication.Length,
-                            Text = actualText,
-                            OriginalMedication = medication
-                        });
-                    }
-
-                    startIndex = index + 1; // Move past this occurrence
-                }
-            }
-
-            return matches;
-        }
-
-        private bool HasOverlap(List<MedicationMatchUI> existingMatches, int newStart, int newLength)
-        {
-            var newEnd = newStart + newLength - 1;
-
-            return existingMatches.Any(match =>
-            {
-                var existingEnd = match.StartIndex + match.Length - 1;
-
-                // Check if ranges overlap
-                return !(newEnd < match.StartIndex || newStart > existingEnd);
-            });
-        }
-
-        // Usage examples
 
         public const string DefaultCultureName = "es-ES";
 
