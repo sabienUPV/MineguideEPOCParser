@@ -1,9 +1,10 @@
 ﻿using Serilog;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 
 namespace MineguideEPOCParser.Core
 {
-    public static class MedicationAnalyzers
+    public static partial class MedicationAnalyzers
     {
         /// <summary>
         /// Analyze how extracted medications match the text and log the results
@@ -38,8 +39,9 @@ namespace MineguideEPOCParser.Core
                 if (!isExactMatch && med.Length > 3)
                 {
                     // Split text into words
-                    var words = t.Split([' ', ',', '.', ';', ':', '\n', '\r', '\t'],
-                        StringSplitOptions.RemoveEmptyEntries);
+                    var words = SplitIntoWordsRegex().Matches(t)
+                        .Select(m => m.Value)
+                        .ToArray();
 
                     // Check each word for similarity
                     foreach (var word in words)
@@ -127,5 +129,8 @@ namespace MineguideEPOCParser.Core
             [Display(Name = "Moderate Similarity")]
             ModerateSimilarity
         }
+
+        [GeneratedRegex(@"\b\w+\b", RegexOptions.CultureInvariant)]
+        private static partial System.Text.RegularExpressions.Regex SplitIntoWordsRegex();
     }
 }
