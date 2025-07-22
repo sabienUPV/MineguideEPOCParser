@@ -88,7 +88,7 @@ namespace MineguideEPOCParser.Core
                 int i = 0;
                 foreach (var value in MedicationManualValidatorParserConfiguration.GetMedicationMatchValues(validatedMedication))
                 {
-                    newRow[reportRowLength + 1 + i] = value;
+                    newRow[reportRowLength + i] = value;
                     i++;
                 }
                 
