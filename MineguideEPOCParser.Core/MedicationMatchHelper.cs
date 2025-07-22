@@ -5,11 +5,11 @@
         public static List<MedicationMatch> FindAllMedicationMatches(string text, string[] medications)
         {
             var matches = new List<MedicationMatch>();
-            var textLower = text.ToLower();
+            var textLower = text.ToLowerInvariant();
 
             foreach (string medication in medications)
             {
-                var medicationLower = medication.ToLower();
+                var medicationLower = medication.ToLowerInvariant();
                 var startIndex = 0;
 
                 while (true)
