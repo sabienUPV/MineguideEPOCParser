@@ -12,6 +12,42 @@ namespace MineguideEPOCParser.GUIApp
     /// </summary>
     public partial class MedicationManualValidatorControl : UserControl
     {
+        // Dependency property IsParsing
+        public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
+            nameof(IsParsing),
+            typeof(bool),
+            typeof(MedicationManualValidatorControl),
+            new PropertyMetadata(false)
+        );
+
+        // Dependency property IsNotParsing
+        public static readonly DependencyProperty IsNotParsingProperty = DependencyProperty.Register(
+            nameof(IsNotParsing),
+            typeof(bool),
+            typeof(MedicationManualValidatorControl),
+            new PropertyMetadata(true)
+        );
+
+        public bool IsParsing
+        {
+            get => (bool)GetValue(IsParsingProperty);
+            private set
+            {
+                SetValue(IsParsingProperty, value);
+                SetValue(IsNotParsingProperty, !value);
+            }
+        }
+
+        public bool IsNotParsing
+        {
+            get => (bool)GetValue(IsNotParsingProperty);
+            private set
+            {
+                SetValue(IsNotParsingProperty, value);
+                SetValue(IsParsingProperty, !value);
+            }
+        }
+
         public MedicationManualValidatorControl()
         {
             InitializeComponent();
@@ -255,6 +291,8 @@ namespace MineguideEPOCParser.GUIApp
                 Configuration = configuration,
             };
 
+            IsParsing = true; // Set parsing state to true
+
             try
             {
                 // Start the parser (with cancellation support)
@@ -263,7 +301,7 @@ namespace MineguideEPOCParser.GUIApp
                 // Show success message
                 MessageBox.Show($"Medication validation completed successfully.\nThe validated medications have been written to: {outputFile}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                // Clear the RichTextBox and reset matches
+                // Reset validation (set parsing to false, clear the RichTextBox, and reset matches)
                 ResetMedicationValidation();
             }
             catch (OperationCanceledException)
@@ -494,6 +532,8 @@ namespace MineguideEPOCParser.GUIApp
             MyRichTextBox.Document.Blocks.Clear();
             _currentMedicationMatches = null;
             _currentMedicationFocusIndex = -1; // Reset focus index
+
+            IsParsing = false; // Set parsing state to false
         }
 
         private int _currentMedicationFocusIndex = -1;

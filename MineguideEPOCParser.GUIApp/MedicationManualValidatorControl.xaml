@@ -24,12 +24,12 @@
             <wv2:WebView2 x:Name="MyWebView" Source="https://snomedsns.es/search" Margin="10" NavigationCompleted="OnNavigationCompleted" />
         </DockPanel>
         <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-            <Button x:Name="BtnLoad" Content="Load" Margin="5" Click="LoadMedications" />
+            <Button x:Name="BtnLoad" Content="Load" Margin="5" Click="LoadMedications" IsEnabled="{Binding IsNotParsing}" />
             <Button x:Name="BtnAdd" Content="Add medication" Margin="5" Click="OnAddMedicationClicked" />
             <Button x:Name="BtnCorrect" Content="Correct medication" Margin="5" Click="OnCorrectMedicationClicked" />
             <Button x:Name="BtnRemove" Content="Remove medication" Margin="5" Click="OnRemoveMedicationClicked" />
             <Button x:Name="BtnNext" Content="Next" Margin="5" Click="OnUserFinishedMedicationValidation" />
-            <Button x:Name="BtnStop" Content="Stop" Margin="5" Click="StopMedicationValidation" />
+            <Button x:Name="BtnStop" Content="Stop" Margin="5" Click="StopMedicationValidation" IsEnabled="{Binding IsParsing}" />
         </StackPanel>
     </Grid>
 </UserControl>
