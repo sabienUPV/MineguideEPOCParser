@@ -2,6 +2,35 @@
 {
     public static class MedicationMatchHelper
     {
+        /// <summary>
+        /// Instead of matching medications by exact text,
+        /// we allow for fuzzy matching using Levenshtein distance,
+        /// as long as the similarity score is strong enough.
+        /// </summary>
+        public static List<MedicationMatch> FindAllMedicationMatchesBySimilarity(string text, string[] medications)
+        {
+            var (_, _, medicationDetails) = MedicationAnalyzers.AnalyzeMedicationMatches(text, medications);
+
+            var matches = new List<MedicationMatch>();
+
+            foreach (var kvp in medicationDetails)
+            {
+                var similarityScore = kvp.Value.SimilarityScore;
+                if (MedicationAnalyzers.IsStrongSimilarityOrBetter(similarityScore))
+                {
+                    matches.Add(new MedicationMatch
+                    {
+                        StartIndex = kvp.Value.BestMatchIndex!.Value,
+                        Length = kvp.Value.BestMatch!.Length,
+                        Text = kvp.Value.BestMatch,
+                        OriginalMedication = kvp.Value.Medication,
+                    });
+                }
+            }
+
+            return matches;
+        }
+
         public static List<MedicationMatch> FindAllMedicationMatches(string text, string[] medications)
         {
             var matches = new List<MedicationMatch>();

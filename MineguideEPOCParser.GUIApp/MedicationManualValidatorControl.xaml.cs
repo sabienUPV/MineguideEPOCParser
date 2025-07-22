@@ -77,7 +77,7 @@ namespace MineguideEPOCParser.GUIApp
         public void HighlightMedicationsClickable(RichTextBox richTextBox, string text, string[] medications,
             Func<MedicationMatchUI, Task> onMedicationClick)
         {
-            var sortedMatches = MedicationMatchHelper.FindAllMedicationMatches(text, medications)
+            var sortedMatches = MedicationMatchHelper.FindAllMedicationMatchesBySimilarity(text, medications)
                 .Select(m => MedicationMatchUI.FromMedicationMatch(m))
                 .OrderBy(m => m.StartIndex)
                 .ToList();
@@ -132,7 +132,7 @@ namespace MineguideEPOCParser.GUIApp
                     FontWeight = FontWeights.Bold,
                     TextDecorations = null, // Remove underline for cleaner look
                     Focusable = true,
-                    ToolTip = $"Original: {match.OriginalMedication}\nCorrected: {match.CorrectedMedication}"
+                    ToolTip = $"Text:\n{match.Text}\n---\nOriginal medication (from LLM):\n{match.OriginalMedication}\n---\nCorrected medication (after human validation):\n{match.CorrectedMedication}"
                 };
 
                 // Capture the match in the closure

@@ -13,8 +13,8 @@ namespace MineguideEPOCParser.Core
         /// <param name="medications">Array of extracted medication names</param>
         /// <param name="logger">Optional Serilog logger</param>
         /// <returns>Analysis statistics including match count and percentage</returns>
-        public static (int matchCount, double matchPercentage, Dictionary<string, MedicationDetails> details) AnalyzeMedicationMatches(
-            string t, string[] medications, ILogger? logger)
+        public static (int MatchCount, double MatchPercentage, Dictionary<string, MedicationDetails> Details) AnalyzeMedicationMatches(
+            string t, string[] medications, ILogger? logger = null)
         {
             int medicationsInText = 0;
             var medicationDetails = new Dictionary<string, MedicationDetails>();
@@ -28,11 +28,13 @@ namespace MineguideEPOCParser.Core
                 if (medicationDetails.ContainsKey(med)) continue;
 
                 // Case-insensitive exact match check
-                bool isExactMatch = t.Contains(med, StringComparison.OrdinalIgnoreCase);
+                int exactMatchIndex = t.IndexOf(med, StringComparison.OrdinalIgnoreCase);
+                bool isExactMatch = exactMatchIndex >= 0;
 
                 // Levenshtein distance matching
                 int bestDistance = int.MaxValue;
                 string? closestMatch = null;
+                int? closestMatchIndex = null;
                 double similarityScore = 0;
 
                 // Only check for fuzzy matches if no exact match and medication name is meaningful
@@ -40,11 +42,11 @@ namespace MineguideEPOCParser.Core
                 {
                     // Split text into words
                     var words = SplitIntoWordsRegex().Matches(t)
-                        .Select(m => m.Value)
+                        .Select(m => (m.Value, m.Index))
                         .ToArray();
 
                     // Check each word for similarity
-                    foreach (var word in words)
+                    foreach (var (word, index) in words)
                     {
                         // Skip very short words
                         if (word.Length < 3) continue;
@@ -61,25 +63,32 @@ namespace MineguideEPOCParser.Core
                             similarityScore = similarity;
                             bestDistance = distance;
                             closestMatch = word;
+                            closestMatchIndex = index;
                         }
                     }
                 }
 
-                // Determine match type with threshold
-                MatchType matchType = MatchType.None;
+                MatchSimilarityType matchType;
                 if (isExactMatch)
                 {
-                    matchType = MatchType.Exact;
-                    medicationsInText++;
+                    // If we found an exact match,
+                    // we didn't need to calculate Levenshtein distance for it,
+                    // so we need to manually set the similarity score and best match
+
+                    matchType = MatchSimilarityType.Exact;
+                    similarityScore = ExactMatchThreshold; // 100% similarity for exact matches
+                    closestMatch = med; // The medication itself is the best match
+                    closestMatchIndex = exactMatchIndex; // Use the index of the exact match
                 }
-                else if (similarityScore >= 0.8) // 80% similarity threshold
+                else
                 {
-                    matchType = MatchType.StrongSimilarity;
-                    medicationsInText++;
+                    // Determine match type with threshold
+                    matchType = DetermineMatchSimilarityType(similarityScore);
                 }
-                else if (similarityScore >= 0.6) // 60% similarity threshold
+
+                if (IsStrongSimilarityOrBetter(similarityScore))
                 {
-                    matchType = MatchType.ModerateSimilarity;
+                    medicationsInText++;
                 }
 
                 medicationDetails[med] = new MedicationDetails
@@ -88,6 +97,7 @@ namespace MineguideEPOCParser.Core
                     ExactMatch = isExactMatch,
                     SimilarityScore = similarityScore,
                     BestMatch = closestMatch,
+                    BestMatchIndex = closestMatchIndex,
                     LevenshteinDistance = isExactMatch ? 0 : bestDistance,
                     MatchType = matchType
                 };
@@ -106,6 +116,32 @@ namespace MineguideEPOCParser.Core
             return (medicationsInText, matchPercentage, medicationDetails);
         }
 
+        public const double ExactMatchThreshold = 1.0; // 100% similarity threshold for exact matches
+        public const double StrongSimilarityThreshold = 0.8; // 80% similarity threshold for strong matches
+        public const double ModerateSimilarityThreshold = 0.6; // 60% similarity threshold for moderate matches
+
+        public static bool IsExactMatch(double similarityScore) => similarityScore >= ExactMatchThreshold; // 100% similarity threshold
+        public static bool IsStrongSimilarityOrBetter(double similarityScore) => similarityScore >= StrongSimilarityThreshold; // 80% similarity threshold
+        public static bool IsModerateSimilarityOrBetter(double similarityScore) => similarityScore >= ModerateSimilarityThreshold; // 60% similarity threshold
+
+        public static MatchSimilarityType DetermineMatchSimilarityType(double similarityScore)
+        {
+            if (IsExactMatch(similarityScore)) // 100% similarity threshold
+            {
+                return MatchSimilarityType.Exact;
+            }
+            else if (IsStrongSimilarityOrBetter(similarityScore)) // 80% similarity threshold
+            {
+                return MatchSimilarityType.StrongSimilarity;
+            }
+            else if (IsModerateSimilarityOrBetter(similarityScore)) // 60% similarity threshold
+            {
+                return MatchSimilarityType.ModerateSimilarity;
+            }
+
+            return MatchSimilarityType.None;
+        }
+
         public record MedicationDetails
         {
             public required string Medication { get; init; }
@@ -113,14 +149,15 @@ namespace MineguideEPOCParser.Core
             public double SimilarityScore { get; init; }
             public string SimilarityScorePercentage => GetSimilarityScorePercentage(System.Globalization.CultureInfo.InvariantCulture);
             public string? BestMatch { get; init; }
+            public int? BestMatchIndex { get; init; } // Index of the best match in the original text
             public int LevenshteinDistance { get; init; }
-            public MatchType MatchType { get; init; }
+            public MatchSimilarityType MatchType { get; init; }
 
             public string GetSimilarityScorePercentage(IFormatProvider? provider)
                 => SimilarityScore.ToString("P2", provider);
         };
 
-        public enum MatchType
+        public enum MatchSimilarityType
         {
             None,
             Exact,
