@@ -143,7 +143,6 @@ namespace MineguideEPOCParser.Core
                 match.StartIndex.ToString(),
                 match.Length.ToString(),
                 match.MatchInText,
-                match.ExtractedMedication,
                 match.ExperimentResult.ToResultString(),
             ];
         }
