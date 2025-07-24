@@ -430,6 +430,17 @@ namespace MineguideEPOCParser.GUIApp
 
         private static void MarkMedicationAsTruePositive(MedicationMatchUI match)
         {
+            if (match.ExperimentResult != MedicationMatch.ExperimentResultType.FP)
+            {
+                // If it isn't a false positive, either it is already a true positive,
+                // or it is a false negative, which shouldn't be able to change into a true positive
+                if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FN)
+                {
+                    MessageBox.Show("A false negative (FN) medication match cannot be marked as true positive (TP).");
+                }
+                return;
+            }
+
             if (match.MatchInText == match.ExtractedMedication)
             {
                 // Change the experiment result to TP
@@ -503,6 +514,13 @@ namespace MineguideEPOCParser.GUIApp
 
         private static void MarkMedicationAsFalsePositive(MedicationMatchUI match)
         {
+            if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FN)
+            {
+                // If it is a false negative, it shouldn't be able to change into a false positive
+                MessageBox.Show("A false negative (FN) medication match cannot be marked as false positive (FP).");
+                return;
+            }
+
             // Change the experiment result to FP
             match.ExperimentResult = MedicationMatch.ExperimentResultType.FP;
         }
