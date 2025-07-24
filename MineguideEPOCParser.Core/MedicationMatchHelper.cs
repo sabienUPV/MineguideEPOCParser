@@ -22,8 +22,11 @@
                     {
                         StartIndex = kvp.Value.BestMatchIndex!.Value,
                         Length = kvp.Value.BestMatch!.Length,
-                        Text = kvp.Value.BestMatch,
-                        OriginalMedication = kvp.Value.Medication,
+                        MatchInText = kvp.Value.BestMatch,
+                        ExtractedMedication = kvp.Value.Medication,
+                        ExperimentResult = kvp.Value.ExactMatch
+                            ? MedicationMatch.ExperimentResultType.TP
+                            : MedicationMatch.ExperimentResultType.TP_
                     });
                 }
             }
@@ -55,8 +58,9 @@
                         {
                             StartIndex = index,
                             Length = medication.Length,
-                            Text = actualText,
-                            OriginalMedication = medication
+                            MatchInText = actualText,
+                            ExtractedMedication = medication,
+                            ExperimentResult = MedicationMatch.ExperimentResultType.TP // Default to True Positive, since we are matching by exact text
                         });
                     }
 

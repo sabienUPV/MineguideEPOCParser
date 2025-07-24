@@ -75,23 +75,18 @@ namespace MineguideEPOCParser.Core
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var reportRow = currentReportRows[0];
-                var reportRowLength = reportRow.Length;
                 
-                // Create a new row for each validated medication
-                var newRow = new string[reportRowLength + NumberOfOutputAdditionalColumns];
-                Array.Copy(reportRow, newRow, reportRowLength);
-                
-                // Set the medication value in the new row
-                newRow[medicationIndex] = validatedMedication.CorrectedMedication;
-                
-                // Set the additional columns for the medication match at the end of the row
-                int i = 0;
-                foreach (var value in MedicationManualValidatorParserConfiguration.GetMedicationMatchValues(validatedMedication))
-                {
-                    newRow[reportRowLength + i] = value;
-                    i++;
-                }
-                
+                var newRow = Utilities.ArrayCopyAndAdd(
+                    reportRow,
+                    MedicationManualValidatorParserConfiguration.GetMedicationMatchValues(validatedMedication)
+                );
+
+                // Set the medication value in the new row to the extracted medication
+                // (because we don't know if the order in the original rows is the same as the order in the medication values,
+                // and also there could be new medications (FP, false positives) that were not in the original rows,
+                // we are basing our row on the first row, and just replacing the medication value each time).
+                newRow[medicationIndex] = validatedMedication.ExtractedMedication;
+
                 // Yield the new row
                 yield return newRow;
             }
@@ -112,18 +107,21 @@ namespace MineguideEPOCParser.Core
         protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [
             BuildMedicationHeader(nameof(MedicationMatch.StartIndex)),
             BuildMedicationHeader(nameof(MedicationMatch.Length)),
-            BuildMedicationHeader(nameof(MedicationMatch.Text)),
-            BuildMedicationHeader(nameof(MedicationMatch.OriginalMedication)),
+            BuildMedicationHeader(nameof(MedicationMatch.MatchInText)),
+            BuildMedicationHeader(nameof(MedicationMatch.ExperimentResult))
         ]);
 
         // We do this here to ensure the order is preserved
         // in the same way as the headers (which are defined right above, in GetDefaultColumns).
-        public static IEnumerable<string> GetMedicationMatchValues(MedicationMatch match)
+        public static string[] GetMedicationMatchValues(MedicationMatch match)
         {
-            yield return match.StartIndex.ToString();
-            yield return match.Length.ToString();
-            yield return match.Text;
-            yield return match.OriginalMedication;
+            return [
+                match.StartIndex.ToString(),
+                match.Length.ToString(),
+                match.MatchInText,
+                match.ExtractedMedication,
+                match.ExperimentResult.ToResultString(),
+            ];
         }
     }
 }

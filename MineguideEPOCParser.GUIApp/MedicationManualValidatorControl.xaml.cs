@@ -99,15 +99,33 @@ namespace MineguideEPOCParser.GUIApp
         {
             public Hyperlink? Hyperlink { get; set; } // Optional hyperlink for clickable highlights
 
+            public Color BackgroundColor => ExperimentResult switch
+            {
+                ExperimentResultType.TP => Colors.LightGreen,
+                ExperimentResultType.TP_ => Colors.LightSkyBlue,
+                ExperimentResultType.FP => Colors.OrangeRed,
+                ExperimentResultType.FN => Colors.Yellow,
+                _ => Colors.Transparent, // Default color if no match
+            };
+
+            public Color ForegroundColor => ExperimentResult switch
+            {
+                ExperimentResultType.TP => Colors.DarkGreen,
+                ExperimentResultType.TP_ => Colors.DarkBlue,
+                ExperimentResultType.FP => Colors.White,
+                ExperimentResultType.FN => Colors.Black,
+                _ => Colors.Black, // Default color if no match
+            };
+
             public MedicationMatch ToMedicationMatch()
             {
                 return new MedicationMatch
                 {
                     StartIndex = this.StartIndex,
                     Length = this.Length,
-                    Text = this.Text,
-                    OriginalMedication = this.OriginalMedication,
-                    CorrectedMedication = this.CorrectedMedication
+                    MatchInText = this.MatchInText,
+                    ExtractedMedication = this.ExtractedMedication,
+                    ExperimentResult = this.ExperimentResult,
                 };
             }
 
@@ -117,9 +135,9 @@ namespace MineguideEPOCParser.GUIApp
                 {
                     StartIndex = match.StartIndex,
                     Length = match.Length,
-                    Text = match.Text,
-                    OriginalMedication = match.OriginalMedication,
-                    CorrectedMedication = match.CorrectedMedication,
+                    MatchInText = match.MatchInText,
+                    ExtractedMedication = match.ExtractedMedication,
+                    ExperimentResult = match.ExperimentResult,
                     Hyperlink = hyperlink
                 };
             }
@@ -176,21 +194,15 @@ namespace MineguideEPOCParser.GUIApp
                     paragraph.Inlines.Add(new Run(normalText));
                 }
 
-                var originalMedication = match.OriginalMedication;
-                var isNotExactMatch = !string.IsNullOrWhiteSpace(originalMedication) && originalMedication != match.Text;
-
-                var correctedMedication = match.CorrectedMedication;
-                var isCorrected = !string.IsNullOrWhiteSpace(correctedMedication) && correctedMedication != match.OriginalMedication;
-
                 // Create clickable hyperlink for medication
-                var hyperlink = new Hyperlink(new Run(match.Text))
+                var hyperlink = new Hyperlink(new Run(match.MatchInText))
                 {
-                    Foreground = new SolidColorBrush(Colors.DarkGreen),
-                    Background = new SolidColorBrush(isCorrected ? Colors.LightSkyBlue : isNotExactMatch ? Colors.Yellow : Colors.LightGreen),
+                    Foreground = new SolidColorBrush(match.ForegroundColor),
+                    Background = new SolidColorBrush(match.BackgroundColor),
                     FontWeight = FontWeights.Bold,
                     TextDecorations = null, // Remove underline for cleaner look
                     Focusable = true,
-                    ToolTip = $"Text:\n{match.Text}\n---\nOriginal medication (from LLM):\n{match.OriginalMedication}\n---\nCorrected medication (after human validation):\n{match.CorrectedMedication}"
+                    ToolTip = $"Text: {match.MatchInText}\nExtracted medication (from LLM): {match.ExtractedMedication}\nValidated experiment result: {match.ExperimentResult.ToResultString()}"
                 };
 
                 // Capture the match in the closure
@@ -262,11 +274,25 @@ namespace MineguideEPOCParser.GUIApp
                 return;
             }
 
-            // If middle click is pressed, correct the medication match
+            // If middle click is pressed, toggle the medication match between TP and FP
             var match = _currentMedicationMatches?.FirstOrDefault(m => m.Hyperlink == hyperlink);
             if (match is not null)
             {
-                CorrectMedication(match);
+                if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FP)
+                {
+                    MarkMedicationAsTruePositive(match); // Change to TP
+                    RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+                }
+                else if (match.ExperimentResult == MedicationMatch.ExperimentResultType.TP || match.ExperimentResult == MedicationMatch.ExperimentResultType.TP_)
+                {
+                    MarkMedicationAsFalsePositive(match); // Change to FP
+                    RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+                }
+                else
+                {
+                    MessageBox.Show("Only TP and FP matches can be toggled with middle click.");
+                    return;
+                }
             }
             else 
             {
@@ -370,94 +396,81 @@ namespace MineguideEPOCParser.GUIApp
             }
         }
 
-        // Add medication button click handler
-        private void OnAddMedicationClicked(object? sender, RoutedEventArgs e)
+        // True medication button click handler
+        private void OnTrueMedicationClicked(object? sender, RoutedEventArgs e)
+        {
+            // Get focused medication match
+            MedicationMatchUI? selectedMatch = GetFocusedMedication();
+
+            if (selectedMatch is null)
+            {
+                // Get selected text from RichTextBox
+                var selectedText = GetSelectedText(out int startIndex);
+                if (selectedText == null)
+                {
+                    return; // No valid selection, exit
+                }
+
+                // Check if the selected text matches any medication match
+                selectedMatch = _currentMedicationMatches?.FirstOrDefault(m => m.StartIndex == startIndex && m.MatchInText == selectedText);
+
+                if (selectedMatch is null)
+                {
+                    // If no match was found, we can add the selected text as a new medication (it's a false negative)
+                    AddFalsePositiveMedication(selectedText, startIndex);
+                    RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+                    return;
+                }
+            }
+
+            // If a match was found, mark it as a true positive
+            MarkMedicationAsTruePositive(selectedMatch);
+            RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+        }
+
+        private static void MarkMedicationAsTruePositive(MedicationMatchUI match)
+        {
+            if (match.MatchInText == match.ExtractedMedication)
+            {
+                // Change the experiment result to TP
+                match.ExperimentResult = MedicationMatch.ExperimentResultType.TP;
+            }
+            else
+            {
+                // Change the experiment result to TP*, since the match is not exact
+                match.ExperimentResult = MedicationMatch.ExperimentResultType.TP_;
+            }
+        }
+
+        private void AddFalsePositiveMedication(string selectedText, int startIndex)
         {
             // Initialize the validated medications list if it is null
             _currentMedicationMatches ??= [];
 
-            // Get selected text from RichTextBox
-            var selectedText = GetSelectedText(out int startIndex);
-            if (selectedText == null)
-            {
-                return; // No valid selection, exit
-            }
             // Create a new MedicationMatchUI for the selected text
             var newMatch = new MedicationMatchUI
             {
                 StartIndex = startIndex,
                 Length = selectedText.Length,
-                Text = selectedText,
-                OriginalMedication = string.Empty, // Set as empty to symbolize that it didn't exist before the user validation
-                CorrectedMedication = selectedText // Use the selected text as the original medication
+                MatchInText = selectedText,
+                ExtractedMedication = selectedText,
+                // We are manually adding medication that hadn't been extracted by the LLM, so it's a False Negative
+                ExperimentResult = MedicationMatch.ExperimentResultType.FN
             };
 
             // Add the selected text to the validated medications list
             // (making sure it's still sorted by start index,
             // since our code assumes that the matches are sorted)
             _currentMedicationMatches.AddSorted(newMatch, MedicationMatch.Comparer);
-
-            // Redraw the RichTextBox with updated highlights
-            RenderMedicationsText();
         }
 
-        private void OnCorrectMedicationClicked(object? sender, RoutedEventArgs e)
+        // False positive medication button click handler
+        private void OnFalseMedicationClicked(object? sender, RoutedEventArgs e)
         {
             if (_currentMedicationMatches == null || _currentMedicationMatches.Count == 0)
             {
-                MessageBox.Show("No medications to correct.");
-                return; // No matches to correct, exit
-            }
-
-            // Get focused medication match
-            MedicationMatchUI? selectedMatch = GetFocusedMedication();
-            if (selectedMatch is null)
-            {
-                // Get selected text from RichTextBox
-                var selectedText = GetSelectedText(out int startIndex);
-                if (selectedText is null)
-                {
-                    MessageBox.Show("Please select a medication to correct.");
-                    return; // No valid selection, exit
-                }
-                // Find the match by start index and selected text
-                selectedMatch = _currentMedicationMatches.FirstOrDefault(m => m.StartIndex == startIndex && m.Text == selectedText);
-                if (selectedMatch is null)
-                {
-                    MessageBox.Show($"Medication '{selectedText}' not found in the validated list.");
-                    return; // No match found, exit
-                }
-            }
-
-            // Correct the selected medication
-            CorrectMedication(selectedMatch);
-        }
-
-        private void CorrectMedication(MedicationMatchUI medicationMatch)
-        {
-            // Prompt user for corrected medication
-            var input = Microsoft.VisualBasic.Interaction.InputBox(
-                "Enter the corrected medication name:",
-                "Correct Medication",
-                medicationMatch.CorrectedMedication);
-            if (string.IsNullOrWhiteSpace(input))
-            {
-                MessageBox.Show("No correction entered. Operation cancelled.");
-                return; // No valid input, exit
-            }
-            // Update the corrected medication
-            medicationMatch.CorrectedMedication = input.Trim();
-            // Redraw the RichTextBox with updated highlights
-            RenderMedicationsText();
-        }
-
-        // Remove medication button click handler
-        private void OnRemoveMedicationClicked(object? sender, RoutedEventArgs e)
-        {
-            if (_currentMedicationMatches == null || _currentMedicationMatches.Count == 0)
-            {
-                MessageBox.Show("No medications to remove.");
-                return; // No matches to remove, exit
+                MessageBox.Show("No medications to mark as false positives.");
+                return; // No matches to mark as false positives, exit
             }
 
             // Get selected medication
@@ -469,31 +482,29 @@ namespace MineguideEPOCParser.GUIApp
                 var selectedText = GetSelectedText(out int startIndex);
                 if (selectedText is null)
                 {
-                    MessageBox.Show("Please select a medication to remove.");
+                    MessageBox.Show("Please select a medication to mark as a false positive.");
                     return; // No valid selection, exit
                 }
                 // Find the match by start index and selected text
-                selectedMatch = _currentMedicationMatches.FirstOrDefault(m => m.StartIndex == startIndex && m.Text == selectedText);
+                selectedMatch = _currentMedicationMatches.FirstOrDefault(m => m.StartIndex == startIndex && m.MatchInText == selectedText);
                 if (selectedMatch is null)
                 {
-                    MessageBox.Show($"Medication '{selectedText}' not found in the validated list.");
+                    MessageBox.Show($"Medication '{selectedText}' not found in the list.");
                     return; // No match found, exit
                 }
             }
 
-            // Remove the selected text from the validated medications list
-            if (_currentMedicationMatches?.Remove(selectedMatch) == true)
-            {
-                // Redraw the RichTextBox with updated highlights
-                if (_currentMedicationMatches != null)
-                {
-                    RenderMedicationsText();
-                }
-            }
-            else
-            {
-                MessageBox.Show($"Medication '{selectedMatch.CorrectedMedication}' not found in the validated list.");
-            }
+            // Mark the selected medication as a false positive
+            MarkMedicationAsFalsePositive(selectedMatch);
+
+            // Redraw the RichTextBox with updated highlights
+            RenderMedicationsText();
+        }
+
+        private static void MarkMedicationAsFalsePositive(MedicationMatchUI match)
+        {
+            // Change the experiment result to FP
+            match.ExperimentResult = MedicationMatch.ExperimentResultType.FP;
         }
 
         private MedicationMatchUI? GetFocusedMedication()
@@ -630,21 +641,15 @@ namespace MineguideEPOCParser.GUIApp
                 return;
             }
             // Handle other keys for actions (clicking buttons)
-            else if (e.Key == Key.A)
+            else if (e.Key == Key.T)
             {
-                BtnAdd.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                BtnTrue.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 e.Handled = true;
                 return;
             }
-            else if (e.Key == Key.C)
+            else if (e.Key == Key.F)
             {
-                BtnCorrect.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                e.Handled = true;
-                return;
-            }
-            else if (e.Key == Key.R)
-            {
-                BtnRemove.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                BtnFalse.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 e.Handled = true;
                 return;
             }
@@ -699,7 +704,7 @@ namespace MineguideEPOCParser.GUIApp
 
         private async Task OnMedicationClicked(MedicationMatchUI match)
         {
-            await SnomedSearchAndClick(match.Text);
+            await SnomedSearchAndClick(match.MatchInText);
         }
 
         private async Task SnomedSearchAndClick(string text)
