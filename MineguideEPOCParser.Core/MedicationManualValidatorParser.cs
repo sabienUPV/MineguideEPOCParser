@@ -67,25 +67,49 @@ namespace MineguideEPOCParser.Core
             // so we can just take the first row to get the medication text.
             var medicationTextToValidate = currentReportRows[0][inputTargetColumnIndex];
 
-            // Get all medication values from the duplicated report rows
-            var medicationValues = currentReportRows.Select(r => r[medicationIndex]).ToArray();
+            // Classify the duplicated report rows by their medication name,
+            // and also get all medication values to an array for validation.
+            var medicationRows = currentReportRows.ToDictionary(r => r[medicationIndex], r => r);
+            var medicationValues = medicationRows.Keys.ToArray();
 
             foreach (var validatedMedication in await Configuration.ValidationFunction(medicationTextToValidate, medicationValues, cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var reportRow = currentReportRows[0];
-                
-                var newRow = Utilities.ArrayCopyAndAdd(
-                    reportRow,
-                    MedicationManualValidatorParserConfiguration.GetMedicationMatchValues(validatedMedication)
-                );
+                var medicationMatchValues = MedicationManualValidatorParserConfiguration.GetMedicationMatchValues(validatedMedication);
 
-                // Set the medication value in the new row to the extracted medication
-                // (because we don't know if the order in the original rows is the same as the order in the medication values,
-                // and also there could be new medications (FP, false positives) that were not in the original rows,
-                // we are basing our row on the first row, and just replacing the medication value each time).
-                newRow[medicationIndex] = validatedMedication.ExtractedMedication;
+                string[] reportRow, newRow;
+                if (medicationRows.TryGetValue(validatedMedication.ExtractedMedication, out var existingReportRow))
+                {
+                    // If the medication was found in the original rows, use that row
+                    // (this is important to preserve the original row's values for other columns).
+                    reportRow = existingReportRow;
+                    newRow = Utilities.ArrayCopyAndAdd(reportRow, medicationMatchValues);
+                }
+                else
+                {
+                    // If the medication was not found in the original rows, we will create a new row
+                    // based on the first row of the current report.
+                    reportRow = currentReportRows[0];
+
+                    // We actually know that all columns after the medication column will be related to that medication,
+                    // and since we are creating a new "medication", we should actually set those columns to empty,
+                    // and add our columns.
+
+                    // Set the first columns (up to the medication index) to the original row values
+                    // (since they are common to the same report)
+                    newRow = new string[reportRow.Length + medicationMatchValues.Length];
+                    Array.Copy(reportRow, 0, newRow, 0, medicationIndex);
+
+                    // Set the medication name
+                    newRow[medicationIndex] = validatedMedication.ExtractedMedication;
+
+                    // Set the rest of the columns to empty
+                    Array.Fill(newRow, string.Empty, medicationIndex + 1, reportRow.Length - medicationIndex - 1);
+
+                    // Add the medication match values at the end
+                    Array.Copy(medicationMatchValues, 0, newRow, reportRow.Length, medicationMatchValues.Length);
+                }
 
                 // Yield the new row
                 yield return newRow;
