@@ -668,7 +668,7 @@ namespace MineguideEPOCParser.GUIApp
             string? defaultFileName = null;
             if (inputFile is not null)
             {
-                defaultFileName = System.IO.Path.GetFileNameWithoutExtension(inputFile) + "_gold.csv";
+                defaultFileName = System.IO.Path.GetFileNameWithoutExtension(inputFile) + "_validated.csv";
             }
             return BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(defaultFileName: defaultFileName);
         }
