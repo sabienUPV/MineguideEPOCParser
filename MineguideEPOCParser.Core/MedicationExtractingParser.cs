@@ -36,7 +36,7 @@ namespace MineguideEPOCParser.Core
                 if (Configuration.UseJsonFormat)
                 {
                     var medicationsJson = await ApiClient.CallToApiJson<MedicationsList>(t, DefaultModel, Configuration.SystemPrompt, Logger, cancellationToken);
-                    medications = medicationsJson?.Medicamentos;
+                    medications = medicationsJson?.Medicamentos.Where(m => !string.IsNullOrWhiteSpace(m)).ToArray();
                 }
                 else
                 {
