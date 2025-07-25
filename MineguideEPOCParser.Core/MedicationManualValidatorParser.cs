@@ -69,7 +69,9 @@ namespace MineguideEPOCParser.Core
 
             // Classify the duplicated report rows by their medication name,
             // and also get all medication values to an array for validation.
-            var medicationRows = currentReportRows.ToDictionary(r => r[medicationIndex], r => r);
+            var medicationRows = currentReportRows
+                .GroupBy(r => r[medicationIndex]) // Using GroupBy first allows graceful handling of duplicate medications (we just take the first occurrence)
+                .ToDictionary(g => g.Key, g => g.First()); // ToDictionary usually throws an exception if there are duplicates, but since we are using GroupBy first, it will not throw.
             var medicationValues = medicationRows.Keys.ToArray();
 
             foreach (var validatedMedication in await Configuration.ValidationFunction(medicationTextToValidate, medicationValues, cancellationToken))
