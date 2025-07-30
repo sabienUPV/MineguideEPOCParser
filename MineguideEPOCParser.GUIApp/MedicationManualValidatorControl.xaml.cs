@@ -11,7 +11,7 @@ namespace MineguideEPOCParser.GUIApp
     /// <summary>
     /// Lógica de interacción para MedicationManualValidatorControl.xaml
     /// </summary>
-    public partial class MedicationManualValidatorControl : UserControl
+    public partial class MedicationManualValidatorControl : UserControl, IAsyncDisposable
     {
         // Dependency property IsParsing
         public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
@@ -54,6 +54,11 @@ namespace MineguideEPOCParser.GUIApp
             InitializeComponent();
 
             CreateProgress();
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            await StopMedicationValidation();
         }
 
         public Progress<ProgressValue>? Progress { get; private set; }
