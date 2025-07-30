@@ -512,12 +512,13 @@ namespace MineguideEPOCParser.GUIApp
             RenderMedicationsText();
         }
 
-        private static void MarkMedicationAsFalsePositive(MedicationMatchUI match)
+        private void MarkMedicationAsFalsePositive(MedicationMatchUI match)
         {
             if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FN)
             {
-                // If it is a false negative, it shouldn't be able to change into a false positive
-                MessageBox.Show("A false negative (FN) medication match cannot be marked as false positive (FP).");
+                // If it is a false negative, and you are marking it as "false positive",
+                // that means it wasn't a match in the first place, so remove it from the matches
+                _currentMedicationMatches?.Remove(match);
                 return;
             }
 
