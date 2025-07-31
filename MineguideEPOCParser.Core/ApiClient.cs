@@ -9,15 +9,19 @@ using System.Text.Json.Serialization;
 using JsonIgnoreAttribute = System.Text.Json.Serialization.JsonIgnoreAttribute;
 using Newtonsoft.Json.Linq;
 using Polly.Retry;
+using Microsoft.Extensions.Configuration;
 
 namespace MineguideEPOCParser.Core
 {
-	public static class ApiClient
+	public class ApiClient
 	{
 		private const string ApiUrl = "https://mineguide.itaca.upv.es:11434/api/generate";
-        private const string ApiKey = "32868ebff04b45108ae1637756df5778";
 
-		public static async Task<TOutput?> CallToApiJson<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
+        private static readonly string ApiKey = new ConfigurationBuilder()
+            .AddUserSecrets<ApiClient>()
+            .Build()["ApiKey"] ?? throw new InvalidOperationException("Ollama API key is not set in user secrets.");
+
+        public static async Task<TOutput?> CallToApiJson<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
         {
             var jsonRetryPolicy = CreateJsonRetryPolicy(log);
             var httpRetryPolicy = CreateHttpRetryPolicy(log);
