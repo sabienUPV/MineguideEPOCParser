@@ -288,16 +288,12 @@ namespace MineguideEPOCParser.GUIApp
                     MarkMedicationAsTruePositive(match); // Change to TP
                     RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
                 }
-                else if (match.ExperimentResult == MedicationMatch.ExperimentResultType.TP || match.ExperimentResult == MedicationMatch.ExperimentResultType.TP_)
+                else
                 {
                     MarkMedicationAsFalsePositive(match); // Change to FP
                     RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
                 }
-                else
-                {
-                    MessageBox.Show("Only TP and FP matches can be toggled with middle click.");
-                    return;
-                }
+
             }
             else 
             {
