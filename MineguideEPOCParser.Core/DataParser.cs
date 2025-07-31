@@ -59,6 +59,8 @@ namespace MineguideEPOCParser.Core
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
+                InitParsing();
+
                 await DoPreProcessing(cancellationToken);
 
                 var defaultCsvConfig = new CsvConfiguration(new CultureInfo(Configuration.CultureName))
@@ -113,6 +115,8 @@ namespace MineguideEPOCParser.Core
             {
                 CurrentCsvReader?.Dispose();
                 CurrentCsvReader = null; // Clear the current reader to avoid memory leaks
+
+                CleanupParsing();
             }
         }
 
@@ -176,6 +180,11 @@ namespace MineguideEPOCParser.Core
             }
         }
 
+        protected virtual void InitParsing()
+        {
+            // Override this method to add custom initialization logic before parsing
+        }
+
         protected virtual Task DoPreProcessing(CancellationToken cancellationToken = default)
         {
             // Override this method to add custom pre-processing logic
@@ -204,6 +213,12 @@ namespace MineguideEPOCParser.Core
         {
             // Override this method to add custom post-processing logic
             return Task.CompletedTask;
+        }
+
+        protected virtual void CleanupParsing()
+        {
+            // Override this method to add custom cleanup logic after parsing
+            // This is called in the finally block of the ParseData method
         }
 
         /// <summary>
