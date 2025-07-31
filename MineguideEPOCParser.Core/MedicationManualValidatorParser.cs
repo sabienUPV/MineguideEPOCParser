@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using CsvHelper.Configuration;
+using System.Runtime.CompilerServices;
 
 namespace MineguideEPOCParser.Core
 {
@@ -10,6 +11,47 @@ namespace MineguideEPOCParser.Core
     public class MedicationManualValidatorParser : DataParser<MedicationManualValidatorParserConfiguration>
     {
         public override int NumberOfOutputAdditionalColumns => 4; // StartIndex, Length, Text, OriginalMedication
+
+        public class MedicationMatchClassMap : ClassMap<MedicationMatch>
+        {
+            public MedicationMatchClassMap(MedicationManualValidatorParserConfiguration config)
+            {
+                // Map all MedicationMatch properties to the output columns
+                Map(m => m.StartIndex).Name(config.MatchStartIndexHeaderName);
+                Map(m => m.Length).Name(config.MatchLengthHeaderName);
+                Map(m => m.MatchInText).Name(config.MatchInTextHeaderName);
+                Map(m => m.ExperimentResult).Name(config.MatchExperimentResultHeaderName);
+                Map(m => m.ExtractedMedication).Name(config.MedicationHeaderName);
+            }
+        }
+
+        private bool _hasMatchHeaders = false;
+        protected override void ValidateHeaders(string[] headers)
+        {
+            base.ValidateHeaders(headers);
+
+            // Check if the match headers (the output headers) are present in the input headers
+            if (Configuration.OutputAdditionalHeaderNames.All(h => headers.Contains(h)))
+            {
+                // It already has the match information,
+                // so we can just extract it from the CSV
+                _hasMatchHeaders = true;
+
+                // Register the MedicationMatch class map to the CsvReader
+                var classMap = new MedicationMatchClassMap(Configuration);
+                CurrentCsvReader?.Context.RegisterClassMap(classMap);
+            }
+            else
+            {
+                _hasMatchHeaders = false;
+            }
+        }
+
+        protected override void CleanupParsing()
+        {
+            base.CleanupParsing();
+            _hasMatchHeaders = false; // Reset the flag for the next parsing operation
+        }
 
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
             IAsyncEnumerable<string[]> rows,
@@ -34,6 +76,7 @@ namespace MineguideEPOCParser.Core
             // Optimization: We can assume all rows from the same report number are grouped together
             string? currentReportNumber = null;
             List<string[]> currentReportRows = [];
+            List<MedicationMatch>? existingMedicationMatches = _hasMatchHeaders ? [] : null;
 
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {
@@ -44,11 +87,20 @@ namespace MineguideEPOCParser.Core
                 {
                     currentReportRows.Add(row);
                     currentReportNumber = reportNumberValue;
+
+                    if (_hasMatchHeaders)
+                    {
+                        // If the medication matches are already present in the row,
+                        // we can just get them from the row
+                        // (we know the reader should be pointing to the current row,
+                        // so we should be able to get the record directly).
+                        existingMedicationMatches?.Add(CurrentCsvReader!.GetRecord<MedicationMatch>());
+                    }
                 }
                 else
                 {
                     // We have reached a new report, yield the current report rows for validation
-                    await foreach (var validatedRow in ValidateMedications(currentReportRows, inputTargetColumnIndex, medicationIndex, cancellationToken))
+                    await foreach (var validatedRow in ValidateMedications(currentReportRows, inputTargetColumnIndex, medicationIndex, existingMedicationMatches, cancellationToken))
                     {
                         yield return validatedRow;
                     }
@@ -61,7 +113,7 @@ namespace MineguideEPOCParser.Core
             }
         }
 
-        private async IAsyncEnumerable<string[]> ValidateMedications(List<string[]> currentReportRows, int inputTargetColumnIndex, int medicationIndex, [EnumeratorCancellation] CancellationToken cancellationToken)
+        private async IAsyncEnumerable<string[]> ValidateMedications(List<string[]> currentReportRows, int inputTargetColumnIndex, int medicationIndex, List<MedicationMatch>? existingMedicationMatches, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             // Since the rows are grouped by report number, the report text should be the same for all rows,
             // so we can just take the first row to get the medication text.
@@ -72,9 +124,19 @@ namespace MineguideEPOCParser.Core
             var medicationRows = currentReportRows
                 .GroupBy(r => r[medicationIndex]) // Using GroupBy first allows graceful handling of duplicate medications (we just take the first occurrence)
                 .ToDictionary(g => g.Key, g => g.First()); // ToDictionary usually throws an exception if there are duplicates, but since we are using GroupBy first, it will not throw.
-            var medicationValues = medicationRows.Keys.ToArray();
 
-            foreach (var validatedMedication in await Configuration.ValidationFunction(medicationTextToValidate, medicationValues, cancellationToken))
+            List<MedicationMatch> medicationMatches;
+            if (existingMedicationMatches is not null)
+            {
+                medicationMatches = existingMedicationMatches;
+            }
+            else
+            {
+                var medicationValues = medicationRows.Keys.ToArray();
+                medicationMatches = MedicationMatchHelper.FindAllMedicationMatchesBySimilarity(medicationTextToValidate, medicationValues);
+            }
+
+            foreach (var validatedMedication in await Configuration.ValidationFunction(medicationTextToValidate, medicationMatches, cancellationToken))
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
@@ -126,15 +188,22 @@ namespace MineguideEPOCParser.Core
         public string ReportNumberHeaderName { get; set; } = DefaultReportNumberHeaderName;
         public string MedicationHeaderName { get; set; } = DefaultMedicationHeaderName;
 
-        public required Func<string, string[], CancellationToken, Task<MedicationMatch[]>> ValidationFunction { get; set; }
+        // MedicationMatch header names
+        public string MatchStartIndexHeaderName => BuildMedicationHeader(nameof(MedicationMatch.StartIndex));
+        public string MatchLengthHeaderName => BuildMedicationHeader(nameof(MedicationMatch.Length));
+        public string MatchInTextHeaderName => BuildMedicationHeader(nameof(MedicationMatch.MatchInText));
+        public string MatchExperimentResultHeaderName => BuildMedicationHeader(nameof(MedicationMatch.ExperimentResult));
+
+
+        public required Func<string, IEnumerable<MedicationMatch>, CancellationToken, Task<MedicationMatch[]>> ValidationFunction { get; set; }
 
         public string BuildMedicationHeader(string header) => $"{MedicationHeaderName}_{header}";
 
         protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [
-            BuildMedicationHeader(nameof(MedicationMatch.StartIndex)),
-            BuildMedicationHeader(nameof(MedicationMatch.Length)),
-            BuildMedicationHeader(nameof(MedicationMatch.MatchInText)),
-            BuildMedicationHeader(nameof(MedicationMatch.ExperimentResult))
+            MatchStartIndexHeaderName,
+            MatchLengthHeaderName,
+            MatchInTextHeaderName,
+            MatchExperimentResultHeaderName
         ]);
 
         // We do this here to ensure the order is preserved

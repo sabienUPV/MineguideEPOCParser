@@ -151,9 +151,9 @@ namespace MineguideEPOCParser.GUIApp
         private string? _currentText;
         private List<MedicationMatchUI>? _currentMedicationMatches;
 
-        public void LoadAllMedicationMatches(string text, string[] medications)
+        public void LoadMedicationMatches(string text, IEnumerable<MedicationMatch> medicationMatches)
         {
-            var sortedMatches = MedicationMatchHelper.FindAllMedicationMatchesBySimilarity(text, medications)
+            var sortedMatches = medicationMatches
                 .Select(m => MedicationMatchUI.FromMedicationMatch(m))
                 .OrderBy(m => m.StartIndex)
                 .ToList();
@@ -364,9 +364,9 @@ namespace MineguideEPOCParser.GUIApp
         }
 
         private SemaphoreSlim? _medicationValidationSemaphore;
-        private async Task<MedicationMatch[]> ValidateMedications(string text, string[] medications, CancellationToken cancellationToken)
+        private async Task<MedicationMatch[]> ValidateMedications(string text, IEnumerable<MedicationMatch> medicationMatches, CancellationToken cancellationToken)
         {
-            LoadAllMedicationMatches(text, medications);
+            LoadMedicationMatches(text, medicationMatches);
 
             if (_currentMedicationMatches is null)
             {
