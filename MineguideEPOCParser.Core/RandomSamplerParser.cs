@@ -11,10 +11,9 @@ namespace MineguideEPOCParser.Core
 
         private Random? _random;
 
-        protected override Task DoPreProcessing(CancellationToken cancellationToken = default)
+        protected override void InitParsing()
         {
             _random = new Random(Configuration.Seed);
-            return Task.CompletedTask;
         }
 
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
