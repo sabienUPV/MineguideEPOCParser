@@ -42,6 +42,9 @@ namespace MineguideEPOCParser.Core
         /// Number of output columns that the parser will write to the output file (in addition to the input columns).
         /// </summary>
         public virtual int NumberOfOutputAdditionalColumns => 1;
+        
+        
+        protected CsvReader? CurrentCsvReader { get; private set; }
 
         /// <summary>
         /// Reads the medication from the input CSV file, lazily,
@@ -56,18 +59,21 @@ namespace MineguideEPOCParser.Core
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var csvConfig = new CsvConfiguration(new CultureInfo(Configuration.CultureName))
+                await DoPreProcessing(cancellationToken);
+
+                var defaultCsvConfig = new CsvConfiguration(new CultureInfo(Configuration.CultureName))
                 {
                     CountBytes = Progress is not null && Configuration.RowLimit is null,
                 };
-
-                await DoPreProcessing(cancellationToken);
+                var csvConfig = ConfigureCsvConfiguration(defaultCsvConfig);
 
                 // Read
-                using var reader = new StreamReader(Configuration.InputFile);
-                using var csvReader = new CsvReader(reader, csvConfig);
+                using var streamReader = new StreamReader(Configuration.InputFile);
+                CurrentCsvReader = new CsvReader(streamReader, csvConfig);
 
-                var dataRead = await ReadData(csvReader, reader, Configuration.RowLimit, cancellationToken);
+                ConfigureCsvReader(CurrentCsvReader);
+
+                var dataRead = await ReadData(CurrentCsvReader, streamReader, Configuration.RowLimit, cancellationToken);
 
                 // Generate new headers
                 string[]? newHeaders = GenerateNewHeaders(dataRead);
@@ -100,6 +106,11 @@ namespace MineguideEPOCParser.Core
             {
                 Logger?.Error(ex, "An unexpected error occurred: {Message}", ex.Message);
                 throw;
+            }
+            finally
+            {
+                CurrentCsvReader?.Dispose();
+                CurrentCsvReader = null; // Clear the current reader to avoid memory leaks
             }
         }
 
@@ -169,6 +180,22 @@ namespace MineguideEPOCParser.Core
             return Task.CompletedTask;
         }
 
+        protected virtual CsvConfiguration ConfigureCsvConfiguration(CsvConfiguration csvConfig)
+        {
+            // Override this method to configure the CsvConfiguration if needed
+            return csvConfig;
+        }
+
+        protected virtual void ConfigureCsvReader(CsvReader csv)
+        {
+            // Override this method to configure the CsvReader if needed
+        }
+
+        protected virtual void ValidateHeaders(string[] headers)
+        {
+            // Override this method to validate the headers if needed
+        }
+
         protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] headers, CancellationToken cancellationToken = default);
 
         /// <summary>
@@ -195,6 +222,8 @@ namespace MineguideEPOCParser.Core
                     {
                         throw new InvalidOperationException($"{Configuration.InputTargetColumnHeaderName} column was not found");
                     }
+
+                    ValidateHeaders(headerArray);
 
                     rowsEnumerable = ReadDataFromCsv(csv, sr, count, cancellationToken);
                 }
