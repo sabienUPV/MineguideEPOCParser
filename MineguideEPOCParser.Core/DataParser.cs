@@ -87,6 +87,8 @@ namespace MineguideEPOCParser.Core
 
                 await WriteTransformedData(csvWriter, newHeaders, newRows);
 
+                await DoPostProcessing(cancellationToken);
+
                 // Report progress and log completion
                 Progress?.Report(new ProgressValue
                 {
@@ -197,6 +199,12 @@ namespace MineguideEPOCParser.Core
         }
 
         protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] headers, CancellationToken cancellationToken = default);
+
+        protected virtual Task DoPostProcessing(CancellationToken cancellationToken = default)
+        {
+            // Override this method to add custom post-processing logic
+            return Task.CompletedTask;
+        }
 
         /// <summary>
         /// Este método se encarga de leer el archivo csv y devolver un objeto 'DataReadContent'
