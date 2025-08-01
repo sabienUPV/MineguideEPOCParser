@@ -287,7 +287,18 @@ namespace MineguideEPOCParser.GUIApp
         private void Hyperlink_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             // Only handle middle click in the hyperlink
-            if (sender is not Hyperlink hyperlink || e.ChangedButton != MouseButton.Middle)
+            if (sender is not Hyperlink hyperlink)
+            {
+                return;
+            }
+
+            // If right click is pressed, and there is no selected text, open the correct medication dialog
+            bool shouldCorrectMedication = (e.ChangedButton == MouseButton.Right && MyRichTextBox.Selection.IsEmpty);
+            // If middle click is pressed, toggle the medication match between TP and FP
+            bool shouldToggleExperimentResult = e.ChangedButton == MouseButton.Middle;
+
+            // If neither of our conditions is true, do nothing
+            if (!(shouldCorrectMedication || shouldToggleExperimentResult))
             {
                 return;
             }
@@ -300,27 +311,26 @@ namespace MineguideEPOCParser.GUIApp
                 return;
             }
 
-            // If Ctrl+middle click is pressed, open the correct medication dialog
-            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            // If right click is pressed, and there is no selected text, open the correct medication dialog
+            if (shouldCorrectMedication)
             {
                 CorrectMedication(match);
-                RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
-                FocusMedicationMatch(match); // Focus the match after correction
-                e.Handled = true;
-                return;
             }
-
-            // If middle click is pressed, toggle the medication match between TP and FP
-            if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FP)
+            else // if (shouldToggleExperimentResult)
             {
-                MarkMedicationAsTruePositive(match); // Change to TP
+                // If middle click is pressed, toggle the medication match between TP and FP
+                if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FP)
+                {
+                    MarkMedicationAsTruePositive(match); // Change to TP
+                }
+                else
+                {
+                    MarkMedicationAsFalsePositive(match); // Change to FP
+                }
             }
-            else
-            {
-                MarkMedicationAsFalsePositive(match); // Change to FP
-            }
+            
             RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
-            FocusMedicationMatch(match); // Focus the match after changing its state
+            FocusMedicationMatch(match); // Focus the match after redrawing
             e.Handled = true;
         }
 
