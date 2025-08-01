@@ -756,30 +756,41 @@ namespace MineguideEPOCParser.GUIApp
                 }
                 return;
             }
-            // Handle other keys for actions (clicking buttons)
-            else if (e.Key == Key.T)
+            // Handle other keys for actions (clicking buttons) without modifiers
+            else
             {
-                BtnTrue.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                e.Handled = true;
-                return;
-            }
-            else if (e.Key == Key.F)
-            {
-                BtnFalse.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                e.Handled = true;
-                return;
-            }
-            else if (e.Key == Key.C)
-            {
-                BtnCorrect.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                e.Handled = true;
-                return;
-            }
-            else if (e.Key == Key.N)
-            {
-                BtnNext.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-                e.Handled = true;
-                return;
+                // If any modifiers are pressed, then maybe the user wants to perform a different action
+                // (e.g. Ctrl+C to copy, Ctrl+V to paste, etc.),
+                // so we only handle the keys if no modifiers are pressed
+                if (Keyboard.Modifiers != ModifierKeys.None)
+                {
+                    return; // Do not handle keys with modifiers
+                }
+
+                if (e.Key == Key.T)
+                {
+                    BtnTrue.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Key.F)
+                {
+                    BtnFalse.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Key.C)
+                {
+                    BtnCorrect.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Key.N)
+                {
+                    BtnNext.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    e.Handled = true;
+                    return;
+                }
             }
         }
 
