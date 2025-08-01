@@ -51,11 +51,8 @@ namespace MineguideEPOCParser.Core
                         // Skip very short words
                         if (word.Length < 3) continue;
 
-                        // Calculate Levenshtein distance
-                        int distance = Fastenshtein.Levenshtein.Distance(med.ToLower(), word.ToLower());
-
-                        // Calculate similarity as percentage (higher is better)
-                        double similarity = 1.0 - ((double)distance / Math.Max(med.Length, word.Length));
+                        int distance = CalculateCaseInsensitiveLevenshteinDistance(med, word);
+                        double similarity = CalculateSimilarityScore(med, word, distance);
 
                         // Keep track of the best match
                         if (similarity > similarityScore)
@@ -115,6 +112,18 @@ namespace MineguideEPOCParser.Core
             // Return statistics for potential further processing
             return (medicationsInText, matchPercentage, medicationDetails);
         }
+
+        /// <summary>
+        /// Calculate Levenshtein distance (case-insensitive)
+        /// </summary>
+        public static int CalculateCaseInsensitiveLevenshteinDistance(string value1, string value2)
+            => Fastenshtein.Levenshtein.Distance(value1.ToLower(), value2.ToLower());
+
+        /// <summary>
+        /// Calculate similarity as percentage (higher is better)
+        /// </summary>
+        public static double CalculateSimilarityScore(string value1, string value2, int distance) =>
+            1.0 - ((double)distance / Math.Max(value1.Length, value2.Length));
 
         public const double ExactMatchThreshold = 1.0; // 100% similarity threshold for exact matches
         public const double StrongSimilarityThreshold = 0.8; // 80% similarity threshold for strong matches

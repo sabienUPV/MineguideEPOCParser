@@ -153,10 +153,59 @@ namespace MineguideEPOCParser.GUIApp
         private string? _currentText;
         private List<MedicationMatchUI>? _currentMedicationMatches;
 
+        /// <summary>
+        /// The idea is that, while the user keeps correcting medications,
+        /// We start creating a dictionary of corrections, that we will then
+        /// be able to match using the Levenshtein distance to provide
+        /// with default corrections for medications based on previous corrections already made.
+        /// Once the user validates the new inferred correction, it gets added as well.
+        /// </summary>
+        private readonly Dictionary<string, string> _correctedMedications = new(StringComparer.OrdinalIgnoreCase);
+
+        private string? FindClosestCorrectedMedication(MedicationMatch medicationMatch)
+        {
+            if (_correctedMedications is null || _correctedMedications.Count == 0)
+            {
+                return null; // No previously corrected medications to compare against
+            }
+
+            if (_correctedMedications.TryGetValue(medicationMatch.ExtractedMedication, out var correctedMedication))
+            {
+                return correctedMedication;
+            }
+
+            var (previouslyExtractedMedication, distance) = _correctedMedications.Keys
+                .Select(previouslyExtractedMedication =>
+                {
+                    return (previouslyExtractedMedication,
+                            distance: MedicationAnalyzers.CalculateCaseInsensitiveLevenshteinDistance(
+                                        medicationMatch.ExtractedMedication,
+                                        previouslyExtractedMedication));
+                })
+                .MinBy(md => md.distance);
+
+            var similarityScore = MedicationAnalyzers.CalculateSimilarityScore(medicationMatch.ExtractedMedication, previouslyExtractedMedication, distance);
+            var isSimilarEnough = MedicationAnalyzers.IsStrongSimilarityOrBetter(similarityScore);
+
+            return isSimilarEnough ? _correctedMedications[previouslyExtractedMedication] : null;
+        }
+
         public void LoadMedicationMatches(string text, IEnumerable<MedicationMatch> medicationMatches)
         {
             var sortedMatches = medicationMatches
-                .Select(m => MedicationMatchUI.FromMedicationMatch(m))
+                .Select(m =>
+                {
+                    var medicationMatchUI = MedicationMatchUI.FromMedicationMatch(m);
+
+                    // If previously we corrected a close enough medication,
+                    // we auto-fill the corrected medication to that one by default
+                    if (FindClosestCorrectedMedication(m) is string correctedMedication)
+                    {
+                        medicationMatchUI.CorrectedMedication = correctedMedication;
+                    }
+
+                    return medicationMatchUI;
+                })
                 .OrderBy(m => m.StartIndex)
                 .ToList();
 
@@ -417,6 +466,15 @@ namespace MineguideEPOCParser.GUIApp
                 }
 
                 cancellationToken.ThrowIfCancellationRequested();
+
+                // Add the current corrected medications to the dictionary
+                foreach (var match in _currentMedicationMatches)
+                {
+                    if (!string.IsNullOrEmpty(match.CorrectedMedication))
+                    {
+                        _correctedMedications[match.ExtractedMedication] = match.CorrectedMedication;
+                    }
+                }
 
                 return _currentMedicationMatches.Select(m => m.ToMedicationMatch()).ToArray();
             }
