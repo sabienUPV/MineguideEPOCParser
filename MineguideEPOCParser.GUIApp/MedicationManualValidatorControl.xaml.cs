@@ -421,7 +421,7 @@ namespace MineguideEPOCParser.GUIApp
         private void OnTrueMedicationClicked(object? sender, RoutedEventArgs e)
         {
             // Get focused medication match
-            MedicationMatchUI? selectedMatch = GetFocusedMedication();
+            MedicationMatchUI? selectedMatch = GetFocusedMedicationMatch();
 
             if (selectedMatch is null)
             {
@@ -439,8 +439,9 @@ namespace MineguideEPOCParser.GUIApp
                 if (selectedMatch is null)
                 {
                     // If no match was found, we can add the selected text as a new medication (it's a false negative)
-                    AddFalseNegativeMedication(selectedText, startIndex);
+                    var newMatch = AddFalseNegativeMedication(selectedText, startIndex);
                     RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+                    FocusMedicationMatch(newMatch); // Focus the new hyperlink
                     return;
                 }
             }
@@ -475,7 +476,7 @@ namespace MineguideEPOCParser.GUIApp
             }
         }
 
-        private void AddFalseNegativeMedication(string selectedText, int startIndex)
+        private MedicationMatchUI AddFalseNegativeMedication(string selectedText, int startIndex)
         {
             // Initialize the validated medications list if it is null
             _currentMedicationMatches ??= [];
@@ -495,6 +496,9 @@ namespace MineguideEPOCParser.GUIApp
             // (making sure it's still sorted by start index,
             // since our code assumes that the matches are sorted)
             _currentMedicationMatches.AddSorted(newMatch, MedicationMatch.Comparer);
+
+            // Return the new match for further processing if needed
+            return newMatch;
         }
 
         // False positive medication button click handler
@@ -507,7 +511,7 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             // Get selected medication
-            MedicationMatchUI? selectedMatch = GetFocusedMedication();
+            MedicationMatchUI? selectedMatch = GetFocusedMedicationMatch();
 
             if (selectedMatch is null)
             {
@@ -557,7 +561,7 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             // Get focused medication match
-            MedicationMatchUI? selectedMatch = GetFocusedMedication();
+            MedicationMatchUI? selectedMatch = GetFocusedMedicationMatch();
             if (selectedMatch is null)
             {
                 // Get selected text from RichTextBox
@@ -598,7 +602,30 @@ namespace MineguideEPOCParser.GUIApp
             RenderMedicationsText();
         }
 
-        private MedicationMatchUI? GetFocusedMedication()
+        private void FocusMedicationMatch(MedicationMatchUI match)
+        {
+            // If the match has a hyperlink, focus it
+            if (match.Hyperlink == null)
+            {
+                throw new InvalidOperationException("The medication match does not have a hyperlink to focus.");
+            }
+
+            if (_currentMedicationMatches is null)
+            {
+                throw new InvalidOperationException("No medication matches loaded. Please load medications first.");
+            }
+
+            var focusIndex = _currentMedicationMatches.IndexOf(match);
+            if (focusIndex < 0)
+            {
+                throw new InvalidOperationException("The medication match is not found in the current matches list.");
+            }
+
+            match.Hyperlink.Focus();
+            _currentMedicationFocusIndex = focusIndex; // Update focus index
+        }
+
+        private MedicationMatchUI? GetFocusedMedicationMatch()
         {
             // If a hyperlink is focused, get its text
             if (_currentMedicationMatches is not null && _currentMedicationFocusIndex >= 0 && _currentMedicationFocusIndex < _currentMedicationMatches.Count)
