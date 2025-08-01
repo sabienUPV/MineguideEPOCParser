@@ -652,7 +652,7 @@ namespace MineguideEPOCParser.GUIApp
             FocusMedicationMatch(selectedMatch); // Focus the match after correction
         }
 
-        private static void CorrectMedication(MedicationMatchUI medicationMatch)
+        private void CorrectMedication(MedicationMatchUI medicationMatch)
         {
             // Prompt user for corrected medication
             var input = Microsoft.VisualBasic.Interaction.InputBox(
@@ -666,6 +666,34 @@ namespace MineguideEPOCParser.GUIApp
             }
             // Update the corrected medication
             medicationMatch.CorrectedMedication = input.Trim();
+
+            // If the match is marked as a False Positive (FP),
+            // ask the user if the correct medication was already contained in the matched text
+            // (if so, there would be a False Negative (FN) as well in that subtext which we should add)
+            if (medicationMatch.ExperimentResult == MedicationMatch.ExperimentResultType.FP)
+            {
+                var subTextIndex = medicationMatch.MatchInText.IndexOf(medicationMatch.CorrectedMedication, StringComparison.OrdinalIgnoreCase);
+                if (subTextIndex < 0)
+                {
+                    // The corrected medication is not part of the original text,
+                    // so there is no False Negative (FN) to add here
+                    return;
+                }
+
+                var subText = medicationMatch.MatchInText.Substring(subTextIndex, medicationMatch.CorrectedMedication.Length);
+
+                var result = MessageBox.Show(
+                    $"The medication '{medicationMatch.ExtractedMedication}' was marked as a False Positive (FP).\n" +
+                    $"We detected that your correction ('{medicationMatch.CorrectedMedication}') is contained in the original matched text as '{subText}'.\n" +
+                    "Do you want to mark this part of the original text as a False Negative (FN) as well?\n",
+                    "Mark part of the original text as False Negative",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+                if (result == MessageBoxResult.Yes)
+                {
+                    AddFalseNegativeMedication(subText, medicationMatch.StartIndex + subTextIndex);
+                }
+            }
         }
 
         private void FocusMedicationMatch(MedicationMatchUI match)
