@@ -1,4 +1,5 @@
 ﻿using CsvHelper.Configuration;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace MineguideEPOCParser.Core
@@ -77,9 +78,7 @@ namespace MineguideEPOCParser.Core
             }
 
             // Optimization: We can assume all rows from the same report number are grouped together
-            string? currentReportNumber = null;
-            List<string[]> currentReportRows = [];
-            List<MedicationMatch>? existingMedicationMatches = _hasMatchHeaders ? [] : null;
+            Report? currentReport = null;
 
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {
@@ -88,22 +87,23 @@ namespace MineguideEPOCParser.Core
                 // If we have reached a new report number,
                 // validate the current report rows, yield the results,
                 // and start a new report
-                if (currentReportNumber != null && currentReportNumber != reportNumberValue)
+                if (currentReport is not null && currentReport.ReportNumber != reportNumberValue)
                 {
                     // We have reached a new report, yield the current report rows for validation
-                    await foreach (var validatedRow in ValidateMedications(currentReportRows, inputTargetColumnIndex, medicationIndex, existingMedicationMatches, cancellationToken))
+                    await foreach (var validatedRow in ValidateMedications(currentReport.Rows, inputTargetColumnIndex, medicationIndex, currentReport.MedicationMatches, cancellationToken))
                     {
                         yield return validatedRow;
                     }
 
                     // Start a new report
-                    currentReportRows.Clear();
-                    existingMedicationMatches?.Clear();
+                    currentReport = new Report(reportNumberValue, _hasMatchHeaders);
                 }
 
+                // If we don't have a current report, create a new one
+                currentReport ??= new Report(reportNumberValue, _hasMatchHeaders);
+
                 // Add the row to the current report rows
-                currentReportRows.Add(row);
-                currentReportNumber = reportNumberValue;
+                currentReport.Rows.Add(row);
 
                 if (_hasMatchHeaders)
                 {
@@ -111,8 +111,23 @@ namespace MineguideEPOCParser.Core
                     // we can just get them from the row
                     // (we know the reader should be pointing to the current row,
                     // so we should be able to get the record directly).
-                    existingMedicationMatches?.Add(CurrentCsvReader!.GetRecord<MedicationMatch>());
+                    currentReport.MedicationMatches?.Add(CurrentCsvReader!.GetRecord<MedicationMatch>());
                 }
+            }
+        }
+
+        public class Report
+        {
+            public required string ReportNumber { get; init; }
+            public List<string[]> Rows { get; init; }
+            public List<MedicationMatch>? MedicationMatches { get; init; }
+
+            [SetsRequiredMembers]
+            public Report(string reportNumber, bool hasMatchHeaders)
+            {
+                ReportNumber = reportNumber;
+                Rows = [];
+                MedicationMatches = hasMatchHeaders ? [] : null;
             }
         }
 
