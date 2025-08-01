@@ -304,6 +304,8 @@ namespace MineguideEPOCParser.GUIApp
             if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
             {
                 CorrectMedication(match);
+                RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+                FocusMedicationMatch(match); // Focus the match after correction
                 e.Handled = true;
                 return;
             }
@@ -312,14 +314,13 @@ namespace MineguideEPOCParser.GUIApp
             if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FP)
             {
                 MarkMedicationAsTruePositive(match); // Change to TP
-                RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
             }
             else
             {
                 MarkMedicationAsFalsePositive(match); // Change to FP
-                RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
             }
-
+            RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+            FocusMedicationMatch(match); // Focus the match after changing its state
             e.Handled = true;
         }
 
@@ -449,6 +450,7 @@ namespace MineguideEPOCParser.GUIApp
             // If a match was found, mark it as a true positive
             MarkMedicationAsTruePositive(selectedMatch);
             RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+            FocusMedicationMatch(selectedMatch); // Focus the match after marking it
         }
 
         private static void MarkMedicationAsTruePositive(MedicationMatchUI match)
@@ -531,11 +533,9 @@ namespace MineguideEPOCParser.GUIApp
                 }
             }
 
-            // Mark the selected medication as a false positive
-            MarkMedicationAsFalsePositive(selectedMatch);
-
-            // Redraw the RichTextBox with updated highlights
-            RenderMedicationsText();
+            MarkMedicationAsFalsePositive(selectedMatch); // Mark the selected medication as a false positive
+            RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+            FocusMedicationMatch(selectedMatch); // Focus the match after marking it
         }
 
         private void MarkMedicationAsFalsePositive(MedicationMatchUI match)
@@ -580,11 +580,12 @@ namespace MineguideEPOCParser.GUIApp
                 }
             }
 
-            // Correct the selected medication
-            CorrectMedication(selectedMatch);
+            CorrectMedication(selectedMatch); // Correct the selected medication
+            RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+            FocusMedicationMatch(selectedMatch); // Focus the match after correction
         }
 
-        private void CorrectMedication(MedicationMatchUI medicationMatch)
+        private static void CorrectMedication(MedicationMatchUI medicationMatch)
         {
             // Prompt user for corrected medication
             var input = Microsoft.VisualBasic.Interaction.InputBox(
@@ -598,8 +599,6 @@ namespace MineguideEPOCParser.GUIApp
             }
             // Update the corrected medication
             medicationMatch.CorrectedMedication = input.Trim();
-            // Redraw the RichTextBox with updated highlights
-            RenderMedicationsText();
         }
 
         private void FocusMedicationMatch(MedicationMatchUI match)
