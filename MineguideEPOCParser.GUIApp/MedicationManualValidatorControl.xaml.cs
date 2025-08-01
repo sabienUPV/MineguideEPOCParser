@@ -684,7 +684,10 @@ namespace MineguideEPOCParser.GUIApp
             var focusIndex = _currentMedicationMatches.IndexOf(match);
             if (focusIndex < 0)
             {
-                throw new InvalidOperationException("The medication match is not found in the current matches list.");
+                // The medication match is not found in the current matches list.
+                // This could happen, for instance, if a FN match was removed,
+                // so we return gracefully without focusing.
+                return;
             }
 
             match.Hyperlink.Focus();
