@@ -9,6 +9,7 @@ namespace MineguideEPOCParser.GUIApp
     public partial class MainWindow : Window
 	{
         private ContentControl? _currentControl;
+        private MenuItem? _selectedMenuItem;
 
         private static readonly (string Header, Func<ContentControl> Factory)[] _controlFactories =
         [
@@ -28,16 +29,25 @@ namespace MineguideEPOCParser.GUIApp
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            // Initialize the main content control with the first control
-            _currentControl = _controlFactories[0].Factory();
-            MainContentControl.Content = _currentControl;
-            // Populate the menu with control options
+            // Populate the menu with control factories
             foreach (var (header, factory) in _controlFactories)
             {
                 var menuItem = new MenuItem { Header = header };
-                menuItem.Click += async (s, args) => await ChangeContentControl(factory());
+                menuItem.Click += async (s, args) =>
+                {
+                    await ChangeContentControl(factory());
+                    HighlightMenuItem(menuItem);
+                };
                 MainMenu.Items.Add(menuItem);
             }
+
+            // Set the initial content control to the first one in the list
+            _currentControl = _controlFactories[0].Factory();
+            MainContentControl.Content = _currentControl;
+
+            // Highlight the first menu item by default
+            if (MainMenu.Items.Count > 0)
+                HighlightMenuItem((MenuItem)MainMenu.Items[0]);
         }
 
         private async Task ChangeContentControl(ContentControl newControl)
@@ -62,6 +72,18 @@ namespace MineguideEPOCParser.GUIApp
             {
                 await asyncDisposable.DisposeAsync();
             }
+        }
+
+        private void HighlightMenuItem(MenuItem menuItem)
+        {
+            // Remove highlight from the previously selected menu item
+            _selectedMenuItem?.ClearValue(FontWeightProperty);
+
+            // Highlight the new menu item
+            menuItem.FontWeight = FontWeights.Bold;
+
+            // Store the selected menu item
+            _selectedMenuItem = menuItem;
         }
     }
 }
