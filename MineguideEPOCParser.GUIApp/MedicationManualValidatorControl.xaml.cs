@@ -286,7 +286,6 @@ namespace MineguideEPOCParser.GUIApp
 
         private void Hyperlink_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            // Only handle middle click in the hyperlink
             if (sender is not Hyperlink hyperlink)
             {
                 return;
