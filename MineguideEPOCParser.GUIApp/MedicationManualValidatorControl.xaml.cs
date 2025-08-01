@@ -429,6 +429,7 @@ namespace MineguideEPOCParser.GUIApp
                 var selectedText = GetSelectedText(out int startIndex);
                 if (selectedText == null)
                 {
+                    MessageBox.Show("Please select a medication to mark as a True Positive (TP), OR select some text to add as a False Negative (FN).");
                     return; // No valid selection, exit
                 }
 
@@ -438,7 +439,7 @@ namespace MineguideEPOCParser.GUIApp
                 if (selectedMatch is null)
                 {
                     // If no match was found, we can add the selected text as a new medication (it's a false negative)
-                    AddFalsePositiveMedication(selectedText, startIndex);
+                    AddFalseNegativeMedication(selectedText, startIndex);
                     RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
                     return;
                 }
@@ -474,7 +475,7 @@ namespace MineguideEPOCParser.GUIApp
             }
         }
 
-        private void AddFalsePositiveMedication(string selectedText, int startIndex)
+        private void AddFalseNegativeMedication(string selectedText, int startIndex)
         {
             // Initialize the validated medications list if it is null
             _currentMedicationMatches ??= [];
@@ -514,7 +515,7 @@ namespace MineguideEPOCParser.GUIApp
                 var selectedText = GetSelectedText(out int startIndex);
                 if (selectedText is null)
                 {
-                    MessageBox.Show("Please select a medication to mark as a false positive.");
+                    MessageBox.Show("Please select a medication to mark as a False Positive (FP) if it was extracted, OR to remove a False Negative (FN) you previously added.");
                     return; // No valid selection, exit
                 }
                 // Find the match by start index and selected text
@@ -625,7 +626,6 @@ namespace MineguideEPOCParser.GUIApp
             
             if (string.IsNullOrWhiteSpace(selectedText))
             {
-                MessageBox.Show("Please select some text.");
                 startIndex = -1; // Set start index to -1 to indicate no selection
                 return null;
             }
