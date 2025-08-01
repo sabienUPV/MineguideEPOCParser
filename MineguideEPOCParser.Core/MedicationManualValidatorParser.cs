@@ -85,22 +85,10 @@ namespace MineguideEPOCParser.Core
             {
                 var reportNumberValue = row[reportNumberIndex];
 
-                // If we are still in the same report, add the row to the current report rows
-                if (currentReportNumber == null || currentReportNumber == reportNumberValue)
-                {
-                    currentReportRows.Add(row);
-                    currentReportNumber = reportNumberValue;
-
-                    if (_hasMatchHeaders)
-                    {
-                        // If the medication matches are already present in the row,
-                        // we can just get them from the row
-                        // (we know the reader should be pointing to the current row,
-                        // so we should be able to get the record directly).
-                        existingMedicationMatches?.Add(CurrentCsvReader!.GetRecord<MedicationMatch>());
-                    }
-                }
-                else
+                // If we have reached a new report number,
+                // validate the current report rows, yield the results,
+                // and start a new report
+                if (currentReportNumber != null && currentReportNumber != reportNumberValue)
                 {
                     // We have reached a new report, yield the current report rows for validation
                     await foreach (var validatedRow in ValidateMedications(currentReportRows, inputTargetColumnIndex, medicationIndex, existingMedicationMatches, cancellationToken))
@@ -110,8 +98,20 @@ namespace MineguideEPOCParser.Core
 
                     // Start a new report
                     currentReportRows.Clear();
-                    currentReportRows.Add(row);
-                    currentReportNumber = reportNumberValue;
+                    existingMedicationMatches?.Clear();
+                }
+
+                // Add the row to the current report rows
+                currentReportRows.Add(row);
+                currentReportNumber = reportNumberValue;
+
+                if (_hasMatchHeaders)
+                {
+                    // If the medication matches are already present in the row,
+                    // we can just get them from the row
+                    // (we know the reader should be pointing to the current row,
+                    // so we should be able to get the record directly).
+                    existingMedicationMatches?.Add(CurrentCsvReader!.GetRecord<MedicationMatch>());
                 }
             }
         }
