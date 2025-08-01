@@ -8,8 +8,11 @@ namespace MineguideEPOCParser.Core
         public int Length { get; set; }
         public required string MatchInText { get; set; }
         public required string ExtractedMedication { get; set; } // The medication from your array
-
+        
         public ExperimentResultType ExperimentResult { get; set; } = ExperimentResultType.TP; // Default to True Positive
+
+        public string? CorrectedMedication { get; set; } // The corrected medication by the user after validating, if any
+
 
         /// <summary>
         /// Possible values:

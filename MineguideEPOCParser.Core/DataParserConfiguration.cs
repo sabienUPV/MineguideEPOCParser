@@ -9,7 +9,7 @@
         public required string OutputFile { get; set; }
 
         public string? InputTargetColumnHeaderName { get; set; }
-        public string[] OutputAdditionalHeaderNames { get; set; }
+        public string[] OutputAdditionalHeaderNames { get; protected set; }
 
         public int NumberOfOutputAdditionalHeaders => OutputAdditionalHeaderNames?.Length ?? 0;
 

@@ -10,18 +10,21 @@ namespace MineguideEPOCParser.Core
     /// </summary>
     public class MedicationManualValidatorParser : DataParser<MedicationManualValidatorParserConfiguration>
     {
-        public override int NumberOfOutputAdditionalColumns => 4; // StartIndex, Length, Text, OriginalMedication
+        public override int NumberOfOutputAdditionalColumns => 5; // StartIndex, Length, MatchInText, ExtractedMedication, CorrectedMedication
 
         public class MedicationMatchClassMap : ClassMap<MedicationMatch>
         {
             public MedicationMatchClassMap(MedicationManualValidatorParserConfiguration config)
             {
                 // Map all MedicationMatch properties to the output columns
+                Map(m => m.ExtractedMedication).Name(config.MedicationHeaderName);
+
                 Map(m => m.StartIndex).Name(config.MatchStartIndexHeaderName);
                 Map(m => m.Length).Name(config.MatchLengthHeaderName);
                 Map(m => m.MatchInText).Name(config.MatchInTextHeaderName);
                 Map(m => m.ExperimentResult).Name(config.MatchExperimentResultHeaderName);
-                Map(m => m.ExtractedMedication).Name(config.MedicationHeaderName);
+
+                Map(m => m.CorrectedMedication).Name(config.MatchCorrectedMedicationHeaderName).Optional();
             }
         }
 
@@ -30,8 +33,8 @@ namespace MineguideEPOCParser.Core
         {
             base.ValidateHeaders(headers);
 
-            // Check if the match headers (the output headers) are present in the input headers
-            if (Configuration.OutputAdditionalHeaderNames.All(h => headers.Contains(h)))
+            // Check if the required match headers are present in the input headers
+            if (Configuration.GetRequiredMedicationMatchHeaders().All(h => headers.Contains(h)))
             {
                 // It already has the match information,
                 // so we can just extract it from the CSV
@@ -188,11 +191,15 @@ namespace MineguideEPOCParser.Core
         public string ReportNumberHeaderName { get; set; } = DefaultReportNumberHeaderName;
         public string MedicationHeaderName { get; set; } = DefaultMedicationHeaderName;
 
+        // NOTE: DON'T MANUALLY SET THE OutputAdditionalHeaderNames for this config (publicly),
+        // since we are not supporting that for detecting existing medication matches.
+
         // MedicationMatch header names
         public string MatchStartIndexHeaderName => BuildMedicationHeader(nameof(MedicationMatch.StartIndex));
         public string MatchLengthHeaderName => BuildMedicationHeader(nameof(MedicationMatch.Length));
         public string MatchInTextHeaderName => BuildMedicationHeader(nameof(MedicationMatch.MatchInText));
         public string MatchExperimentResultHeaderName => BuildMedicationHeader(nameof(MedicationMatch.ExperimentResult));
+        public string MatchCorrectedMedicationHeaderName => BuildMedicationHeader(nameof(MedicationMatch.CorrectedMedication));
 
 
         public required Func<string, IEnumerable<MedicationMatch>, CancellationToken, Task<MedicationMatch[]>> ValidationFunction { get; set; }
@@ -203,8 +210,21 @@ namespace MineguideEPOCParser.Core
             MatchStartIndexHeaderName,
             MatchLengthHeaderName,
             MatchInTextHeaderName,
-            MatchExperimentResultHeaderName
+            MatchExperimentResultHeaderName,
+            MatchCorrectedMedicationHeaderName
         ]);
+
+        public string[] GetRequiredMedicationMatchHeaders()
+        {
+            // Return the headers that are required for the medication matches
+            return [
+                MatchStartIndexHeaderName,
+                MatchLengthHeaderName,
+                MatchInTextHeaderName,
+                MatchExperimentResultHeaderName,
+                //MatchCorrectedMedicationHeaderName // This one is optional, so we purposefully don't include it here
+            ];
+        }
 
         // We do this here to ensure the order is preserved
         // in the same way as the headers (which are defined right above, in GetDefaultColumns).
@@ -215,6 +235,7 @@ namespace MineguideEPOCParser.Core
                 match.Length.ToString(),
                 match.MatchInText,
                 match.ExperimentResult.ToResultString(),
+                match.CorrectedMedication ?? string.Empty
             ];
         }
     }

@@ -60,6 +60,7 @@
             <Button x:Name="BtnLoad" Content="Load" Margin="5" Click="LoadMedications" IsEnabled="{Binding IsNotParsing}" />
             <Button x:Name="BtnTrue" Content="True" Margin="5" Click="OnTrueMedicationClicked" />
             <Button x:Name="BtnFalse" Content="False" Margin="5" Click="OnFalseMedicationClicked" />
+            <Button x:Name="BtnCorrect" Content="Correct" Margin="5" Click="OnCorrectMedicationClicked" />
             <Button x:Name="BtnNext" Content="Next" Margin="5" Click="OnUserFinishedMedicationValidation" />
             <Button x:Name="BtnStop" Content="Stop" Margin="5" Click="StopMedicationValidation" IsEnabled="{Binding IsParsing}" />
         </StackPanel>
