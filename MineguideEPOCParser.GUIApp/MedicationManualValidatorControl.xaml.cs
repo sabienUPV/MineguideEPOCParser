@@ -218,7 +218,7 @@ namespace MineguideEPOCParser.GUIApp
                     Foreground = new SolidColorBrush(match.ForegroundColor),
                     Background = new SolidColorBrush(match.BackgroundColor),
                     FontWeight = FontWeights.Bold,
-                    TextDecorations = null, // Remove underline for cleaner look
+                    TextDecorations = string.IsNullOrEmpty(match.CorrectedMedication) ? null : TextDecorations.Underline,
                     Focusable = true,
                     ToolTip = tooltipBuilder.ToString(),
                 };
