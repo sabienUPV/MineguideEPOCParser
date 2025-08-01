@@ -658,7 +658,7 @@ namespace MineguideEPOCParser.GUIApp
             var input = Microsoft.VisualBasic.Interaction.InputBox(
                 $"Extracted medication (from LLM): {medicationMatch.ExtractedMedication}\n\nEnter the corrected medication name:",
                 $"Correct Medication ({medicationMatch.ExtractedMedication})",
-                medicationMatch.CorrectedMedication ?? string.Empty);
+                medicationMatch.CorrectedMedication ?? medicationMatch.ExtractedMedication);
             if (string.IsNullOrWhiteSpace(input))
             {
                 MessageBox.Show("No correction entered. Operation cancelled.");
