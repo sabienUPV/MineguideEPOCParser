@@ -654,45 +654,96 @@ namespace MineguideEPOCParser.GUIApp
 
         private void CorrectMedication(MedicationMatchUI medicationMatch)
         {
-            // Prompt user for corrected medication
-            var input = Microsoft.VisualBasic.Interaction.InputBox(
-                $"Extracted medication (from LLM): {medicationMatch.ExtractedMedication}\n\nEnter the corrected medication name:",
-                $"Correct Medication ({medicationMatch.ExtractedMedication})",
-                medicationMatch.CorrectedMedication ?? medicationMatch.ExtractedMedication);
-            if (string.IsNullOrWhiteSpace(input))
-            {
-                MessageBox.Show("No correction entered. Operation cancelled.");
-                return; // No valid input, exit
-            }
-            // Update the corrected medication
-            medicationMatch.CorrectedMedication = input.Trim();
-
             // If the match is marked as a False Positive (FP),
             // ask the user if the correct medication was already contained in the matched text
             // (if so, there would be a False Negative (FN) as well in that subtext which we should add)
-            if (medicationMatch.ExperimentResult == MedicationMatch.ExperimentResultType.FP)
+            bool isFalsePositive = medicationMatch.ExperimentResult == MedicationMatch.ExperimentResultType.FP;
+            if (isFalsePositive)
             {
-                var subTextIndex = medicationMatch.MatchInText.IndexOf(medicationMatch.CorrectedMedication, StringComparison.OrdinalIgnoreCase);
-                if (subTextIndex < 0)
-                {
-                    // The corrected medication is not part of the original text,
-                    // so there is no False Negative (FN) to add here
-                    return;
-                }
-
-                var subText = medicationMatch.MatchInText.Substring(subTextIndex, medicationMatch.CorrectedMedication.Length);
-
                 var result = MessageBox.Show(
-                    $"The medication '{medicationMatch.ExtractedMedication}' was marked as a False Positive (FP).\n" +
-                    $"We detected that your correction ('{medicationMatch.CorrectedMedication}') is contained in the original matched text as '{subText}'.\n" +
-                    "Do you want to mark this part of the original text as a False Negative (FN) as well?\n",
-                    "Mark part of the original text as False Negative",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-                if (result == MessageBoxResult.Yes)
+                    $"""
+                    NOTE: The selected medication '{medicationMatch.ExtractedMedication}' was marked as a **False Positive** (FP).
+                    
+                    If you continue, you will be prompted to mark part of the original text as a False Negative (FN).
+                    You NEED to ensure that the corrected medication you enter is part of the original text EXPLICITLY.
+                    If you later need to correct that medication as well (e.g., due to a typo, or a need to convert brands to generic names),
+                    you can do so afterwards by doing the same 'Correct' action on the newly created FN text.
+
+                    Do you want to continue?
+                    """,
+                    "Mark part of the original text as False Negative (FN)",
+                    MessageBoxButton.OKCancel,
+                    MessageBoxImage.Information);
+                if (result != MessageBoxResult.OK)
                 {
-                    AddFalseNegativeMedication(subText, medicationMatch.StartIndex + subTextIndex);
+                    return; // User cancelled the operation
                 }
+            }
+
+            // Prompt user for corrected medication
+            string? input;
+            int subTextIndex = -1;
+            while (true)
+            {
+                input = Microsoft.VisualBasic.Interaction.InputBox(
+                $"Extracted medication (from LLM): {medicationMatch.ExtractedMedication}\n\nEnter the corrected medication name:",
+                $"Correct Medication ({medicationMatch.ExtractedMedication})",
+                medicationMatch.CorrectedMedication ?? medicationMatch.ExtractedMedication);
+                
+                if (string.IsNullOrWhiteSpace(input))
+                {
+                    MessageBox.Show("No correction entered. Operation cancelled.");
+                    return; // No valid input, exit
+                }
+                
+                input = input.Trim(); // Trim whitespace
+
+                if (isFalsePositive)
+                {
+                    subTextIndex = medicationMatch.MatchInText.IndexOf(input, StringComparison.OrdinalIgnoreCase);
+                    if (subTextIndex < 0)
+                    {
+                        // The corrected medication is not part of the original text,
+                        // so we can't add a False Negative (FN) here.
+                        // Prompt the user that they need to enter a valid subtext.
+                        var result = MessageBox.Show(
+                            $"""
+                            The corrected medication '{input}' as **False Negative (FN)** was not found in the original text:
+                            
+                            {medicationMatch.MatchInText}
+                            
+                            Please ensure that the corrected medication is part of the original text.
+
+                            Remember: If you meant to correct a **True Positive** (TP or TP*) medication instead,
+                            please change its status from **False Positive** (FP) to **True Positive** (TP or TP*) first,
+                            and then use the 'Correct' action again to correct it.
+
+                            Do you want to try again?
+                            """,
+                            "Warning: False Negative (FN) not found in text",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Warning);
+
+                        if (result == MessageBoxResult.Yes)
+                        {
+                            continue; // Try again
+                        }
+                        else
+                        {
+                            return; // User cancelled the operation
+                        }
+                    }
+                }
+                break; // Valid input, exit loop
+            }
+            
+            // Update the corrected medication
+            medicationMatch.CorrectedMedication = input;
+
+            if (isFalsePositive)
+            {
+                var subText = medicationMatch.MatchInText.Substring(subTextIndex, medicationMatch.CorrectedMedication.Length);
+                AddFalseNegativeMedication(subText, medicationMatch.StartIndex + subTextIndex);
             }
         }
 
