@@ -692,7 +692,12 @@ namespace MineguideEPOCParser.GUIApp
                 
                 if (string.IsNullOrWhiteSpace(input))
                 {
-                    MessageBox.Show("No correction entered. Operation cancelled.");
+                    var result = MessageBox.Show("No correction entered. Did you mean to remove the correction?\n\nPress 'Yes' to remove the correction for this medication.", "Remove correction?", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
+                    if (result == MessageBoxResult.OK)
+                    {
+                        // User wants to remove the correction
+                        medicationMatch.CorrectedMedication = null;
+                    }
                     return; // No valid input, exit
                 }
                 
