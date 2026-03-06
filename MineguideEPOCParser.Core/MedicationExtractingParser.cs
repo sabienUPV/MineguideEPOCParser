@@ -75,7 +75,7 @@ namespace MineguideEPOCParser.Core
         private IEnumerable<string[]> CreateNewRowsForEachMedication(string[] row, string t, string[] medications, int inputTargetColumnIndex, Dictionary<string, MedicationAnalyzers.MedicationDetails>? medicationDetails)
         {
             // Devuelve cada medicamento en una fila, ordenados alfabéticamente
-            foreach (var medication in medications.Order())
+            foreach (var medication in medications.OrderBy(m => m))
             {
                 // Duplicate the row for each medication, including the medication
                 string[] newRow;

@@ -94,6 +94,7 @@ namespace MineguideEPOCParser.Core
         //    return text.Replace("FEV 1", "FEV1").Replace("FEVI", "FEV1").Replace(',', '.');
         //}
 
+#if NET7_0_OR_GREATER
         /// <summary>
         /// Regex to extract the FEV1 (%) measurements from the text.
         /// Notes:
@@ -105,5 +106,21 @@ namespace MineguideEPOCParser.Core
         /// </summary>
         [GeneratedRegex(@"FEV\s?[1I][^\/<>\n]*?(\d+(?:[\.,]\d+)?)\s*?%", RegexOptions.IgnoreCase)]
         internal static partial Regex ExtractFEV1Regex();
+#else
+        private static readonly Regex _extractFEV1Regex = new(
+            @"FEV\s?[1I][^\/<>\n]*?(\d+(?:[\.,]\d+)?)\s*?%",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>
+        /// Regex to extract the FEV1 (%) measurements from the text.
+        /// Notes:
+        /// - The measurement must be followed by a percentage value (%)
+        /// - This accepts various spellings ("FEV1", "FEV 1", "FEVI") as the measurement name, in a case-insensitive way
+        /// - The value can be a decimal number (with a dot or a comma as the decimal separator)
+        /// - It prevents matching the FEV1/FVC ratio by checking that the measurement name is not followed by a slash
+        /// - It also prevents matching the measurement if it is followed by a "<" or ">" character (because it might show an interval rather than a single value)
+        /// </summary>
+        internal static Regex ExtractFEV1Regex() => _extractFEV1Regex;
+#endif
     }
 }

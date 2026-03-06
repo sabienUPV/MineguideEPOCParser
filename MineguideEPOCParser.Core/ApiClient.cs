@@ -1,25 +1,17 @@
-﻿using System.Net.Http.Json;
-using System.Text;
-using Polly;
-using Serilog;
-using Newtonsoft.Json;
-using JsonException = Newtonsoft.Json.JsonException;
-using JsonSerializer = System.Text.Json.JsonSerializer;
-using System.Text.Json.Serialization;
-using JsonIgnoreAttribute = System.Text.Json.Serialization.JsonIgnoreAttribute;
+﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
+using Polly;
 using Polly.Retry;
-using Microsoft.Extensions.Configuration;
+using Serilog;
+using System.Text;
 
 namespace MineguideEPOCParser.Core
 {
 	public class ApiClient
 	{
 		private const string ApiUrl = "https://mineguide.itaca.upv.es:11434/api/generate";
-
-        private static readonly string ApiKey = new ConfigurationBuilder()
-            .AddUserSecrets<ApiClient>()
-            .Build()["ApiKey"] ?? throw new InvalidOperationException("Ollama API key is not set in user secrets.");
+        private const string ApiKey = "<API-KEY-HERE>";
 
         public static async Task<TOutput?> CallToApiJson<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
         {
@@ -82,12 +74,22 @@ namespace MineguideEPOCParser.Core
         {
             log?.Information("Calling API...");
 
+            var settings = new JsonSerializerSettings
+            {
+                ContractResolver = new DefaultContractResolver
+                {
+                    // ollama's output properties are in snake_case
+                    // (https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion)
+                    NamingStrategy = new SnakeCaseNamingStrategy()
+                }
+            };
+
             log?.Verbose("Request:\n{@Request}", generateRequest);
             var request = new HttpRequestMessage()
             {
                 Method = HttpMethod.Post,
                 RequestUri = uri,
-                Content = new StringContent(JsonSerializer.Serialize(generateRequest), Encoding.UTF8, "application/json")
+                Content = new StringContent(JsonConvert.SerializeObject(generateRequest, settings), Encoding.UTF8, "application/json")
             };
             request.Headers.Add("X-API-Key", ApiKey);
 
@@ -103,21 +105,11 @@ namespace MineguideEPOCParser.Core
 
             response.EnsureSuccessStatusCode();
 
-            var jsonOptions = new System.Text.Json.JsonSerializerOptions
-            {
-                // ollama's output properties are in snake_case
-                // (https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-completion)
-                PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.SnakeCaseLower,
-                PropertyNameCaseInsensitive = true,
-            };
-
-            var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse>(jsonOptions, cancellationToken);
+            var apiResponseString = await response.Content.ReadAsStringAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (apiResponse == null)
-            {
-                throw new InvalidOperationException("Error: API response is null");
-            }
+            var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(apiResponseString, settings)
+                ?? throw new InvalidOperationException("Error: API response is null");
 
             log?.Debug("Raw API Response:\n{Response}", apiResponse.Response);
             log?.Verbose("Raw API Response with metadata: {@FullResponse}", apiResponse);
@@ -201,14 +193,14 @@ namespace MineguideEPOCParser.Core
 			public required string Prompt { get; set; }
 			public required string Model { get; set; }
 
-			[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-			public RequestOptions? Options { get; set; }
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+            public RequestOptions? Options { get; set; }
 
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public string? System { get; set; }
 
-            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-			public string? Format { get; set; }
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+            public string? Format { get; set; }
 			public bool Stream { get; set; }
 		}
 
@@ -226,7 +218,7 @@ namespace MineguideEPOCParser.Core
         /// </summary>
 		private class ApiResponse
 		{
-            [System.Text.Json.Serialization.JsonRequired]
+            [JsonProperty(Required = Required.Always)]
 			public required string Response { get; init; }
 
             // Other properties, might be interesting for analyzing logs later

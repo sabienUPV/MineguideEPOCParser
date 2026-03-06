@@ -833,7 +833,11 @@ namespace MineguideEPOCParser.GUIApp
             // Cancel any ongoing parsing operation
             if (_cancellationTokenSource is not null)
             {
+#if NET8_0_OR_GREATER
                 await _cancellationTokenSource.CancelAsync();
+#else
+                _cancellationTokenSource.Cancel();
+#endif
             }
 
             ResetMedicationValidation();

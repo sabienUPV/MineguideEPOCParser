@@ -1,89 +1,39 @@
-﻿using System.Windows;
-using System.Windows.Controls;
+﻿using System.ComponentModel;
+using System.Windows;
 
 namespace MineguideEPOCParser.GUIApp
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
-	{
-        private ContentControl? _currentControl;
-        private MenuItem? _selectedMenuItem;
-
-        private static readonly (string Header, Func<ContentControl> Factory)[] _controlFactories =
-        [
-            ("Medication Parser", () => new MedicationParserControl()),
-            ("Medication Mapper and Grouping to Group Mapper", () => new MedicationMapperGroupingControl()),
-            ("Medication Grouping To Mapper", () => new MedicationGroupingToMapperControl()),
-            ("File Encoding Converter", () => new FileEncodingConverterControl()),
-            ("Measurements Parser", () => new MeasurementsParserControl()),
-            ("Medication Manual Validator", () => new MedicationManualValidatorControl()),
-            ("Random Sampler Parser", () => new RandomSamplerParserControl())
-        ];
+    {
+        private bool _isSafeToClose = false;
 
         public MainWindow()
         {
             InitializeComponent();
         }
 
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        /*
+         * WPF has a tricky quirk: the Window_Closing event is strictly synchronous.
+         * If you try to await MyMainControl.DisposeAsync() inside it,
+         * the Window will finish closing and destroy the app before the async disposal is actually done!
+         * 
+         * To fix this, we use the "Cancel and Defer" pattern. We cancel the initial close,
+         * run the async cleanup, and then tell the window to close for real.
+         */
+        private async void Window_Closing(object sender, CancelEventArgs e)
         {
-            // Populate the menu with control factories
-            foreach (var (header, factory) in _controlFactories)
-            {
-                var menuItem = new MenuItem { Header = header };
-                menuItem.Click += async (s, args) =>
-                {
-                    await ChangeContentControl(factory());
-                    HighlightMenuItem(menuItem);
-                };
-                MainMenu.Items.Add(menuItem);
-            }
+            // If we've already done the cleanup, let the window close naturally
+            if (_isSafeToClose) return;
 
-            // Set the initial content control to the first one in the list
-            _currentControl = _controlFactories[0].Factory();
-            MainContentControl.Content = _currentControl;
+            // 1. Stop the window from closing immediately
+            e.Cancel = true;
 
-            // Highlight the first menu item by default
-            if (MainMenu.Items.Count > 0)
-                HighlightMenuItem((MenuItem)MainMenu.Items[0]);
-        }
+            // 2. Await the cleanup in your UserControl
+            await MyMainControl.DisposeAsync();
 
-        private async Task ChangeContentControl(ContentControl newControl)
-        {
-            await DisposeCurrentControl();
-            _currentControl = newControl;
-            MainContentControl.Content = _currentControl;
-        }
-
-        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
-        {
-            await DisposeCurrentControl();
-        }
-
-        private async Task DisposeCurrentControl()
-        {
-            if (_currentControl is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-            else if (_currentControl is IAsyncDisposable asyncDisposable)
-            {
-                await asyncDisposable.DisposeAsync();
-            }
-        }
-
-        private void HighlightMenuItem(MenuItem menuItem)
-        {
-            // Remove highlight from the previously selected menu item
-            _selectedMenuItem?.ClearValue(FontWeightProperty);
-
-            // Highlight the new menu item
-            menuItem.FontWeight = FontWeights.Bold;
-
-            // Store the selected menu item
-            _selectedMenuItem = menuItem;
+            // 3. Flag that we are done, and trigger the close again
+            _isSafeToClose = true;
+            this.Close();
         }
     }
 }
