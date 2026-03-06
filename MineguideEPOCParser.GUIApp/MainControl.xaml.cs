@@ -27,8 +27,13 @@ namespace MineguideEPOCParser.GUIApp
             InitializeComponent();
         }
 
+        private bool _menuInitialized = false;
         private void MainControl_Loaded(object sender, RoutedEventArgs e)
         {
+            // Prevent multiple initializations
+            if (_menuInitialized) return;
+            _menuInitialized = true;
+
             // Populate the menu with control factories
             foreach (var (header, factory) in _controlFactories)
             {
