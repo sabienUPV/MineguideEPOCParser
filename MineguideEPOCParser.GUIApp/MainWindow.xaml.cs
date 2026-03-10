@@ -1,10 +1,12 @@
 ﻿using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
 
 namespace MineguideEPOCParser.GUIApp
 {
     public partial class MainWindow : Window
     {
+        private bool _isCleaningUp = false;
         private bool _isSafeToClose = false;
 
         public MainWindow()
@@ -22,18 +24,35 @@ namespace MineguideEPOCParser.GUIApp
          */
         private async void Window_Closing(object sender, CancelEventArgs e)
         {
-            // If we've already done the cleanup, let the window close naturally
             if (_isSafeToClose) return;
 
-            // 1. Stop the window from closing immediately
-            e.Cancel = true;
+            // 1. If we are already cleaning up, just keep the window canceled
+            if (_isCleaningUp)
+            {
+                e.Cancel = true;
+                return;
+            }
 
-            // 2. Await the cleanup in your UserControl
-            await MyMainControl.DisposeAsync();
+            e.Cancel = true; // Stop the window from closing immediately
+            _isCleaningUp = true; // Mark that we've started
 
-            // 3. Flag that we are done, and trigger the close again
-            _isSafeToClose = true;
-            this.Close();
+            try
+            {
+                await MyMainControl.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Cleanup failed: {ex.Message}");
+            }
+            finally
+            {
+                // 3. Flag that we are done
+                _isSafeToClose = true;
+                _isCleaningUp = false;
+                // 4. IMPORTANT: Schedule the close to happen AFTER this method finishes.
+                // This gives WPF a "breath" to finish the cancelled state before trying again.
+                _ = Dispatcher.BeginInvoke(new Action(this.Close));
+            }
         }
     }
 }
