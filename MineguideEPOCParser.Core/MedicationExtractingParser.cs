@@ -41,7 +41,7 @@ namespace MineguideEPOCParser.Core
                 else
                 {
                     var medicationsText = await ApiClient.CallToApiText(t, DefaultModel, Configuration.SystemPrompt, Logger, cancellationToken);
-                    medications = medicationsText?.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    medications = medicationsText?.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(m => m.Trim()).ToArray();
                 }
 
                 Dictionary<string, MedicationAnalyzers.MedicationDetails>? medicationDetails;

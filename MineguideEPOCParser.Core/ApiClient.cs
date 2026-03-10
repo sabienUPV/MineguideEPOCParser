@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Polly;
@@ -11,7 +12,10 @@ namespace MineguideEPOCParser.Core
 	public class ApiClient
 	{
 		private const string ApiUrl = "https://mineguide.itaca.upv.es:11434/api/generate";
-        private const string ApiKey = "<API-KEY-HERE>";
+
+        private static readonly string ApiKey = new ConfigurationBuilder()
+            .AddUserSecrets<ApiClient>()
+            .Build()["ApiKey"] ?? throw new InvalidOperationException("Ollama API key is not set in user secrets.");
 
         public static async Task<TOutput?> CallToApiJson<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
         {
@@ -105,10 +109,14 @@ namespace MineguideEPOCParser.Core
 
             response.EnsureSuccessStatusCode();
 
-            var apiResponseString = await response.Content.ReadAsStringAsync(cancellationToken);
+            using var stream = await response.Content.ReadAsStreamAsync();
             cancellationToken.ThrowIfCancellationRequested();
 
-            var apiResponse = JsonConvert.DeserializeObject<ApiResponse>(apiResponseString, settings)
+            using var reader = new StreamReader(stream);
+            using var jsonReader = new JsonTextReader(reader);
+
+            var serializer = JsonSerializer.Create(settings);
+            var apiResponse = serializer.Deserialize<ApiResponse>(jsonReader)
                 ?? throw new InvalidOperationException("Error: API response is null");
 
             log?.Debug("Raw API Response:\n{Response}", apiResponse.Response);
