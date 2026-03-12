@@ -1,4 +1,4 @@
-﻿using CsvHelper.Configuration;
+using CsvHelper.Configuration;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -121,7 +121,7 @@ namespace MineguideEPOCParser.Core
                 await foreach (var validatedRow in ValidateMedications(currentReport.Rows, inputTargetColumnIndex, medicationIndex, currentReport.MedicationMatches, cancellationToken))
                 {
                     yield return validatedRow;
-        }
+                }
             }
         }
 
@@ -129,7 +129,7 @@ namespace MineguideEPOCParser.Core
         {
             public required string ReportNumber { get; init; }
             public List<string[]> Rows { get; init; }
-            public List<MedicationMatch>? MedicationMatches { get; init; }
+            public List<MedicationResult>? MedicationMatches { get; init; }
 
             [SetsRequiredMembers]
             public Report(string reportNumber, bool hasMatchHeaders)
@@ -140,7 +140,7 @@ namespace MineguideEPOCParser.Core
             }
         }
 
-        private async IAsyncEnumerable<string[]> ValidateMedications(List<string[]> currentReportRows, int inputTargetColumnIndex, int medicationIndex, List<MedicationMatch>? existingMedicationMatches, [EnumeratorCancellation] CancellationToken cancellationToken)
+        private async IAsyncEnumerable<string[]> ValidateMedications(List<string[]> currentReportRows, int inputTargetColumnIndex, int medicationIndex, List<MedicationResult>? existingMedicationMatches, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             // Since the rows are grouped by report number, the report text should be the same for all rows,
             // so we can just take the first row to get the medication text.
@@ -152,7 +152,7 @@ namespace MineguideEPOCParser.Core
                 .GroupBy(r => r[medicationIndex]) // Using GroupBy first allows graceful handling of duplicate medications (we just take the first occurrence)
                 .ToDictionary(g => g.Key, g => g.First()); // ToDictionary usually throws an exception if there are duplicates, but since we are using GroupBy first, it will not throw.
 
-            List<MedicationMatch> medicationMatches;
+            List<MedicationResult> medicationMatches;
             if (existingMedicationMatches is not null)
             {
                 medicationMatches = existingMedicationMatches;
@@ -222,11 +222,11 @@ namespace MineguideEPOCParser.Core
         public string MatchStartIndexHeaderName => BuildMedicationHeader(nameof(MedicationMatch.StartIndex));
         public string MatchLengthHeaderName => BuildMedicationHeader(nameof(MedicationMatch.Length));
         public string MatchInTextHeaderName => BuildMedicationHeader(nameof(MedicationMatch.MatchInText));
-        public string MatchExperimentResultHeaderName => BuildMedicationHeader(nameof(MedicationMatch.ExperimentResult));
-        public string MatchCorrectedMedicationHeaderName => BuildMedicationHeader(nameof(MedicationMatch.CorrectedMedication));
+        public string MatchExperimentResultHeaderName => BuildMedicationHeader(nameof(MedicationResult.ExperimentResult));
+        public string MatchCorrectedMedicationHeaderName => BuildMedicationHeader(nameof(MedicationResult.CorrectedMedication));
 
 
-        public required Func<string, IEnumerable<MedicationMatch>, CancellationToken, Task<MedicationMatch[]>> ValidationFunction { get; set; }
+        public required Func<string, IEnumerable<MedicationResult>, CancellationToken, Task<MedicationResult[]>> ValidationFunction { get; set; }
 
         public string BuildMedicationHeader(string header) => $"{MedicationHeaderName}_{header}";
 
@@ -252,15 +252,28 @@ namespace MineguideEPOCParser.Core
 
         // We do this here to ensure the order is preserved
         // in the same way as the headers (which are defined right above, in GetDefaultColumns).
-        public static string[] GetMedicationMatchValues(MedicationMatch match)
+        public static string[] GetMedicationMatchValues(MedicationResult result)
         {
-            return [
-                match.StartIndex.ToString(),
-                match.Length.ToString(),
-                match.MatchInText,
-                match.ExperimentResult.ToResultString(),
-                match.CorrectedMedication ?? string.Empty
-            ];
+            if (result is MedicationMatch match)
+            {
+                return [
+                    match.StartIndex.ToString(),
+                    match.Length.ToString(),
+                    match.MatchInText,
+                    match.ExperimentResult.ToResultString(),
+                    match.CorrectedMedication ?? string.Empty
+                ];
+            }
+            else
+            {
+                return [
+                    string.Empty,
+                    string.Empty,
+                    string.Empty,
+                    result.ExperimentResult.ToResultString(),
+                    result.CorrectedMedication ?? string.Empty
+                ];
+            }
         }
     }
 }

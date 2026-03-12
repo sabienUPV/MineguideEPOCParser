@@ -1,18 +1,10 @@
-﻿using static MineguideEPOCParser.Core.MedicationMatch;
-
 namespace MineguideEPOCParser.Core
 {
-    public class MedicationMatch
+    public class MedicationResult
     {
-        public int StartIndex { get; set; }
-        public int Length { get; set; }
-        public required string MatchInText { get; set; }
         public required string ExtractedMedication { get; set; } // The medication from your array
-        
         public ExperimentResultType ExperimentResult { get; set; } = ExperimentResultType.TP; // Default to True Positive
-
         public string? CorrectedMedication { get; set; } // The corrected medication by the user after validating, if any
-
 
         /// <summary>
         /// Possible values:
@@ -34,7 +26,7 @@ namespace MineguideEPOCParser.Core
             /// </summary>
             TP_,
             /// <summary>
-            /// False Positive
+            /// False Positive (also used for hallucinations)
             /// </summary>
             FP,
             /// <summary>
@@ -42,22 +34,39 @@ namespace MineguideEPOCParser.Core
             /// </summary>
             FN
         }
+    }
 
+    public class MedicationMatch : MedicationResult
+    {
+        public int StartIndex { get; set; }
+        public int Length { get; set; }
+        public required string MatchInText { get; set; }
 
         // Comparer by StartIndex
-        public class StartIndexComparer : IComparer<MedicationMatch>
+        public class StartIndexComparer : IComparer<MedicationResult>
         {
-            public int Compare(MedicationMatch? x, MedicationMatch? y)
+            public int Compare(MedicationResult? x, MedicationResult? y)
             {
                 if (ReferenceEquals(x, y)) return 0;
                 if (x is null) return -1;
                 if (y is null) return 1;
-                return x.StartIndex.CompareTo(y.StartIndex);
+
+                if (x is MedicationMatch matchX && y is MedicationMatch matchY)
+                {
+                    return matchX.StartIndex.CompareTo(matchY.StartIndex);
+                }
+
+                // If one is a match and the other is not, the match comes first
+                if (x is MedicationMatch) return -1;
+                if (y is MedicationMatch) return 1;
+
+                // If both are not matches, they are equal for sorting (they will be at the end)
+                return 0;
             }
         }
 
         // Comparer instance
-        public static IComparer<MedicationMatch> Comparer { get; } = new StartIndexComparer();
+        public static IComparer<MedicationResult> Comparer { get; } = new StartIndexComparer();
     }
 
     public static class ExperimentResultTypeExtensions
@@ -71,14 +80,14 @@ namespace MineguideEPOCParser.Core
         /// <item>"FN" (False Negative): The medication was not found but should have been.</item>
         /// </list>
         /// </summary>
-        public static string ToResultString(this ExperimentResultType resultType)
+        public static string ToResultString(this MedicationResult.ExperimentResultType resultType)
         {
             return resultType switch
             {
-                ExperimentResultType.TP => "TP",
-                ExperimentResultType.TP_ => "TP*",
-                ExperimentResultType.FP => "FP",
-                ExperimentResultType.FN => "FN",
+                MedicationResult.ExperimentResultType.TP => "TP",
+                MedicationResult.ExperimentResultType.TP_ => "TP*",
+                MedicationResult.ExperimentResultType.FP => "FP",
+                MedicationResult.ExperimentResultType.FN => "FN",
                 _ => throw new ArgumentOutOfRangeException(nameof(resultType), resultType, null)
             };
         }

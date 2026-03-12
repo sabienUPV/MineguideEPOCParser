@@ -1,4 +1,4 @@
-﻿namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core
 {
     public static class MedicationMatchHelper
     {
@@ -7,11 +7,11 @@
         /// we allow for fuzzy matching using Levenshtein distance,
         /// as long as the similarity score is strong enough.
         /// </summary>
-        public static List<MedicationMatch> FindAllMedicationMatchesBySimilarity(string text, string[] medications)
+        public static List<MedicationResult> FindAllMedicationMatchesBySimilarity(string text, string[] medications)
         {
             var (_, _, medicationDetails) = MedicationAnalyzers.AnalyzeMedicationMatches(text, medications);
 
-            var matches = new List<MedicationMatch>();
+            var matches = new List<MedicationResult>();
 
             foreach (var kvp in medicationDetails)
             {
@@ -25,13 +25,19 @@
                         MatchInText = kvp.Value.BestMatch,
                         ExtractedMedication = kvp.Value.Medication,
                         ExperimentResult = kvp.Value.ExactMatch
-                            ? MedicationMatch.ExperimentResultType.TP
-                            : MedicationMatch.ExperimentResultType.TP_
+                            ? MedicationResult.ExperimentResultType.TP
+                            : MedicationResult.ExperimentResultType.TP_
                     });
                 }
                 else
                 {
-                    // TODO: IMPORTANT FIX - If the similarity score is not strong enough, DON'T SKIP IT! It's probably a hallucination from the LLM. Instead consider it a False Positive (FP) without any matches in the text since it was identified as a potential match but didn't meet the similarity threshold.
+                    // If the similarity score is not strong enough, consider it a False Positive (FP) without any matches in the text.
+                    // This is likely a hallucination from the LLM.
+                    matches.Add(new MedicationResult
+                    {
+                        ExtractedMedication = kvp.Value.Medication,
+                        ExperimentResult = MedicationResult.ExperimentResultType.FP
+                    });
                 }
             }
 
@@ -64,7 +70,7 @@
                             Length = medication.Length,
                             MatchInText = actualText,
                             ExtractedMedication = medication,
-                            ExperimentResult = MedicationMatch.ExperimentResultType.TP // Default to True Positive, since we are matching by exact text
+                            ExperimentResult = MedicationResult.ExperimentResultType.TP // Default to True Positive, since we are matching by exact text
                         });
                     }
 
