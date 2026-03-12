@@ -305,7 +305,10 @@ namespace MineguideEPOCParser.GUIApp
             {
                 paragraph.Inlines.Add(new LineBreak());
                 paragraph.Inlines.Add(new LineBreak());
-                paragraph.Inlines.Add(new Run("------ Non-matching medications (from LLM): ------") { FontWeight = FontWeights.Bold });
+                paragraph.Inlines.Add(new Run("------ Medications not found in text predicted by the LLM (possible hallucinations): ------") { FontWeight = FontWeights.Bold });
+                paragraph.Inlines.Add(new LineBreak());
+                paragraph.Inlines.Add(new Run("(these medications cannot be changed from False Positives (FP), since a match in the text cannot be inferred accurately)") { FontStyle = FontStyles.Italic });
+                paragraph.Inlines.Add(new LineBreak());
                 paragraph.Inlines.Add(new LineBreak());
 
                 foreach (var result in nonMatches)
