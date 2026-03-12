@@ -104,6 +104,8 @@ namespace MineguideEPOCParser.GUIApp
         {
             public Hyperlink? Hyperlink { get; set; } // Optional hyperlink for clickable highlights
 
+            public bool HasMatchInText => StartIndex >= 0;
+
             public Color BackgroundColor => ExperimentResult switch
             {
                 ExperimentResultType.TP => Colors.LightGreen,
@@ -124,7 +126,7 @@ namespace MineguideEPOCParser.GUIApp
 
             public MedicationResult ToMedicationResult()
             {
-                if (StartIndex >= 0)
+                if (HasMatchInText)
                 {
                     return new MedicationMatch
                     {
@@ -234,7 +236,7 @@ namespace MineguideEPOCParser.GUIApp
 
                     return medicationResultUI;
                 })
-                .OrderBy(r => r.StartIndex >= 0 ? 0 : 1)
+                .OrderBy(r => r.HasMatchInText ? 0 : 1)
                 .ThenBy(r => r.StartIndex)
                 .ToList();
 
@@ -318,11 +320,10 @@ namespace MineguideEPOCParser.GUIApp
 
         private Hyperlink CreateMedicationHyperlink(MedicationResultUI result, RichTextBox richTextBox, Func<MedicationResultUI, Task> onMedicationClick)
         {
-            var hasMatchInText = result.StartIndex >= 0;
-            var displayText = hasMatchInText ? result.MatchInText : result.ExtractedMedication;
+            var displayText = result.HasMatchInText ? result.MatchInText : result.ExtractedMedication;
 
             var tooltipBuilder = new StringBuilder();
-            if (hasMatchInText)
+            if (result.HasMatchInText)
             {
                 tooltipBuilder.AppendLine($"Text: {result.MatchInText}");
             }
@@ -414,7 +415,7 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             // Get the focused medication match based on the clicked hyperlink
-            var match = _currentMedicationResults?.FirstOrDefault(m => m.Hyperlink == hyperlink);
+            var match = _currentMedicationResults?.FirstOrDefault(m => m.HasMatchInText && m.Hyperlink == hyperlink);
             if (match is null)
             {
                 MessageBox.Show("Medication match not found for the clicked hyperlink.");
@@ -845,7 +846,7 @@ namespace MineguideEPOCParser.GUIApp
             _currentMedicationFocusIndex = focusIndex; // Update focus index
         }
 
-        private MedicationResultUI? GetFocusedMedicationMatch()
+        private MedicationResultUI? GetFocusedMedicationMatch(bool onlyIfMatchInText = true)
         {
             // If a hyperlink is focused, get its text
             if (_currentMedicationResults is not null && _currentMedicationFocusIndex >= 0 && _currentMedicationFocusIndex < _currentMedicationResults.Count)
@@ -853,6 +854,14 @@ namespace MineguideEPOCParser.GUIApp
                 var match = _currentMedicationResults[_currentMedicationFocusIndex];
                 if (match.Hyperlink?.IsFocused == true)
                 {
+                    // If only matches that are part of the original text should be considered,
+                    // and this match doesn't have a match in the text, return null
+                    if (onlyIfMatchInText && !match.HasMatchInText)
+                    {
+                        MessageBox.Show("The currently focused medication does not have a match in the original text. Please select a medication that is part of the original text, or change the focus to it.", "No match in text", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return null;
+                    }
+
                     return match; // Return the focused match
                 }
                 else
@@ -878,12 +887,22 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             startIndex = new TextRange(MyRichTextBox.Document.ContentStart, MyRichTextBox.Selection.Start).Text.Length;
+
+            // If you select text outside of the original text itself (e.g. text related to the non-matching medications at the end),
+            // we consider that there is no valid selection for medication matches,
+            // since those are just informational and not part of the original text.
+            if (startIndex < 0 || _currentText is null || startIndex >= _currentText.Length)
+            {
+                startIndex = -1; // Set start index to -1 to indicate invalid selection
+                return null;
+            }
+
             return selectedText;
         }
 
         // Find the match by start index and selected text
         private MedicationResultUI? FindMedicationMatchFromSelectedText(string selectedText, int startIndex) =>
-            _currentMedicationResults?.FirstOrDefault(m => m.StartIndex == startIndex && m.MatchInText == selectedText);
+            _currentMedicationResults?.FirstOrDefault(m => m.HasMatchInText && m.StartIndex == startIndex && m.MatchInText == selectedText);
 
         // Call this method when the user clicks "Next" or "Finish" after validation
         private void OnUserFinishedMedicationValidation(object? sender, RoutedEventArgs e) => OnUserFinishedMedicationValidation();
