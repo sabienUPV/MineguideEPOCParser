@@ -105,6 +105,7 @@ namespace MineguideEPOCParser.GUIApp
             public Hyperlink? Hyperlink { get; set; } // Optional hyperlink for clickable highlights
 
             public bool HasMatchInText => StartIndex >= 0;
+            public string DisplayText => HasMatchInText ? MatchInText : ExtractedMedication;
 
             public Color BackgroundColor => ExperimentResult switch
             {
@@ -320,8 +321,6 @@ namespace MineguideEPOCParser.GUIApp
 
         private Hyperlink CreateMedicationHyperlink(MedicationResultUI result, RichTextBox richTextBox, Func<MedicationResultUI, Task> onMedicationClick)
         {
-            var displayText = result.HasMatchInText ? result.MatchInText : result.ExtractedMedication;
-
             var tooltipBuilder = new StringBuilder();
             if (result.HasMatchInText)
             {
@@ -336,7 +335,7 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             // Create clickable hyperlink for medication
-            var hyperlink = new Hyperlink(new Run(displayText))
+            var hyperlink = new Hyperlink(new Run(result.DisplayText))
             {
                 Foreground = new SolidColorBrush(result.ForegroundColor),
                 Background = new SolidColorBrush(result.BackgroundColor),
@@ -1085,7 +1084,7 @@ namespace MineguideEPOCParser.GUIApp
 
         private async Task OnMedicationClicked(MedicationResultUI match)
         {
-            await SnomedSearchAndClick(match.MatchInText);
+            await SnomedSearchAndClick(match.DisplayText);
         }
 
         private async Task SnomedSearchAndClick(string text)
