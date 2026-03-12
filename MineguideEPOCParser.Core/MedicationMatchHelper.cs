@@ -29,6 +29,10 @@
                             : MedicationMatch.ExperimentResultType.TP_
                     });
                 }
+                else
+                {
+                    // TODO: IMPORTANT FIX - If the similarity score is not strong enough, DON'T SKIP IT! It's probably a hallucination from the LLM. Instead consider it a False Positive (FP) without any matches in the text since it was identified as a potential match but didn't meet the similarity threshold.
+                }
             }
 
             return matches;
