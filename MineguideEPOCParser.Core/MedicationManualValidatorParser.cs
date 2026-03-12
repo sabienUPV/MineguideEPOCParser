@@ -114,6 +114,15 @@ namespace MineguideEPOCParser.Core
                     currentReport.MedicationMatches?.Add(CurrentCsvReader!.GetRecord<MedicationMatch>());
                 }
             }
+
+            // Don't forget to yield the last report
+            if (currentReport is not null)
+            {
+                await foreach (var validatedRow in ValidateMedications(currentReport.Rows, inputTargetColumnIndex, medicationIndex, currentReport.MedicationMatches, cancellationToken))
+                {
+                    yield return validatedRow;
+        }
+            }
         }
 
         public class Report
