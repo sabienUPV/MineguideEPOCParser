@@ -502,7 +502,7 @@ namespace MineguideEPOCParser.GUIApp
                 }
 
                 // Check if the selected text matches any medication match
-                selectedMatch = _currentMedicationMatches?.FirstOrDefault(m => m.StartIndex == startIndex && m.MatchInText == selectedText);
+                selectedMatch = FindMedicationMatchFromSelectedText(selectedText, startIndex);
 
                 if (selectedMatch is null)
                 {
@@ -592,7 +592,7 @@ namespace MineguideEPOCParser.GUIApp
                     return; // No valid selection, exit
                 }
                 // Find the match by start index and selected text
-                selectedMatch = _currentMedicationMatches.FirstOrDefault(m => m.StartIndex == startIndex && m.MatchInText == selectedText);
+                selectedMatch = FindMedicationMatchFromSelectedText(selectedText, startIndex);
                 if (selectedMatch is null)
                 {
                     MessageBox.Show($"Medication '{selectedText}' not found in the list.");
@@ -639,7 +639,7 @@ namespace MineguideEPOCParser.GUIApp
                     return; // No valid selection, exit
                 }
                 // Find the match by start index and selected text
-                selectedMatch = _currentMedicationMatches.FirstOrDefault(m => m.StartIndex == startIndex && m.MatchInText == selectedText);
+                selectedMatch = FindMedicationMatchFromSelectedText(selectedText, startIndex);
                 if (selectedMatch is null)
                 {
                     MessageBox.Show($"Medication '{selectedText}' not found in the validated list.");
@@ -818,6 +818,10 @@ namespace MineguideEPOCParser.GUIApp
             startIndex = new TextRange(MyRichTextBox.Document.ContentStart, MyRichTextBox.Selection.Start).Text.Length;
             return selectedText;
         }
+
+        // Find the match by start index and selected text
+        private MedicationMatchUI? FindMedicationMatchFromSelectedText(string selectedText, int startIndex) =>
+            _currentMedicationMatches?.FirstOrDefault(m => m.StartIndex == startIndex && m.MatchInText == selectedText);
 
         // Call this method when the user clicks "Next" or "Finish" after validation
         private void OnUserFinishedMedicationValidation(object? sender, RoutedEventArgs e) => OnUserFinishedMedicationValidation();
