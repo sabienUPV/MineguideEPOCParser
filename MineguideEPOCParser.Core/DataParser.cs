@@ -237,7 +237,8 @@ namespace MineguideEPOCParser.Core
                 if (await csv.ReadAsync())
                 {
                     csv.ReadHeader();
-                    headerArray = csv.HeaderRecord;
+                    headerArray = csv.HeaderRecord
+                        ?? throw new InvalidOperationException("Could not read header record from CSV file.");
 
                     inputTargetColumnIndex = GetInputTargetColumnIndex(headerArray);
 
