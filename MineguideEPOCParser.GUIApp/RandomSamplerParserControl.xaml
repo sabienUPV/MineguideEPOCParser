@@ -36,6 +36,8 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="10" />
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
             <!-- Input file -->
@@ -70,8 +72,14 @@
             <!-- Sample size -->
             <Label Grid.Row="8" Grid.Column="0" Content="Sample size:" VerticalAlignment="Center" HorizontalAlignment="Left" />
             <TextBox Grid.Row="8" Grid.Column="2" x:Name="SampleSizeTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            
+            <!-- Exclude file (Optional) -->
+            <Label Grid.Row="10" Grid.Column="0" Content="Exclude files (optional):" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="10" Grid.Column="2" x:Name="ExcludeFilesTextBox" IsReadOnly="True" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Button Grid.Row="10" Grid.Column="4" x:Name="BrowseExcludeFilesButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseExcludeFilesButton_Click" />
+
             <!-- Parse button -->
-            <Button Grid.Row="10" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
+            <Button Grid.Row="12" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
         </Grid>
 
         <!-- Progress bar, cancel button and log viewer -->

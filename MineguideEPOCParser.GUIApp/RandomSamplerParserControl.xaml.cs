@@ -67,6 +67,10 @@ namespace MineguideEPOCParser.GUIApp
         // Progress reporting
         private Progress<ProgressValue>? Progress { get; set; }
 
+        // Custom properties for UI fields
+        // Since the TextBox only contains a string, we can use this property to store the actual array of exclude files
+        private string[]? ExcludeFiles { get; set; }
+
         public RandomSamplerParserControl()
         {
             InitializeComponent();
@@ -250,6 +254,7 @@ namespace MineguideEPOCParser.GUIApp
                 InputFile = inputFile,
                 OutputFile = outputFile,
                 SampleSize = sampleSize,
+                ExcludeFiles = ExcludeFiles,
                 // Seed = RandomSamplerParserConfiguration.DefaultSeed // 1947 is the default seed
             };
 
@@ -355,33 +360,64 @@ namespace MineguideEPOCParser.GUIApp
             OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medication.csv") ?? string.Empty;
         }
 
+        private void BrowseExcludeFilesButton_Click(object sender, RoutedEventArgs e)
+        {
+            ExcludeFiles = BrowseOpenCsvFiles();
+            ExcludeFilesTextBox.Text = ExcludeFiles is null || ExcludeFiles.Length == 0
+                ? string.Empty
+                : JoinCsvFilesForDisplayInTextBox(ExcludeFiles);
+        }
+
         private static string? BrowseCsvFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
+            where TFileDialog : Microsoft.Win32.FileDialog, new()
+        {
+            var dialog = GetBrowseCsvFileDialog<TFileDialog>(currentPath, defaultFileName);
+            if (dialog.ShowDialog() == true)
+            {
+                return dialog.FileName;
+            }
+            return null;
+        }
+
+        private static string[]? BrowseOpenCsvFiles(string? currentPath = null, string? defaultFileName = null)
+        {
+            var dialog = GetBrowseCsvFileDialog<Microsoft.Win32.OpenFileDialog>(currentPath, defaultFileName);
+            dialog.Multiselect = true;
+
+            if (dialog.ShowDialog() == true)
+            {
+                return dialog.FileNames;
+            }
+            return null;
+        }
+
+        private static string JoinCsvFilesForDisplayInTextBox(string[] files)
+        {
+            // Do the same as Windows' file dialog does for showing it in the UI:
+            // wrap the file names in quotes and separate them with a space if there are multiple files
+            return string.Join(" ", files.Select(f => $"\"{f}\""));
+        }
+
+        private static TFileDialog GetBrowseCsvFileDialog<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
             where TFileDialog : Microsoft.Win32.FileDialog, new()
         {
             // Create a new file dialog
             var dialog = new TFileDialog()
             {
-                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*"
+                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
             };
 
             if (!string.IsNullOrEmpty(currentPath))
             {
-                dialog.InitialDirectory = System.IO.Path.GetDirectoryName(currentPath);
-                dialog.FileName = System.IO.Path.GetFileName(currentPath);
+                dialog.InitialDirectory = Path.GetDirectoryName(currentPath);
+                dialog.FileName = Path.GetFileName(currentPath);
             }
             else if (defaultFileName is not null)
             {
                 dialog.FileName = defaultFileName;
             }
 
-            // Show the dialog
-            if (dialog.ShowDialog() == true)
-            {
-                // Return the selected file
-                return dialog.FileName;
-            }
-
-            return null;
+            return dialog;
         }
 
         private void LogLevelComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

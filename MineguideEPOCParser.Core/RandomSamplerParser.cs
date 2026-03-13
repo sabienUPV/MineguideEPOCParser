@@ -1,4 +1,7 @@
-﻿using System.Runtime.CompilerServices;
+﻿using CsvHelper;
+using CsvHelper.Configuration;
+using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace MineguideEPOCParser.Core
 {
@@ -10,10 +13,44 @@ namespace MineguideEPOCParser.Core
         public override int NumberOfOutputAdditionalColumns => 0; // No additional output columns, just sampling the input
 
         private Random? _random;
+        private HashSet<string>? _excludeReportNumbers = null; // To store report numbers to exclude if ExcludeFile is provided
 
         protected override void InitParsing()
         {
             _random = new Random(Configuration.Seed);
+        }
+
+        protected override async Task DoPreProcessing(CancellationToken cancellationToken = default)
+        {
+            if (Configuration.ExcludeFiles is null || Configuration.ExcludeFiles.Length == 0) return;
+            _excludeReportNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            var csvConfig = new CsvConfiguration(new CultureInfo(Configuration.CultureName));
+            
+            foreach (var excludeFile in Configuration.ExcludeFiles)
+            {
+                using var reader = new StreamReader(excludeFile);
+                using var csv = new CsvReader(reader, csvConfig);
+                await foreach (var record in csv.GetRecordsAsync<dynamic>(cancellationToken))
+                {
+                    var dictRecord = (IDictionary<string, object>)record;
+                    if (!dictRecord.TryGetValue(Configuration.ReportNumberHeaderName, out var reportNumberObj))
+                    {
+                        throw new InvalidOperationException($"The report number header '{Configuration.ReportNumberHeaderName}' was not found in the exclude file '{excludeFile}'. Cannot exclude rows.");
+                    }
+                    var reportNumber = reportNumberObj?.ToString();
+                    if (!string.IsNullOrWhiteSpace(reportNumber))
+                    {
+                        _excludeReportNumbers.Add(reportNumber);
+                    }
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Logger?.Information("Pre-processing was cancelled while reading exclude file '{ExcludeFile}'.", excludeFile);
+                    break;
+                }
+            }
         }
 
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
@@ -26,6 +63,25 @@ namespace MineguideEPOCParser.Core
 
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {
+                if (_excludeReportNumbers != null)
+                {
+                    // Get the report number from the specified header
+                    var reportNumberIndex = GetColumnIndex(headers, Configuration.ReportNumberHeaderName);
+
+                    if (reportNumberIndex < 0)
+                    {
+                        throw new InvalidOperationException($"The report number header '{Configuration.ReportNumberHeaderName}' was not found in the input file. Cannot exclude rows.");
+                    }
+
+                    var reportNumber = row[reportNumberIndex];
+
+                    if (_excludeReportNumbers.Contains(reportNumber))
+                    {
+                        Logger?.Information("Skipping report number {ReportNumber} as it is in the exclude list.", reportNumber);
+                        continue; // Skip this row if the report number is in the exclude list
+                    }
+                }
+
                 int key;
                 do
                 {
@@ -52,6 +108,11 @@ namespace MineguideEPOCParser.Core
 
         public int SampleSize { get; set; } = DefaultSampleSize;
         public int Seed { get; set; } = DefaultSeed;
+
+        // Files including reports to exclude from the sample (e.g., if you already had those in a previous sample and want to avoid duplicates in the new sample).
+        public string[]? ExcludeFiles { get; set; }
+        // Report number header for primary key matching with the exclude file (if applicable).
+        public string ReportNumberHeaderName { get; set; } = MedicationManualValidatorParserConfiguration.DefaultReportNumberHeaderName;
 
         protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (null, []);
     }
