@@ -266,9 +266,12 @@ namespace MineguideEPOCParser.Core
             }
             else
             {
+                // Instead of leaving those fields empty,
+                // we put StartIndex = -1 and Length = 0
+                // to indicate that it didn't match (and it is not just missing values).
                 return [
-                    string.Empty,
-                    string.Empty,
+                    "-1",
+                    "0",
                     string.Empty,
                     result.ExperimentResult.ToResultString(),
                     result.CorrectedMedication ?? string.Empty
