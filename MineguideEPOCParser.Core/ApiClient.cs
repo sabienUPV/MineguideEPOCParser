@@ -11,11 +11,13 @@ namespace MineguideEPOCParser.Core
 {
 	public class ApiClient
 	{
-		private const string ApiUrl = "https://mineguide.itaca.upv.es:11434/api/generate";
+        private static readonly IConfiguration Configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .Build();
 
-        private static readonly string ApiKey = new ConfigurationBuilder()
-            .AddUserSecrets<ApiClient>()
-            .Build()["ApiKey"] ?? throw new InvalidOperationException("Ollama API key is not set in user secrets.");
+        private static readonly string ApiUrl = Configuration["ApiUrl"] ?? "https://mineguide.itaca.upv.es:11434/api/generate";
+        private static readonly string ApiKey = Configuration["ApiKey"] ?? throw new InvalidOperationException("Ollama API key is not set in appsettings.json.");
 
         public static async Task<TOutput?> CallToApiJson<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
         {
