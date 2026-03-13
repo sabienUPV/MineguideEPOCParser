@@ -23,6 +23,9 @@ namespace MineguideEPOCParser.Core
         protected override async Task DoPreProcessing(CancellationToken cancellationToken = default)
         {
             if (Configuration.ExcludeFiles is null || Configuration.ExcludeFiles.Length == 0) return;
+
+            Logger?.Information("Reading exclude files to build the set of report numbers to exclude from sampling...");
+
             _excludeReportNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var csvConfig = new CsvConfiguration(new CultureInfo(Configuration.CultureName));
@@ -51,6 +54,8 @@ namespace MineguideEPOCParser.Core
                     break;
                 }
             }
+
+            Logger?.Information("Finished reading exclude files. Total report numbers to exclude: {ExcludeCount}.", _excludeReportNumbers.Count);
         }
 
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
