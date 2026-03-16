@@ -19,14 +19,14 @@ namespace MineguideEPOCParser.Core
         private static readonly string ApiUrl = Configuration["ApiUrl"] ?? "https://mineguide.itaca.upv.es:11434/api/generate";
         private static readonly string ApiKey = Configuration["ApiKey"] ?? throw new InvalidOperationException("Ollama API key ('ApiKey' property) is not set in appsettings.json.");
 
+        private static readonly HttpClient _sharedClient = new();
+
         public static async Task<TOutput?> CallToApiJson<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
         {
             var jsonRetryPolicy = CreateJsonRetryPolicy(log);
             var httpRetryPolicy = CreateHttpRetryPolicy(log);
 
             var retryPolicy = Policy.WrapAsync(jsonRetryPolicy, httpRetryPolicy);
-
-            using var client = new HttpClient();
 
             var uri = new Uri(ApiUrl);
             RequestConfig generateRequest = CreateRequestConfig(t, model, system, format: "json");
@@ -35,7 +35,7 @@ namespace MineguideEPOCParser.Core
             {
                 return await retryPolicy.ExecuteAsync(async (ct) =>
                 {
-                    var apiResponse = await ExecuteApiCall(client, uri, generateRequest, log, ct);
+                    var apiResponse = await ExecuteApiCall(_sharedClient, uri, generateRequest, log, ct);
                     var output = ExtractJsonOutputFromApiResponse<TOutput>(log, apiResponse, ct);
                     return output;
                 }, cancellationToken);
@@ -54,14 +54,12 @@ namespace MineguideEPOCParser.Core
         {
             var retryPolicy = CreateHttpRetryPolicy(log);
 
-            using var client = new HttpClient();
-
             var uri = new Uri(ApiUrl);
             RequestConfig generateRequest = CreateRequestConfig(t, model, system, format: null);
 
             return await retryPolicy.ExecuteAsync(async (ct) =>
             {
-                var apiResponse = await ExecuteApiCall(client, uri, generateRequest, log, ct);
+                var apiResponse = await ExecuteApiCall(_sharedClient, uri, generateRequest, log, ct);
                 return apiResponse.Response;
             }, cancellationToken);
         }
