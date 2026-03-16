@@ -109,7 +109,16 @@ namespace MineguideEPOCParser.Core
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            response.EnsureSuccessStatusCode();
+            if (!response.IsSuccessStatusCode)
+            {
+                string errorBody = await response.Content.ReadAsStringAsync();
+
+                // Instead of using response.EnsureSuccessStatusCode(),
+                // which throws a generic HttpRequestException without the response body,
+                // we throw a new HttpRequestException with the response body included in the error message.
+                // This way we can log the error message returned by the API which is very useful for debugging.
+                throw new HttpRequestException($"HTTP Error {(int)response.StatusCode} ({response.StatusCode}): {errorBody}");
+            }
 
             using var stream = await response.Content.ReadAsStreamAsync();
             cancellationToken.ThrowIfCancellationRequested();
