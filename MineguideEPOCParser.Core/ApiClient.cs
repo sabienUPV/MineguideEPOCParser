@@ -97,7 +97,15 @@ namespace MineguideEPOCParser.Core
                 RequestUri = uri,
                 Content = new StringContent(JsonConvert.SerializeObject(generateRequest, settings), Encoding.UTF8, "application/json")
             };
-            request.Headers.Add("X-API-Key", ApiKey);
+
+            // Add API key to the request header if it's set in the configuration
+            // This way, if we want to make it work without an API key
+            // (for example, if the Ollama API is running locally in the same machine as this code and we are not exposing it outside),
+            // we can just set an empty string in the configuration)
+            if (!string.IsNullOrEmpty(ApiKey))
+            {
+                request.Headers.Add("X-API-Key", ApiKey);
+            }
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
