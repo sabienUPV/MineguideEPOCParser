@@ -308,7 +308,7 @@ namespace MineguideEPOCParser.Core
             {
                 rowsRead++;
 
-                var row = csv.Parser.Record;
+                var row = csv.Parser.Record!;
 
                 SetRowInfo(rowsRead, row);
 
@@ -337,7 +337,7 @@ namespace MineguideEPOCParser.Core
                 // and counting the bytes for each row (CsvParser.ByteCount)
                 return new ProgressValue
                 {
-                    Value = (double)csv.Context.Parser.ByteCount / sr.BaseStream.Length,
+                    Value = (double)csv.Context.Parser!.ByteCount / sr.BaseStream.Length,
                     RowsProcessed = rowsRead,
                 };
             }
