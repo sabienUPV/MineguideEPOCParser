@@ -5,6 +5,19 @@ namespace MineguideEPOCParser.Core
 {
     public static class Utilities
     {
+        public static string MaskApiKey(string? apiKey)
+        {
+            if (string.IsNullOrEmpty(apiKey))
+                return "null or empty";
+
+            // If the key is absurdly short (e.g., "12345"), it's dangerous to even show 4 characters.
+            if (apiKey.Length <= 8)
+                return "***";
+
+            // Example output: "sk...a1b2" (the first 2 characters, dots, and the last 4 characters using C#'s ^ operator)
+            return $"{apiKey[..2]}...{apiKey[^4..]}";
+        }
+
         public static T[] ArrayCopyAndAdd<T>(T[] sourceArray, T elementToAdd)
         {
             // Create a new array with one more element at the end,

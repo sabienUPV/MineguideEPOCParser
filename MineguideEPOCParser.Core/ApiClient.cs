@@ -79,6 +79,8 @@ namespace MineguideEPOCParser.Core
         private static async Task<ApiResponse> ExecuteApiCall(HttpClient client, Uri uri, RequestConfig generateRequest, ILogger? log, CancellationToken cancellationToken)
         {
             log?.Information("Calling API...");
+            log?.Debug("API URL: {ApiUrl}", ApiUrl);
+            log?.Debug("API Key (truncated): {ApiKey}", Utilities.MaskApiKey(ApiKey));
 
             var settings = new JsonSerializerSettings
             {
