@@ -34,8 +34,8 @@ public static class ParserCommands
     public static async Task RunAsync(
         string inputFile,
         string outputFile,
-        string? culture,
-        CancellationToken ct)
+        string? culture = null,
+        CancellationToken ct = default)
     {
         Log.Information("Application started. Press Ctrl+C to cancel...\n");
 
