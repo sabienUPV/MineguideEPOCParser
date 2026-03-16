@@ -19,9 +19,9 @@ namespace MineguideEPOCParser.Core
         private static readonly string ApiUrl = Configuration["ApiUrl"] ?? "https://mineguide.itaca.upv.es:11434/api/generate";
         private static readonly string ApiKey = Configuration["ApiKey"] ?? throw new InvalidOperationException("Ollama API key ('ApiKey' property) is not set in appsettings.json.");
 
-        private static readonly HttpClient _sharedClient = new();
+        private static readonly HttpClient _sharedClient = new() { Timeout = Timeout.InfiniteTimeSpan };
 
-        public static async Task<TOutput?> CallToApiJson<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
+        public static async Task<TOutput?> CallToApiJson<TOutput>(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default, bool autoPullModel = true)
         {
             var jsonRetryPolicy = CreateJsonRetryPolicy(log);
             var httpRetryPolicy = CreateHttpRetryPolicy(log);
@@ -35,7 +35,7 @@ namespace MineguideEPOCParser.Core
             {
                 return await retryPolicy.ExecuteAsync(async (ct) =>
                 {
-                    var apiResponse = await ExecuteApiCall(_sharedClient, uri, generateRequest, log, ct);
+                    var apiResponse = await ExecuteApiCall(_sharedClient, uri, generateRequest, log, ct, autoPullModel);
                     var output = ExtractJsonOutputFromApiResponse<TOutput>(log, apiResponse, ct);
                     return output;
                 }, cancellationToken);
@@ -50,7 +50,7 @@ namespace MineguideEPOCParser.Core
             }
         }
 
-        public static async Task<string?> CallToApiText(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default)
+        public static async Task<string?> CallToApiText(string t, string model, string? system, ILogger? log = null, CancellationToken cancellationToken = default, bool autoPullModel = true)
         {
             var retryPolicy = CreateHttpRetryPolicy(log);
 
@@ -59,12 +59,12 @@ namespace MineguideEPOCParser.Core
 
             return await retryPolicy.ExecuteAsync(async (ct) =>
             {
-                var apiResponse = await ExecuteApiCall(_sharedClient, uri, generateRequest, log, ct);
+                var apiResponse = await ExecuteApiCall(_sharedClient, uri, generateRequest, log, ct, autoPullModel);
                 return apiResponse.Response;
             }, cancellationToken);
         }
 
-        private static async Task<ApiResponse> ExecuteApiCall(HttpClient client, Uri uri, RequestConfig generateRequest, ILogger? log, CancellationToken cancellationToken)
+        private static async Task<ApiResponse> ExecuteApiCall(HttpClient client, Uri uri, RequestConfig generateRequest, ILogger? log, CancellationToken cancellationToken, bool autoPullModel)
         {
             log?.Information("Calling API...");
             log?.Debug("API URL: {ApiUrl}", ApiUrl);
@@ -111,10 +111,23 @@ namespace MineguideEPOCParser.Core
             {
                 string errorBody = await response.Content.ReadAsStringAsync();
 
-                // Instead of using response.EnsureSuccessStatusCode(),
-                // which throws a generic HttpRequestException without the response body,
-                // we throw a new HttpRequestException with the response body included in the error message.
-                // This way we can log the error message returned by the API which is very useful for debugging.
+                // If it's a 404 error, the message mentions the model, and autoPullModel is enabled,
+                // we can assume that the error is caused by the model not being found in the server.
+                // In that case, we can try to automatically pull the model and retry the request.
+                if (autoPullModel &&
+                    response.StatusCode == System.Net.HttpStatusCode.NotFound &&
+                    errorBody.Contains("model", StringComparison.OrdinalIgnoreCase))
+                {
+                    log?.Warning("Model '{Model}' is not installed in the server. Initiating automatic download...", generateRequest.Model);
+
+                    await PullModelAsync(client, uri, generateRequest.Model, log, cancellationToken);
+
+                    log?.Information("Model '{Model}' downloaded successfully! Retrying original request...", generateRequest.Model);
+
+                    // Recursive call (setting autoPullModel to false to avoid infinite loops if something goes wrong)
+                    return await ExecuteApiCall(client, uri, generateRequest, log, cancellationToken, autoPullModel: false);
+                }
+
                 throw new HttpRequestException($"HTTP Error {(int)response.StatusCode} ({response.StatusCode}): {errorBody}");
             }
 
@@ -200,6 +213,33 @@ namespace MineguideEPOCParser.Core
                 {
                     log?.Warning(ex, "Error from API - HTTP error: {ExceptionMessage}. Retrying in {SleepDuration} seconds... (number of retries: {AttemptNumber})", ex.Message, sleepDuration.TotalSeconds, retryCount);
                 });
+        }
+
+        private static async Task PullModelAsync(HttpClient client, Uri originalUri, string modelName, ILogger? log, CancellationToken cancellationToken)
+        {
+            // Check the pull URL (e.g.: http://localhost:11434/api/generate -> http://localhost:11434/api/pull)
+            var pullUri = new Uri(new Uri(originalUri.GetLeftPart(UriPartial.Authority)), "/api/pull");
+
+            var requestBody = new { name = modelName, stream = false };
+            var request = new HttpRequestMessage(HttpMethod.Post, pullUri)
+            {
+                Content = new StringContent(JsonConvert.SerializeObject(requestBody), Encoding.UTF8, "application/json")
+            };
+
+            if (!string.IsNullOrEmpty(ApiKey))
+            {
+                request.Headers.Add("X-API-Key", ApiKey);
+            }
+
+            log?.Information("Downloading model '{Model}'... This might take several minutes depending on the model size and network speed. Please wait.", modelName);
+
+            var pullResponse = await client.SendAsync(request, cancellationToken);
+
+            if (!pullResponse.IsSuccessStatusCode)
+            {
+                string pullError = await pullResponse.Content.ReadAsStringAsync();
+                throw new HttpRequestException($"Failed to automatically pull model '{modelName}'. Status: {pullResponse.StatusCode}. Error: {pullError}");
+            }
         }
 
         /// <summary>
