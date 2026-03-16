@@ -17,4 +17,8 @@
     <ProjectReference Include="..\MineguideEPOCParser.Core\MineguideEPOCParser.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Cocona" Version="2.2.0" />
+  </ItemGroup>
+
 </Project>
