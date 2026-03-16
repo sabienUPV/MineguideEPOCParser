@@ -33,7 +33,12 @@ namespace MineguideEPOCParser.Core
 
             try
             {
-                return await retryPolicy.ExecuteAsync(GetExecuteApiCallJsonFunc<TOutput>(client, uri, generateRequest, log, cancellationToken));
+                return await retryPolicy.ExecuteAsync(async (ct) =>
+                {
+                    var apiResponse = await ExecuteApiCall(client, uri, generateRequest, log, ct);
+                    var output = ExtractJsonOutputFromApiResponse<TOutput>(log, apiResponse, ct);
+                    return output;
+                }, cancellationToken);
             }
             catch (JsonException ex)
             {
@@ -54,26 +59,11 @@ namespace MineguideEPOCParser.Core
             var uri = new Uri(ApiUrl);
             RequestConfig generateRequest = CreateRequestConfig(t, model, system, format: null);
 
-            return await retryPolicy.ExecuteAsync(GetExecuteApiCallFunc(client, uri, generateRequest, log, cancellationToken));
-        }
-
-        private static Func<Task<string>> GetExecuteApiCallFunc(HttpClient client, Uri uri, RequestConfig generateRequest, ILogger? log, CancellationToken cancellationToken)
-        {
-            return async () =>
+            return await retryPolicy.ExecuteAsync(async (ct) =>
             {
-                var apiResponse = await ExecuteApiCall(client, uri, generateRequest, log, cancellationToken);
+                var apiResponse = await ExecuteApiCall(client, uri, generateRequest, log, ct);
                 return apiResponse.Response;
-            };
-        }
-
-        private static Func<Task<TOutput>> GetExecuteApiCallJsonFunc<TOutput>(HttpClient client, Uri uri, RequestConfig generateRequest, ILogger? log, CancellationToken cancellationToken)
-        {
-            return async () =>
-            {
-                var apiResponse = await ExecuteApiCall(client, uri, generateRequest, log, cancellationToken);
-                var output = ExtractJsonOutputFromApiResponse<TOutput>(log, apiResponse, cancellationToken);
-                return output;
-            };
+            }, cancellationToken);
         }
 
         private static async Task<ApiResponse> ExecuteApiCall(HttpClient client, Uri uri, RequestConfig generateRequest, ILogger? log, CancellationToken cancellationToken)
