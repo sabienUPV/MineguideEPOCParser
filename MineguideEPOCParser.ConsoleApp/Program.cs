@@ -1,55 +1,70 @@
-﻿using Cocona;
+﻿using ConsoleAppFramework;
 using MineguideEPOCParser.Core;
 using Serilog;
 
-// 1. Keep your Serilog setup exactly as is
-await using var log = new LoggerConfiguration()
+// 1. Configure Serilog statically and globally
+Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Verbose() // Log everything by default
     .WriteTo.Console()
     .CreateLogger();
 
-// 2. Initialize the Cocona App
-var app = CoconaApp.Create();
+// 2. Initialize the app
+var app = ConsoleApp.Create();
 
-// 3. Define your main command. Cocona maps these parameters to CLI arguments automatically!
-app.AddCommand(async (
-    [Option('i', Description = "The path to the input file to parse.")] string inputFile,
-    [Option('o', Description = "The path where the output should be saved.")] string outputFile,
-    [Option('c', Description = "Culture code for parsing (e.g., 'en-US'). Set to your computer's culture by default")] string? culture,
-    CancellationToken ct) =>
+// 3. Register the main command pointing to our method
+app.Add("", ParserCommands.RunAsync);
+
+// 4. Run the app
+await app.RunAsync(args);
+
+// 5. Ensure all logs are written and flushed before exiting
+await Log.CloseAndFlushAsync();
+
+/// <summary>
+/// Contains the commands for our console application.
+/// </summary>
+public static class ParserCommands
 {
-    log.Information("Application started. Press Ctrl+C to cancel...\n");
-
-    try
+    /// <summary>
+    /// Starts the medication parsing process by extracting the data.
+    /// </summary>
+    /// <param name="inputFile">-i, The path to the input file to parse.</param>
+    /// <param name="outputFile">-o, The path where the output should be saved.</param>
+    /// <param name="culture">-c, Culture code for parsing (e.g., 'en-US'). Set to your computer's culture by default.</param>
+    public static async Task RunAsync(
+        string inputFile,
+        string outputFile,
+        string? culture,
+        CancellationToken ct)
     {
-        // 4. Map the CLI arguments to your configuration object
-        // (Replace "YourConfigurationClass" with whatever type TestConfigurations returns)
-        var runConfiguration = new MedicationExtractingParserConfiguration
+        Log.Information("Application started. Press Ctrl+C to cancel...\n");
+
+        try
         {
-            InputFile = inputFile,
-            OutputFile = outputFile,
-            CultureName = culture ?? System.Globalization.CultureInfo.CurrentCulture.Name
-        };
+            var runConfiguration = new MedicationExtractingParserConfiguration
+            {
+                InputFile = inputFile,
+                OutputFile = outputFile,
+                CultureName = culture ?? System.Globalization.CultureInfo.CurrentCulture.Name
+            };
 
-        var medicationParser = new MedicationExtractingParser()
+            var medicationParser = new MedicationExtractingParser()
+            {
+                Configuration = runConfiguration,
+                Logger = Log.Logger // Use the static logger
+            };
+
+            // ConsoleAppFramework automatically binds the CancellationToken to Ctrl+C (SIGINT)
+            await medicationParser.ParseData(ct);
+            Log.Information("ParseMedication completed successfully.");
+        }
+        catch (OperationCanceledException)
         {
-            Configuration = runConfiguration,
-            Logger = log
-        };
-
-        // 5. Pass Cocona's built-in cancellation token (triggered by Ctrl+C)
-        await medicationParser.ParseData(ct);
-        log.Information("ParseMedication completed");
+            Log.Information("ParseMedication has been cancelled by the user.");
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred during parsing.");
+        }
     }
-    catch (OperationCanceledException)
-    {
-        log.Information("ParseMedication has been cancelled by the user.");
-    }
-    catch (Exception ex)
-    {
-        log.Error(ex, "An error occurred during parsing.");
-    }
-});
-
-// 6. Run the application
-await app.RunAsync();
+}
