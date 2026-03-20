@@ -209,6 +209,26 @@ namespace MineguideEPOCParser.Core
 
             public string GetSimilarityScorePercentage(IFormatProvider? provider)
                 => SimilarityScore.ToString("P2", provider);
+
+            // Helper methods for CSV export
+            public static string[] GetDetailsColumnsExceptMedication() => [
+                nameof(ExactMatch),
+                nameof(SimilarityScore),
+                nameof(SimilarityScorePercentage),
+                nameof(BestMatch),
+                nameof(BestMatchIndex),
+                nameof(LevenshteinDistance),
+                nameof(MatchType)
+            ];
+
+            public string[] GetDetailsValuesExceptMedication(IFormatProvider? culture) => [
+                ExactMatch.ToString(),
+                SimilarityScore.ToString(),
+                GetSimilarityScorePercentage(culture),
+                BestMatch ?? string.Empty,
+                LevenshteinDistance.ToString(),
+                MatchType.ToString()
+            ];
         }
 
         public enum MatchSimilarityType

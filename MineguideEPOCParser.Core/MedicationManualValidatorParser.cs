@@ -167,40 +167,29 @@ namespace MineguideEPOCParser.Core
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                var medicationMatchValues = MedicationManualValidatorParserConfiguration.GetMedicationMatchValues(validatedMedication);
+                var medicationMatchValues = validatedMedication.GetMedicationMatchValues(Configuration.Culture);
 
-                string[] reportRow, newRow;
-                if (medicationRows.TryGetValue(validatedMedication.ExtractedMedication, out var existingReportRow))
-                {
-                    // If the medication was found in the original rows, use that row
-                    // (this is important to preserve the original row's values for other columns).
-                    reportRow = existingReportRow;
-                    newRow = Utilities.ArrayCopyAndAdd(reportRow, medicationMatchValues);
-                }
-                else
-                {
-                    // If the medication was not found in the original rows, we will create a new row
-                    // based on the first row of the current report.
-                    reportRow = currentReportRows[0];
+                // We actually know that all columns after the medication column will be related to that medication,
+                // so we just keep the columns before the medication column, add the medication column with the validated medication name,
+                // and then add all the medication match values after that.
 
-                    // We actually know that all columns after the medication column will be related to that medication,
-                    // and since we are creating a new "medication", we should actually set those columns to empty,
-                    // and add our columns.
+                // 1. Get the base row (either the existing one, or the first row of the report as a template)
+                string[] baseRow = medicationRows.TryGetValue(validatedMedication.ExtractedMedication, out var existingRow)
+                    ? existingRow
+                    : currentReportRows[0];
 
-                    // Set the first columns (up to the medication index) to the original row values
-                    // (since they are common to the same report)
-                    newRow = new string[reportRow.Length + medicationMatchValues.Length];
-                    Array.Copy(reportRow, 0, newRow, 0, medicationIndex);
+                // 2. Create the correctly sized array: 
+                // Base columns (up to medicationIndex) + The Medication Column (+1) + The fresh stats
+                string[] newRow = new string[medicationIndex + 1 + medicationMatchValues.Length];
 
-                    // Set the medication name
-                    newRow[medicationIndex] = validatedMedication.ExtractedMedication;
+                // 3. Copy the standard report data (everything BEFORE the medication column)
+                Array.Copy(baseRow, 0, newRow, 0, medicationIndex);
 
-                    // Set the rest of the columns to empty
-                    Array.Fill(newRow, string.Empty, medicationIndex + 1, reportRow.Length - medicationIndex - 1);
+                // 4. Set the medication name (Crucial for new rows, harmlessly overwrites with the same text for existing rows)
+                newRow[medicationIndex] = validatedMedication.ExtractedMedication;
 
-                    // Add the medication match values at the end
-                    Array.Copy(medicationMatchValues, 0, newRow, reportRow.Length, medicationMatchValues.Length);
-                }
+                // 5. Graft the freshly calculated validation stats immediately after the medication column
+                Array.Copy(medicationMatchValues, 0, newRow, medicationIndex + 1, medicationMatchValues.Length);
 
                 // Yield the new row
                 yield return newRow;
@@ -235,7 +224,8 @@ namespace MineguideEPOCParser.Core
             MatchLengthHeaderName,
             MatchInTextHeaderName,
             MatchExperimentResultHeaderName,
-            MatchCorrectedMedicationHeaderName
+            MatchCorrectedMedicationHeaderName,
+            ..MedicationAnalyzers.MedicationDetails.GetDetailsColumnsExceptMedication()
         ]);
 
         public string[] GetRequiredMedicationMatchHeaders()
@@ -248,35 +238,6 @@ namespace MineguideEPOCParser.Core
                 MatchExperimentResultHeaderName,
                 //MatchCorrectedMedicationHeaderName // This one is optional, so we purposefully don't include it here
             ];
-        }
-
-        // We do this here to ensure the order is preserved
-        // in the same way as the headers (which are defined right above, in GetDefaultColumns).
-        public static string[] GetMedicationMatchValues(MedicationResult result)
-        {
-            if (result is MedicationMatch match)
-            {
-                return [
-                    match.StartIndex.ToString(),
-                    match.Length.ToString(),
-                    match.MatchInText,
-                    match.ExperimentResult.ToResultString(),
-                    match.CorrectedMedication ?? string.Empty
-                ];
-            }
-            else
-            {
-                // Instead of leaving those fields empty,
-                // we put StartIndex = -1 and Length = 0
-                // to indicate that it didn't match (and it is not just missing values).
-                return [
-                    "-1",
-                    "0",
-                    string.Empty,
-                    result.ExperimentResult.ToResultString(),
-                    result.CorrectedMedication ?? string.Empty
-                ];
-            }
         }
     }
 }

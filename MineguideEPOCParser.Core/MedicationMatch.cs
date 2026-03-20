@@ -1,4 +1,5 @@
 using CsvHelper.Configuration.Attributes;
+using static MineguideEPOCParser.Core.MedicationAnalyzers;
 
 namespace MineguideEPOCParser.Core
 {
@@ -7,6 +8,12 @@ namespace MineguideEPOCParser.Core
         public required string ExtractedMedication { get; set; } // The medication from your array
         public ExperimentResultType ExperimentResult { get; set; } = ExperimentResultType.TP; // Default to True Positive
         public string? CorrectedMedication { get; set; } // The corrected medication by the user after validating, if any
+
+        // This property will be ignored in CSV Parser,
+        // since for import we don't need it since we calculate it ourselves,
+        // and for export we use GetMedicationMatchValues() to include the details values in the output with full control of the order and formatting.
+        [Ignore]
+        public MedicationDetails? Details { get; set; }
         
         public const string TPStar = "TP*"; // C# doesn't allow enum members to have special characters, so we use "TP_" and map it to "TP*"
         /// <summary>
@@ -38,6 +45,23 @@ namespace MineguideEPOCParser.Core
             /// </summary>
             FN
         }
+
+        // Instead of leaving those fields empty,
+        // we put StartIndex = -1 and Length = 0
+        // to indicate that it didn't match (and it is not just missing values).
+        public virtual string[] GetMedicationMatchValues(IFormatProvider? culture) => ConcatDetailsToMatchValuesIfPresent([
+                "-1",
+                "0",
+                string.Empty,
+                ExperimentResult.ToResultString(),
+                CorrectedMedication ?? string.Empty
+            ], culture);
+
+        protected string[] ConcatDetailsToMatchValuesIfPresent(string[] matchValues, IFormatProvider? culture) => [
+            ..matchValues,
+            ..Details?.GetDetailsValuesExceptMedication(culture)
+                ?? Enumerable.Repeat(string.Empty, MedicationDetails.GetDetailsColumnsExceptMedication().Length).ToArray()
+        ];
     }
 
     public class MedicationMatch : MedicationResult
@@ -45,6 +69,14 @@ namespace MineguideEPOCParser.Core
         public int StartIndex { get; set; }
         public int Length { get; set; }
         public required string MatchInText { get; set; }
+
+        public override string[] GetMedicationMatchValues(IFormatProvider? culture) => ConcatDetailsToMatchValuesIfPresent([
+            StartIndex.ToString(),
+            Length.ToString(),
+            MatchInText,
+            ExperimentResult.ToResultString(),
+            CorrectedMedication ?? string.Empty
+        ], culture);
 
         // Comparer by StartIndex
         public class StartIndexComparer : IComparer<MedicationResult>

@@ -128,12 +128,7 @@ namespace MineguideEPOCParser.Core
             [
                 medication,
                 CurrentRowNumber.ToString(),
-                details.ExactMatch.ToString(),
-                details.SimilarityScore.ToString(),
-                details.GetSimilarityScorePercentage(Configuration.Culture),
-                details.BestMatch ?? string.Empty,
-                details.LevenshteinDistance.ToString(),
-                details.MatchType.ToString()
+                ..details.GetDetailsValuesExceptMedication(Configuration.Culture)
             ];
         }
     }
@@ -147,7 +142,7 @@ namespace MineguideEPOCParser.Core
     }
 
     public class MedicationExtractingParserConfiguration : DataParserConfiguration
-	{
+    {
         public const string DefaultSystemPrompt = """
         You are meant to parse any medical data sent to you in SPANISH.
         Follow STRICTLY these instructions by order priority:
@@ -156,7 +151,7 @@ namespace MineguideEPOCParser.Core
         - The JSON format should be: { ""Medicamentos"": [ ] }     
         """;
         public const bool DefaultSystemPromptUsesJsonFormat = true;
-        
+
         public const string InputRowNumberHeaderName = "InputRowNumber";
 
         public bool DecodeHtmlFromInput { get; set; }
@@ -166,13 +161,6 @@ namespace MineguideEPOCParser.Core
         public bool UseJsonFormat { get; set; } = DefaultSystemPromptUsesJsonFormat;
 
         protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns()
-            => (DefaultTHeaderName, [DefaultMedicationHeaderName,
-                InputRowNumberHeaderName,
-                nameof(MedicationAnalyzers.MedicationDetails.ExactMatch),
-                nameof(MedicationAnalyzers.MedicationDetails.SimilarityScore), 
-                nameof(MedicationAnalyzers.MedicationDetails.SimilarityScorePercentage), 
-                nameof(MedicationAnalyzers.MedicationDetails.BestMatch), 
-                nameof(MedicationAnalyzers.MedicationDetails.LevenshteinDistance), 
-                nameof(MedicationAnalyzers.MedicationDetails.MatchType)]);
+            => (DefaultTHeaderName, [DefaultMedicationHeaderName, InputRowNumberHeaderName, ..MedicationAnalyzers.MedicationDetails.GetDetailsColumnsExceptMedication()]);
     }
 }
