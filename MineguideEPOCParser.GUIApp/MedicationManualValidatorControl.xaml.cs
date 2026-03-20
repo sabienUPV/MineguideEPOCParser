@@ -509,6 +509,14 @@ namespace MineguideEPOCParser.GUIApp
             {
                 MessageBox.Show($"The validation process was cancelled.\nThe information that was already validated has been written to the output file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred during medication validation:\n{ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            finally
+            {
+                IsParsing = false; // Set parsing state to false
+            }
         }
 
         private SemaphoreSlim? _medicationValidationSemaphore;
