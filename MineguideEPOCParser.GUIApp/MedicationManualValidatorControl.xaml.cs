@@ -750,7 +750,7 @@ namespace MineguideEPOCParser.GUIApp
             int subTextIndex = -1;
             while (true)
             {
-                input = Microsoft.VisualBasic.Interaction.InputBox(
+                input = InputBoxWindow.Show(
                 $"Extracted medication (from LLM): {medicationMatch.ExtractedMedication}\n\nEnter the corrected medication name:",
                 $"Correct Medication ({medicationMatch.ExtractedMedication})",
                 medicationMatch.CorrectedMedication ?? medicationMatch.ExtractedMedication);
