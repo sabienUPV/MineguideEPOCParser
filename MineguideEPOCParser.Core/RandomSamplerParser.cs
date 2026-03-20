@@ -26,7 +26,7 @@ namespace MineguideEPOCParser.Core
 
             _excludeReportNumbers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            var csvConfig = new CsvConfiguration(new CultureInfo(Configuration.CultureName));
+            var csvConfig = new CsvConfiguration(Configuration.Culture);
             
             foreach (var excludeFile in Configuration.ExcludeFiles)
             {

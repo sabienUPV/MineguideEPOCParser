@@ -24,6 +24,28 @@ namespace MineguideEPOCParser.Core
                 Map(m => m.ExperimentResult).Name(config.MatchExperimentResultHeaderName);
 
                 Map(m => m.CorrectedMedication).Name(config.MatchCorrectedMedicationHeaderName).Optional();
+
+                // Also map the details columns
+                var detailsColumns = MedicationAnalyzers.MedicationDetails.GetDetailsColumnsExceptMedication();
+                Map(m => m.Details).Convert(convertFromStringFunction: data =>
+                {
+                    var medication = data.Row.GetField<string>(DataParserConfiguration.DefaultMedicationHeaderName)
+                        ?? throw new InvalidOperationException($"The medication header '{DataParserConfiguration.DefaultMedicationHeaderName}' was not found in the input file. Cannot map the MedicationDetails without the medication name.");
+
+                    var details = new MedicationAnalyzers.MedicationDetails() { Medication = medication };
+                    foreach (var propertyName in detailsColumns)
+                    {
+                        // Use reflection to set the properties of the MedicationDetails object based on the column names and values from the CSV
+                        var propertyInfo = typeof(MedicationAnalyzers.MedicationDetails).GetProperty(propertyName);
+                        
+                        if (propertyInfo == null || !propertyInfo.CanWrite) continue;
+
+                        var value = data.Row.GetField(propertyInfo.PropertyType, propertyName);
+                        propertyInfo.SetValue(details, value);
+                    }
+
+                    return details;
+                });
             }
         }
 

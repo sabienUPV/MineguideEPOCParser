@@ -57,7 +57,7 @@ namespace MineguideEPOCParser.Core
 
                 await DoPreProcessing(cancellationToken);
 
-                var defaultCsvConfig = new CsvConfiguration(new CultureInfo(Configuration.CultureName))
+                var defaultCsvConfig = new CsvConfiguration(Configuration.Culture)
                 {
                     CountBytes = Progress is not null && Configuration.RowLimit is null,
                 };
