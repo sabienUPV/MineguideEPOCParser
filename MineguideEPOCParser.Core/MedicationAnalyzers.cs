@@ -216,7 +216,6 @@ namespace MineguideEPOCParser.Core
                 nameof(SimilarityScore),
                 nameof(SimilarityScorePercentage),
                 nameof(BestMatch),
-                nameof(BestMatchIndex),
                 nameof(LevenshteinDistance),
                 nameof(MatchType)
             ];
