@@ -26,7 +26,8 @@ namespace MineguideEPOCParser.Core
                         ExtractedMedication = kvp.Value.Medication,
                         ExperimentResult = kvp.Value.ExactMatch
                             ? MedicationResult.ExperimentResultType.TP
-                            : MedicationResult.ExperimentResultType.TP_
+                            : MedicationResult.ExperimentResultType.TP_,
+                        Details = kvp.Value
                     });
                 }
                 else
@@ -36,7 +37,8 @@ namespace MineguideEPOCParser.Core
                     matches.Add(new MedicationResult
                     {
                         ExtractedMedication = kvp.Value.Medication,
-                        ExperimentResult = MedicationResult.ExperimentResultType.FP
+                        ExperimentResult = MedicationResult.ExperimentResultType.FP,
+                        Details = kvp.Value
                     });
                 }
             }
