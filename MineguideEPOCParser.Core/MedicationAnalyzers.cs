@@ -7,7 +7,10 @@ namespace MineguideEPOCParser.Core
     public static partial class MedicationAnalyzers
     {
         /// <summary>
-        /// Analyze how extracted medications match the text and log the results
+        /// Analyzes how extracted medications match the text and logs the results.
+        /// Uses exact matching first, falling back to an anchor-based sliding window 
+        /// Levenshtein distance calculation to accurately find compound medications 
+        /// while preserving punctuation and spacing.
         /// </summary>
         /// <param name="t">The original text to analyze</param>
         /// <param name="medications">Array of extracted medication names</param>
@@ -19,67 +22,47 @@ namespace MineguideEPOCParser.Core
             int medicationsInText = 0;
             var medicationDetails = new Dictionary<string, MedicationDetails>();
 
+            // Pre-calculate anchors once for the entire text to save CPU
+            var textAnchors = SplitIntoWordsRegex().Matches(t);
+
             foreach (var med in medications)
             {
-                // Skip empty medications
-                if (string.IsNullOrWhiteSpace(med)) continue;
+                // Skip empty or duplicate medications
+                if (string.IsNullOrWhiteSpace(med) || medicationDetails.ContainsKey(med))
+                    continue;
 
-                // Skip duplicate medications
-                if (medicationDetails.ContainsKey(med)) continue;
-
-                // Case-insensitive exact match check
+                // 1. Case-insensitive exact match check (Fastest)
                 int exactMatchIndex = t.IndexOf(med, StringComparison.OrdinalIgnoreCase);
                 bool isExactMatch = exactMatchIndex >= 0;
 
-                // Levenshtein distance matching
                 int bestDistance = int.MaxValue;
                 string? closestMatch = null;
                 int? closestMatchIndex = null;
                 double similarityScore = 0;
 
-                // Only check for fuzzy matches if no exact match and medication name is meaningful
+                // 2. Levenshtein fuzzy matching (Anchor-based sliding window)
                 if (!isExactMatch && med.Length > 3)
                 {
-                    // Split text into words
-                    var words = SplitIntoWordsRegex().Matches(t)
-                        .Select(m => (m.Value, m.Index))
-                        .ToArray();
+                    var fuzzyResult = FindBestFuzzyMatch(t, med, textAnchors);
 
-                    // Check each word for similarity
-                    foreach (var (word, index) in words)
-                    {
-                        // Skip very short words
-                        if (word.Length < 3) continue;
-
-                        int distance = CalculateCaseInsensitiveLevenshteinDistance(med, word);
-                        double similarity = CalculateSimilarityScore(med, word, distance);
-
-                        // Keep track of the best match
-                        if (similarity > similarityScore)
-                        {
-                            similarityScore = similarity;
-                            bestDistance = distance;
-                            closestMatch = word;
-                            closestMatchIndex = index;
-                        }
-                    }
+                    similarityScore = fuzzyResult.Similarity;
+                    bestDistance = fuzzyResult.Distance;
+                    closestMatch = fuzzyResult.Match;
+                    closestMatchIndex = fuzzyResult.Index;
                 }
 
+                // 3. Determine final match type and populate details
                 MatchSimilarityType matchType;
+
                 if (isExactMatch)
                 {
-                    // If we found an exact match,
-                    // we didn't need to calculate Levenshtein distance for it,
-                    // so we need to manually set the similarity score and best match
-
                     matchType = MatchSimilarityType.Exact;
-                    similarityScore = ExactMatchThreshold; // 100% similarity for exact matches
-                    closestMatch = med; // The medication itself is the best match
-                    closestMatchIndex = exactMatchIndex; // Use the index of the exact match
+                    similarityScore = ExactMatchThreshold;
+                    closestMatch = med;
+                    closestMatchIndex = exactMatchIndex;
                 }
                 else
                 {
-                    // Determine match type with threshold
                     matchType = DetermineMatchSimilarityType(similarityScore);
                 }
 
@@ -109,8 +92,72 @@ namespace MineguideEPOCParser.Core
                 medicationsInText, medications.Length, matchPercentage);
             logger?.Verbose("Medication match details: {@MedicationDetails}", medicationDetails);
 
-            // Return statistics for potential further processing
             return (medicationsInText, matchPercentage, medicationDetails);
+        }
+
+        /// <summary>
+        /// Slides a window of words across the text to find the best fuzzy match for a medication.
+        /// By using word anchors, it inherently preserves spaces, punctuation (like +), and formatting
+        /// from the original text during the comparison.
+        /// </summary>
+        private static (double Similarity, int Distance, string? Match, int? Index) FindBestFuzzyMatch(
+            string text,
+            string medication,
+            MatchCollection anchors)
+        {
+            if (anchors.Count == 0)
+                return (0, int.MaxValue, null, null);
+
+            int bestDistance = int.MaxValue;
+            string? closestMatch = null;
+            int? closestMatchIndex = null;
+            double bestSimilarityScore = 0.0;
+
+            // Determine roughly how many words make up the medication name
+            int medWordCount = SplitIntoWordsRegex().Matches(medication).Count;
+            if (medWordCount == 0) medWordCount = 1;
+
+            // Check windows slightly smaller and larger than the target word count
+            // to account for LLMs combining or splitting words
+            int minWindowSize = Math.Max(1, medWordCount - 1);
+            int maxWindowSize = Math.Min(anchors.Count, medWordCount + 2);
+
+            for (int windowSize = minWindowSize; windowSize <= maxWindowSize; windowSize++)
+            {
+                for (int i = 0; i <= anchors.Count - windowSize; i++)
+                {
+                    int startIndex = anchors[i].Index;
+                    var lastAnchor = anchors[i + windowSize - 1];
+                    int length = (lastAnchor.Index + lastAnchor.Length) - startIndex;
+
+                    // Extract the exact substring from the text, preserving ALL punctuation and spaces
+                    string candidate = text.Substring(startIndex, length);
+
+                    // Optimization: If the length difference is huge, it mathematically 
+                    // cannot be a good match. Skip the expensive calculation.
+                    if (Math.Abs(candidate.Length - medication.Length) > (medication.Length * 0.5))
+                        continue;
+
+                    int distance = CalculateCaseInsensitiveLevenshteinDistance(medication, candidate);
+                    double similarity = CalculateSimilarityScore(medication, candidate, distance);
+
+                    if (similarity > bestSimilarityScore)
+                    {
+                        bestSimilarityScore = similarity;
+                        bestDistance = distance;
+                        closestMatch = candidate;
+                        closestMatchIndex = startIndex;
+
+                        // Early exit if we find a perfect mathematical match
+                        if (similarity >= ExactMatchThreshold)
+                        {
+                            return (bestSimilarityScore, bestDistance, closestMatch, closestMatchIndex);
+                        }
+                    }
+                }
+            }
+
+            return (bestSimilarityScore, bestDistance, closestMatch, closestMatchIndex);
         }
 
         /// <summary>
@@ -125,28 +172,26 @@ namespace MineguideEPOCParser.Core
         public static double CalculateSimilarityScore(string value1, string value2, int distance) =>
             1.0 - ((double)distance / Math.Max(value1.Length, value2.Length));
 
+        // Thresholds
         public const double ExactMatchThreshold = 1.0; // 100% similarity threshold for exact matches
         public const double StrongSimilarityThreshold = 0.8; // 80% similarity threshold for strong matches
         public const double ModerateSimilarityThreshold = 0.6; // 60% similarity threshold for moderate matches
 
-        public static bool IsExactMatch(double similarityScore) => similarityScore >= ExactMatchThreshold; // 100% similarity threshold
-        public static bool IsStrongSimilarityOrBetter(double similarityScore) => similarityScore >= StrongSimilarityThreshold; // 80% similarity threshold
-        public static bool IsModerateSimilarityOrBetter(double similarityScore) => similarityScore >= ModerateSimilarityThreshold; // 60% similarity threshold
+        // Helper evaluations
+        public static bool IsExactMatch(double similarityScore) => similarityScore >= ExactMatchThreshold;
+        public static bool IsStrongSimilarityOrBetter(double similarityScore) => similarityScore >= StrongSimilarityThreshold;
+        public static bool IsModerateSimilarityOrBetter(double similarityScore) => similarityScore >= ModerateSimilarityThreshold;
 
         public static MatchSimilarityType DetermineMatchSimilarityType(double similarityScore)
         {
-            if (IsExactMatch(similarityScore)) // 100% similarity threshold
-            {
+            if (IsExactMatch(similarityScore))
                 return MatchSimilarityType.Exact;
-            }
-            else if (IsStrongSimilarityOrBetter(similarityScore)) // 80% similarity threshold
-            {
+
+            if (IsStrongSimilarityOrBetter(similarityScore))
                 return MatchSimilarityType.StrongSimilarity;
-            }
-            else if (IsModerateSimilarityOrBetter(similarityScore)) // 60% similarity threshold
-            {
+
+            if (IsModerateSimilarityOrBetter(similarityScore))
                 return MatchSimilarityType.ModerateSimilarity;
-            }
 
             return MatchSimilarityType.None;
         }
@@ -164,7 +209,7 @@ namespace MineguideEPOCParser.Core
 
             public string GetSimilarityScorePercentage(IFormatProvider? provider)
                 => SimilarityScore.ToString("P2", provider);
-        };
+        }
 
         public enum MatchSimilarityType
         {
