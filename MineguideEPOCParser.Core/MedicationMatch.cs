@@ -1,3 +1,5 @@
+using CsvHelper.Configuration.Attributes;
+
 namespace MineguideEPOCParser.Core
 {
     public class MedicationResult
@@ -5,7 +7,8 @@ namespace MineguideEPOCParser.Core
         public required string ExtractedMedication { get; set; } // The medication from your array
         public ExperimentResultType ExperimentResult { get; set; } = ExperimentResultType.TP; // Default to True Positive
         public string? CorrectedMedication { get; set; } // The corrected medication by the user after validating, if any
-
+        
+        public const string TPStar = "TP*"; // C# doesn't allow enum members to have special characters, so we use "TP_" and map it to "TP*"
         /// <summary>
         /// Possible values:
         /// <list type="bullet">
@@ -24,6 +27,7 @@ namespace MineguideEPOCParser.Core
             /// <summary>
             /// True Positive but not exact (TP*)
             /// </summary>
+            [Name(TPStar)] // This attribute is used by CsvHelper to map the "TP*" string in CSV to the TP_ enum member
             TP_,
             /// <summary>
             /// False Positive (also used for hallucinations)
@@ -84,11 +88,8 @@ namespace MineguideEPOCParser.Core
         {
             return resultType switch
             {
-                MedicationResult.ExperimentResultType.TP => "TP",
-                MedicationResult.ExperimentResultType.TP_ => "TP*",
-                MedicationResult.ExperimentResultType.FP => "FP",
-                MedicationResult.ExperimentResultType.FN => "FN",
-                _ => throw new ArgumentOutOfRangeException(nameof(resultType), resultType, null)
+                MedicationResult.ExperimentResultType.TP_ => MedicationResult.TPStar, // C# doesn't allow the enum member to be named "TP*", so we use "TP_" and map it to "TP*"
+                _ => resultType.ToString() // The others can be returned as their enum names (TP, FP, FN)
             };
         }
     }
