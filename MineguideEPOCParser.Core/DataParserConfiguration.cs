@@ -9,9 +9,7 @@
         public required string OutputFile { get; set; }
 
         public string? InputTargetColumnHeaderName { get; set; }
-        public string[] OutputAdditionalHeaderNames { get; protected set; }
-
-        public int NumberOfOutputAdditionalHeaders => OutputAdditionalHeaderNames?.Length ?? 0;
+        public string[] OutputAdditionalHeaderNames { get; private set; }
 
         /// <summary>
         /// If true, the input target column will be overwritten with the output column(s), renaming the header, instead of adding a new column.
