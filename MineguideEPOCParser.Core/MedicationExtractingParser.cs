@@ -8,14 +8,6 @@ namespace MineguideEPOCParser.Core
         public const string DefaultModel = "llama3:8b";
 
         /// <summary>
-        /// <inheritdoc />
-        /// <para>
-        /// (In this case: Medication name, input row number, and 6 additional columns for analysis (from <see cref="MedicationAnalyzers.MedicationDetails"/>))
-        /// </para>
-        /// </summary>
-        public override int NumberOfOutputAdditionalColumns => 8;
-
-        /// <summary>
         /// Calls the Ollama API to extract the medications from the text in the input column.
         /// </summary>
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] headers, [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -160,7 +152,10 @@ namespace MineguideEPOCParser.Core
 
         public bool UseJsonFormat { get; set; } = DefaultSystemPromptUsesJsonFormat;
 
-        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns()
+        /// <summary>
+        ///  Medication name, input row number, and additional columns for analysis (from <see cref="MedicationAnalyzers.MedicationDetails"/>)
+        /// </summary>
+        public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns()
             => (DefaultTHeaderName, [DefaultMedicationHeaderName, InputRowNumberHeaderName, ..MedicationAnalyzers.MedicationDetails.GetDetailsColumnsExceptMedication()]);
     }
 }

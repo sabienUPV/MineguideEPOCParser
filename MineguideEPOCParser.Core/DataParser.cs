@@ -10,7 +10,15 @@ namespace MineguideEPOCParser.Core
 {
     public abstract class DataParser<TConfiguration> : IDataParser<TConfiguration> where TConfiguration : DataParserConfiguration
     {
-        public required TConfiguration Configuration { get; set; }
+        public required TConfiguration Configuration
+        {
+            get;
+            set
+            {
+                field = value;
+                SetNumberOfOutputAdditionalColumns(value);
+            }
+        }
 
         protected ILogger? _baseLogger; // Base logger for the parser, used for general logging
         protected ILogger? _currentLogger; // Enriched logger for the current operation (e.g., row number, etc.)
@@ -40,8 +48,22 @@ namespace MineguideEPOCParser.Core
 
         /// <summary>
         /// Number of output columns that the parser will write to the output file (in addition to the input columns).
+        /// <para>
+        /// This used to be a magic number so that,
+        /// if the <see cref="Configuration"/> instance had custom additional columns set by whoever created the object instance,
+        /// the parser checked at runtime that the number of columns set match the number of columns the parser expects.
+        /// 
+        /// However, this is unnecessarily difficult to maintain,
+        /// and since the number of default columns from <see cref="DataParserConfiguration.GetDefaultColumns"/> also needs to match what the parser expects,
+        /// and the same actor who creates the parser should also be responsible for creating the default configuration for it,
+        /// now we just dynamically set the result's array length from the default values.
+        /// 
+        /// Since most of the time the default values won't be changed all this will be a bit redundant,
+        /// but it's here if that use case needs to be supported in the future (e.g. for custom header names set by the user or something)
+        /// </para>
         /// </summary>
-        public virtual int NumberOfOutputAdditionalColumns => 1;
+        public int NumberOfOutputAdditionalColumns { get; private set; }
+        private void SetNumberOfOutputAdditionalColumns(TConfiguration config) => NumberOfOutputAdditionalColumns = config.GetDefaultColumns().outputAdditionalHeaders.Length;
         
         
         protected CsvReader? CurrentCsvReader { get; private set; }

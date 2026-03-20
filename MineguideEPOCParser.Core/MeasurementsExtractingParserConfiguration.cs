@@ -21,7 +21,7 @@
         public bool DecodeHtmlFromInput { get; set; }
 
         public const string FEV1HeaderName = "FEV1 (%)";
-        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [FEV1HeaderName]);
+        public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [FEV1HeaderName]);
     }
 
     public class ComplexMeasurementsExtractingParserConfiguration : SimpleMeasurementsExtractingParserConfiguration
@@ -69,6 +69,7 @@
         public const string MeasurementValueHeaderName = "Value";
         public const string MeasurementUnitHeaderName = "Unit";
 
-        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [TextSearchedHeaderName, MeasurementTypeHeaderName, MeasurementValueHeaderName, MeasurementUnitHeaderName]);
+        // 4 Output columns: TextSearched, Type, Value, Unit
+        public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [TextSearchedHeaderName, MeasurementTypeHeaderName, MeasurementValueHeaderName, MeasurementUnitHeaderName]);
     }
 }

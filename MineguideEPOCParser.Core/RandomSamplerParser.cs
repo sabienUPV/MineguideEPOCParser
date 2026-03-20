@@ -10,8 +10,6 @@ namespace MineguideEPOCParser.Core
     /// </summary>
     public class RandomSamplerParser : DataParser<RandomSamplerParserConfiguration>
     {
-        public override int NumberOfOutputAdditionalColumns => 0; // No additional output columns, just sampling the input
-
         private Random? _random;
         private HashSet<string>? _excludeReportNumbers = null; // To store report numbers to exclude if ExcludeFile is provided
 
@@ -119,6 +117,7 @@ namespace MineguideEPOCParser.Core
         // Report number header for primary key matching with the exclude file (if applicable).
         public string ReportNumberHeaderName { get; set; } = MedicationManualValidatorParserConfiguration.DefaultReportNumberHeaderName;
 
-        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (null, []);
+        // No additional output columns, just sampling the input
+        public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (null, []);
     }
 }

@@ -16,9 +16,6 @@ namespace MineguideEPOCParser.Core
         - The JSON format should be: { "Measurements": [{"Type": <Name of the measurement>, "Value": <number WITHOUT the Unit>, "Unit": <"%" or "l" or "ml" (it should be present AFTER THE NUMBER... if it's not, set it to null>} ] }
         """;
 
-        // 4 Output columns: TextSearched, Type, Value, Unit
-        public override int NumberOfOutputAdditionalColumns => 4;
-
         /// <summary>
         /// Calls the Ollama API to extract the measurements from the text in the input column.
         /// </summary>

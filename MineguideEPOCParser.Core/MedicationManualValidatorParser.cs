@@ -11,8 +11,6 @@ namespace MineguideEPOCParser.Core
     /// </summary>
     public class MedicationManualValidatorParser : DataParser<MedicationManualValidatorParserConfiguration>
     {
-        public override int NumberOfOutputAdditionalColumns => 5; // StartIndex, Length, MatchInText, ExtractedMedication, CorrectedMedication
-
         public class MedicationMatchClassMap : ClassMap<MedicationMatch>
         {
             public MedicationMatchClassMap(MedicationManualValidatorParserConfiguration config)
@@ -219,7 +217,8 @@ namespace MineguideEPOCParser.Core
 
         public string BuildMedicationHeader(string header) => $"{MedicationHeaderName}_{header}";
 
-        protected override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [
+        // StartIndex, Length, MatchInText, ExtractedMedication, CorrectedMedication, + all the details columns except medication (since that would be redundant with the ExtractedMedication column)
+        public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [
             MatchStartIndexHeaderName,
             MatchLengthHeaderName,
             MatchInTextHeaderName,
