@@ -1,7 +1,6 @@
 ﻿using CsvHelper.Configuration;
 using CsvHelper.TypeConversion;
 using CsvHelper;
-using System.Globalization;
 using System.Text;
 using System.Runtime.CompilerServices;
 using Serilog;
@@ -116,30 +115,46 @@ namespace MineguideEPOCParser.Core
 
         protected string[] GenerateNewHeaders(DataReadContent dataRead)
         {
-            // Ensure the output headers are unique (their names might already exist in the input headers)
-            var finalOutputHeaders = Configuration.OutputAdditionalHeaderNames.Select(outputHeader =>
-            {
-                var finalOutputHeader = Utilities.ArrayEnsureUniqueHeader(dataRead.Headers, outputHeader);
-
-                if (finalOutputHeader != outputHeader)
-                {
-                    Logger?.Warning("The output header name {OriginalHeaderName} was changed to {OutputHeaderName} because it already existed in the input file.", outputHeader, finalOutputHeader);
-                }
-
-                return finalOutputHeader;
-            });
+            var outputHeaders = Configuration.OutputAdditionalHeaderNames;
 
             IEnumerable<string> headersEnumerable;
+
+            if (Configuration.SkipDuplicateHeaders)
+            {
+                // We skip duplicates at the end, so we consider the input headers as well
+                headersEnumerable = outputHeaders;
+            }
+            else
+            {
+                // Ensure the output headers are unique (their names might already exist in the input headers)
+                headersEnumerable = outputHeaders.Select(outputHeader =>
+                {
+                    var finalOutputHeader = Utilities.ArrayEnsureUniqueHeader(dataRead.Headers, outputHeader);
+
+                    if (finalOutputHeader != outputHeader)
+                    {
+                        Logger?.Warning("The output header name {OriginalHeaderName} was changed to {OutputHeaderName} because it already existed in the input file.", outputHeader, finalOutputHeader);
+                    }
+
+                    return finalOutputHeader;
+                });
+            }
 
             // If we are "overwriting" the input column, replace it with the output columns
             if (Configuration.OverwriteInputTargetColumn)
             {
-                headersEnumerable = GenerateNewHeadersWithOverwrite(dataRead.Headers, finalOutputHeaders);
+                headersEnumerable = GenerateNewHeadersWithOverwrite(dataRead.Headers, headersEnumerable);
             }
             else
             {
                 // Otherwise, add the output columns to the end
-                headersEnumerable = dataRead.Headers.Concat(finalOutputHeaders);
+                headersEnumerable = dataRead.Headers.Concat(headersEnumerable);
+            }
+
+            if (Configuration.SkipDuplicateHeaders)
+            {
+                // For specific cases where the parser handles it, we just skip duplicate headers by making them distinct
+                headersEnumerable = headersEnumerable.Distinct();
             }
 
             return headersEnumerable.ToArray();

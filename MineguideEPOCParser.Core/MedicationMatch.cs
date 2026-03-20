@@ -49,7 +49,7 @@ namespace MineguideEPOCParser.Core
         // Instead of leaving those fields empty,
         // we put StartIndex = -1 and Length = 0
         // to indicate that it didn't match (and it is not just missing values).
-        public virtual string[] GetMedicationMatchValues(IFormatProvider? culture) => ConcatDetailsToMatchValuesIfPresent([
+        public virtual string[] GetMedicationMatchValues(IFormatProvider? culture) => PrependDetailsToMatchValuesIfPresent([
                 "-1",
                 "0",
                 string.Empty,
@@ -57,10 +57,10 @@ namespace MineguideEPOCParser.Core
                 CorrectedMedication ?? string.Empty
             ], culture);
 
-        protected string[] ConcatDetailsToMatchValuesIfPresent(string[] matchValues, IFormatProvider? culture) => [
-            ..matchValues,
+        protected string[] PrependDetailsToMatchValuesIfPresent(string[] matchValues, IFormatProvider? culture) => [
             ..Details?.GetDetailsValuesExceptMedication(culture)
-                ?? Enumerable.Repeat(string.Empty, MedicationDetails.GetDetailsColumnsExceptMedication().Length).ToArray()
+                ?? Enumerable.Repeat(string.Empty, MedicationDetails.GetDetailsColumnsExceptMedication().Length).ToArray(),
+            ..matchValues
         ];
     }
 
@@ -70,7 +70,7 @@ namespace MineguideEPOCParser.Core
         public int Length { get; set; }
         public required string MatchInText { get; set; }
 
-        public override string[] GetMedicationMatchValues(IFormatProvider? culture) => ConcatDetailsToMatchValuesIfPresent([
+        public override string[] GetMedicationMatchValues(IFormatProvider? culture) => PrependDetailsToMatchValuesIfPresent([
             StartIndex.ToString(),
             Length.ToString(),
             MatchInText,

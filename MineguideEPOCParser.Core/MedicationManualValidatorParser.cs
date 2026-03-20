@@ -199,17 +199,22 @@ namespace MineguideEPOCParser.Core
                     : currentReportRows[0];
 
                 // 2. Create the correctly sized array: 
-                // Base columns (up to medicationIndex) + The Medication Column (+1) + The fresh stats
-                string[] newRow = new string[medicationIndex + 1 + medicationMatchValues.Length];
+                // Base columns (up to medicationIndex) + The Medication Column (+2 because there is another column called InputRowNumber after that) + The fresh stats
+                
+                const int columnsAfterMedication = 1; // The InputRowNumber column that is added after the medication column
 
-                // 3. Copy the standard report data (everything BEFORE the medication column)
-                Array.Copy(baseRow, 0, newRow, 0, medicationIndex);
+                int firstIndexOfDetails = Math.Min(medicationIndex + columnsAfterMedication + 1, baseRow.Length);
+
+                string[] newRow = new string[firstIndexOfDetails + medicationMatchValues.Length];
+
+                // 3. Copy the standard report data (everything UNTIL the medication details columns start)
+                Array.Copy(baseRow, 0, newRow, 0, firstIndexOfDetails);
 
                 // 4. Set the medication name (Crucial for new rows, harmlessly overwrites with the same text for existing rows)
                 newRow[medicationIndex] = validatedMedication.ExtractedMedication;
 
-                // 5. Graft the freshly calculated validation stats immediately after the medication column
-                Array.Copy(medicationMatchValues, 0, newRow, medicationIndex + 1, medicationMatchValues.Length);
+                // 5. Graft the freshly calculated validation stats immediately after the InputRowNumber column (which is after the medication column)
+                Array.Copy(medicationMatchValues, 0, newRow, firstIndexOfDetails, medicationMatchValues.Length);
 
                 // Yield the new row
                 yield return newRow;
@@ -223,6 +228,11 @@ namespace MineguideEPOCParser.Core
 
         public string ReportNumberHeaderName { get; set; } = DefaultReportNumberHeaderName;
         public string MedicationHeaderName { get; set; } = DefaultMedicationHeaderName;
+
+        // This parser is special! And it is meant to be used with the output of the MedicationExtractingParser,
+        // so we want to skip adding duplicate headers because we want to overwrite
+        // the existing medication details columns with the new validated values, instead of adding new columns with duplicate header names.
+        public override bool SkipDuplicateHeaders => true;
 
         // NOTE: DON'T MANUALLY SET THE OutputAdditionalHeaderNames for this config (publicly),
         // since we are not supporting that for detecting existing medication matches.
@@ -241,12 +251,13 @@ namespace MineguideEPOCParser.Core
 
         // StartIndex, Length, MatchInText, ExtractedMedication, CorrectedMedication, + all the details columns except medication (since that would be redundant with the ExtractedMedication column)
         public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [
+            // The order is important here! We want the details columns to go first to match the columns from the input file (which comes from MedicationExtractingParser)
+            ..MedicationAnalyzers.MedicationDetails.GetDetailsColumnsExceptMedication(),
             MatchStartIndexHeaderName,
             MatchLengthHeaderName,
             MatchInTextHeaderName,
             MatchExperimentResultHeaderName,
-            MatchCorrectedMedicationHeaderName,
-            ..MedicationAnalyzers.MedicationDetails.GetDetailsColumnsExceptMedication()
+            MatchCorrectedMedicationHeaderName
         ]);
 
         public string[] GetRequiredMedicationMatchHeaders()
