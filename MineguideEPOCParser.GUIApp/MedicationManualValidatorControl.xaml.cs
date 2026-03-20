@@ -136,7 +136,8 @@ namespace MineguideEPOCParser.GUIApp
                         MatchInText = this.MatchInText,
                         ExtractedMedication = this.ExtractedMedication,
                         ExperimentResult = this.ExperimentResult,
-                        CorrectedMedication = this.CorrectedMedication
+                        CorrectedMedication = this.CorrectedMedication,
+                        Details = this.Details
                     };
                 }
                 else
@@ -145,7 +146,8 @@ namespace MineguideEPOCParser.GUIApp
                     {
                         ExtractedMedication = this.ExtractedMedication,
                         ExperimentResult = this.ExperimentResult,
-                        CorrectedMedication = this.CorrectedMedication
+                        CorrectedMedication = this.CorrectedMedication,
+                        Details = this.Details
                     };
                 }
             }
@@ -162,6 +164,7 @@ namespace MineguideEPOCParser.GUIApp
                         ExtractedMedication = match.ExtractedMedication,
                         ExperimentResult = match.ExperimentResult,
                         CorrectedMedication = match.CorrectedMedication,
+                        Details = match.Details,
                         Hyperlink = hyperlink
                     };
                 }
@@ -175,6 +178,7 @@ namespace MineguideEPOCParser.GUIApp
                         ExtractedMedication = result.ExtractedMedication,
                         ExperimentResult = result.ExperimentResult,
                         CorrectedMedication = result.CorrectedMedication,
+                        Details = result.Details,
                         Hyperlink = hyperlink
                     };
                 }
