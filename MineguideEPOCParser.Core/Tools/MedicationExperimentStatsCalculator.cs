@@ -9,6 +9,7 @@ namespace MineguideEPOCParser.Core.Tools
     {
         public int TP { get; set; }
         public int TPStar { get; set; }
+        public int TPExactPlusFuzzy => TP + TPStar;
         public int FP { get; set; }
         public int FN { get; set; }
         public int Hallucinations { get; set; }

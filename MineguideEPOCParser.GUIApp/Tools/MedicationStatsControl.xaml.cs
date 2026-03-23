@@ -56,6 +56,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
                 TPTextBox.Text = stats.TP.ToString();
                 TPStarTextBox.Text = stats.TPStar.ToString();
+                TPExactPlusFuzzyTextBox.Text = stats.TPExactPlusFuzzy.ToString();
                 FPTextBox.Text = stats.FP.ToString();
                 FNTextBox.Text = stats.FN.ToString();
                 HallucinationsTextBox.Text = stats.Hallucinations.ToString();
