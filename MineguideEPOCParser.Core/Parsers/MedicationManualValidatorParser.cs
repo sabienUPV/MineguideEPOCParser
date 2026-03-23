@@ -1,6 +1,8 @@
 using CsvHelper.Configuration;
 using MineguideEPOCParser.Core.Parsers.Configurations;
+using MineguideEPOCParser.Core.Utils;
 using MineguideEPOCParser.Core.Validation;
+using Newtonsoft.Json;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
@@ -99,25 +101,20 @@ namespace MineguideEPOCParser.Core.Parsers
                 throw new InvalidOperationException($"The medication header '{Configuration.MedicationHeaderName}' was not found in the input file.");
             }
 
-            // Optimization: We can assume all rows from the same report number are grouped together
+            // --- 1. PRE-LOAD AND GROUP REPORTS ---
+            // Optimization: We can assume all rows from the same report number are grouped together.
+            // We gather all reports into a list first to support the navigation loop (Go Back).
+            var reports = new List<Report>();
             Report? currentReport = null;
 
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {
                 var reportNumberValue = row[reportNumberIndex];
 
-                // If we have reached a new report number,
-                // validate the current report rows, yield the results,
-                // and start a new report
+                // If we have reached a new report number, start a new report container
                 if (currentReport is not null && currentReport.ReportNumber != reportNumberValue)
                 {
-                    // We have reached a new report, yield the current report rows for validation
-                    await foreach (var validatedRow in ValidateMedications(currentReport.Rows, inputTargetColumnIndex, medicationIndex, currentReport.MedicationMatches, cancellationToken))
-                    {
-                        yield return validatedRow;
-                    }
-
-                    // Start a new report
+                    reports.Add(currentReport);
                     currentReport = new Report(reportNumberValue, _hasMatchHeaders);
                 }
 
@@ -130,20 +127,111 @@ namespace MineguideEPOCParser.Core.Parsers
                 if (_hasMatchHeaders)
                 {
                     // If the medication matches are already present in the row,
-                    // we can just get them from the row
-                    // (we know the reader should be pointing to the current row,
-                    // so we should be able to get the record directly).
+                    // we can just get them from the row (the reader points to the current record).
                     currentReport.MedicationMatches?.Add(CurrentCsvReader!.GetRecord<MedicationMatch>());
                 }
             }
 
-            // Don't forget to yield the last report
+            // Don't forget to add the last report
             if (currentReport is not null)
             {
-                await foreach (var validatedRow in ValidateMedications(currentReport.Rows, inputTargetColumnIndex, medicationIndex, currentReport.MedicationMatches, cancellationToken))
+                reports.Add(currentReport);
+            }
+
+            if (reports.Count == 0) yield break;
+
+            // --- 2. PROGRESS CHECKPOINT RECOVERY ---
+            // Load progress from a sidecar JSON file if it exists to prevent losing work on crash/exit.
+            var checkpointPath = Configuration.OutputFile + ".json";
+            var resultsHistory = new Dictionary<string, MedicationResult[]>();
+            if (File.Exists(checkpointPath))
+            {
+                try
                 {
-                    yield return validatedRow;
+                    var json = await File.ReadAllTextAsync(checkpointPath, cancellationToken);
+                    resultsHistory = JsonConvert.DeserializeObject<Dictionary<string, MedicationResult[]>>(json) ?? new();
+                    Logger?.Information("Loaded progress from checkpoint: {CheckpointPath}", checkpointPath);
                 }
+                catch (Exception ex)
+                {
+                    Logger?.Warning(ex, "Failed to load checkpoint file {CheckpointPath}. Starting from scratch.", checkpointPath);
+                }
+            }
+
+            // --- 3. NAVIGATION & VALIDATION LOOP ---
+            int i = 0;
+            while (i < reports.Count)
+            {
+                var report = reports[i];
+                
+                // Update progress bar in the GUI
+                Progress?.Report(new ProgressValue { Value = (double)i / reports.Count, RowsProcessed = i });
+
+                // Prepare initial matches for validation: check history first, then existing headers, then auto-discovery
+                List<MedicationResult> initialMatches;
+                if (resultsHistory.TryGetValue(report.ReportNumber, out var previousResults))
+                {
+                    initialMatches = previousResults.ToList();
+                }
+                else if (report.MedicationMatches is not null)
+                {
+                    initialMatches = report.MedicationMatches;
+                }
+                else
+                {
+                    // Since rows are grouped, take the first row's target column as the text to validate.
+                    var medicationTextToValidate = report.Rows[0][inputTargetColumnIndex];
+                    var medicationValues = report.Rows.Select(r => r[medicationIndex]).Distinct().ToArray();
+                    initialMatches = MedicationMatchHelper.FindAllMedicationMatchesBySimilarity(medicationTextToValidate, medicationValues);
+                }
+
+                // Yield control to the GUI for user validation
+                var validationResult = await Configuration.ValidationFunction(report.Rows[0][inputTargetColumnIndex], initialMatches, cancellationToken);
+
+                // Handle Navigation
+                if (validationResult.Direction == NavigationDirection.Back)
+                {
+                    i = Math.Max(0, i - 1);
+                    continue;
+                }
+                else if (validationResult.Direction == NavigationDirection.Stop)
+                {
+                    break;
+                }
+
+                // Save results to memory and update the checkpoint file
+                resultsHistory[report.ReportNumber] = validationResult.Results;
+                
+                try
+                {
+                    var json = JsonConvert.SerializeObject(resultsHistory, Formatting.Indented);
+                    await File.WriteAllTextAsync(checkpointPath, json, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    Logger?.Error(ex, "Failed to save progress checkpoint.");
+                }
+
+                i++;
+            }
+
+            // --- 4. DATA RECONSTRUCTION & YIELD ---
+            // Now that validation is finished (or stopped), we reconstruct the CSV rows with the final validated data.
+            foreach (var report in reports)
+            {
+                if (resultsHistory.TryGetValue(report.ReportNumber, out var validatedResults))
+                {
+                    foreach (var row in GenerateValidatedRows(report, validatedResults, medicationIndex))
+                    {
+                        yield return row;
+                    }
+                }
+            }
+            
+            // Clean up checkpoint file on successful completion
+            if (File.Exists(checkpointPath))
+            {
+                File.Delete(checkpointPath);
             }
         }
 
@@ -162,63 +250,41 @@ namespace MineguideEPOCParser.Core.Parsers
             }
         }
 
-        private async IAsyncEnumerable<string[]> ValidateMedications(List<string[]> currentReportRows, int inputTargetColumnIndex, int medicationIndex, List<MedicationResult>? existingMedicationMatches, [EnumeratorCancellation] CancellationToken cancellationToken)
+        private IEnumerable<string[]> GenerateValidatedRows(Report report, MedicationResult[] validatedResults, int medicationIndex)
         {
-            // Since the rows are grouped by report number, the report text should be the same for all rows,
-            // so we can just take the first row to get the medication text.
-            var medicationTextToValidate = currentReportRows[0][inputTargetColumnIndex];
+            // Classify the duplicated report rows by their medication name.
+            // Using GroupBy allows graceful handling of duplicates (we just take the first occurrence).
+            var medicationRows = report.Rows
+                .GroupBy(r => r[medicationIndex])
+                .ToDictionary(g => g.Key, g => g.First());
 
-            // Classify the duplicated report rows by their medication name,
-            // and also get all medication values to an array for validation.
-            var medicationRows = currentReportRows
-                .GroupBy(r => r[medicationIndex]) // Using GroupBy first allows graceful handling of duplicate medications (we just take the first occurrence)
-                .ToDictionary(g => g.Key, g => g.First()); // ToDictionary usually throws an exception if there are duplicates, but since we are using GroupBy first, it will not throw.
-
-            List<MedicationResult> medicationMatches;
-            if (existingMedicationMatches is not null)
+            foreach (var validatedMedication in validatedResults)
             {
-                medicationMatches = existingMedicationMatches;
-            }
-            else
-            {
-                var medicationValues = medicationRows.Keys.ToArray();
-                medicationMatches = MedicationMatchHelper.FindAllMedicationMatchesBySimilarity(medicationTextToValidate, medicationValues);
-            }
-
-            foreach (var validatedMedication in await Configuration.ValidationFunction(medicationTextToValidate, medicationMatches, cancellationToken))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 var medicationMatchValues = validatedMedication.GetMedicationMatchValues(Configuration.Culture);
 
-                // We actually know that all columns after the medication column will be related to that medication,
-                // so we just keep the columns before the medication column, add the medication column with the validated medication name,
-                // and then add all the medication match values after that.
+                // We know that all columns after the medication column are related to that medication.
+                // We keep the columns before, add the validated medication name, then add the fresh stats.
 
                 // 1. Get the base row (either the existing one, or the first row of the report as a template)
                 string[] baseRow = medicationRows.TryGetValue(validatedMedication.ExtractedMedication, out var existingRow)
                     ? existingRow
-                    : currentReportRows[0];
+                    : report.Rows[0];
 
                 // 2. Create the correctly sized array: 
-                // Base columns (up to medicationIndex) + The Medication Column (+2 because there is another column called InputRowNumber after that) + The fresh stats
-                
-                const int columnsAfterMedication = 1; // The InputRowNumber column that is added after the medication column
-
+                // Base columns (up to medicationIndex) + The Medication Column (+1 for InputRowNumber) + The fresh stats
+                const int columnsAfterMedication = 1; // The InputRowNumber column added after the medication column
                 int firstIndexOfDetails = Math.Min(medicationIndex + columnsAfterMedication + 1, baseRow.Length);
-
                 string[] newRow = new string[firstIndexOfDetails + medicationMatchValues.Length];
 
                 // 3. Copy the standard report data (everything UNTIL the medication details columns start)
                 Array.Copy(baseRow, 0, newRow, 0, firstIndexOfDetails);
 
-                // 4. Set the medication name (Crucial for new rows, harmlessly overwrites with the same text for existing rows)
+                // 4. Set the medication name (overwrites or sets for new rows)
                 newRow[medicationIndex] = validatedMedication.ExtractedMedication;
 
-                // 5. Graft the freshly calculated validation stats immediately after the InputRowNumber column (which is after the medication column)
+                // 5. Graft the freshly calculated validation stats immediately after the InputRowNumber column
                 Array.Copy(medicationMatchValues, 0, newRow, firstIndexOfDetails, medicationMatchValues.Length);
 
-                // Yield the new row
                 yield return newRow;
             }
         }

@@ -523,9 +523,12 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
         }
 
+        private NavigationDirection _navigationDirection = NavigationDirection.Next;
+
         private SemaphoreSlim? _medicationValidationSemaphore;
-        private async Task<MedicationResult[]> ValidateMedications(string text, IEnumerable<MedicationResult> medicationResults, CancellationToken cancellationToken)
+        private async Task<ValidationStepResult> ValidateMedications(string text, IEnumerable<MedicationResult> medicationResults, CancellationToken cancellationToken)
         {
+            _navigationDirection = NavigationDirection.Next; // Default to Next for each call
             LoadMedicationResults(text, medicationResults);
 
             if (_currentMedicationResults is null)
@@ -548,6 +551,11 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
                 cancellationToken.ThrowIfCancellationRequested();
 
+                if (_navigationDirection == NavigationDirection.Back)
+                {
+                    return new ValidationStepResult(NavigationDirection.Back, Array.Empty<MedicationResult>());
+                }
+
                 // Add the current corrected medications to the dictionary
                 foreach (var match in _currentMedicationResults)
                 {
@@ -557,13 +565,25 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     }
                 }
 
-                return _currentMedicationResults.Select(m => m.ToMedicationResult()).ToArray();
+                return new ValidationStepResult(NavigationDirection.Next, _currentMedicationResults.Select(m => m.ToMedicationResult()).ToArray());
             }
             finally
             {
                 semaphore?.Dispose();
                 _medicationValidationSemaphore = null; // Siempre se limpia, incluso si hay excepción
             }
+        }
+
+        private void OnUserFinishedMedicationValidation(object? sender, RoutedEventArgs e)
+        {
+            _navigationDirection = NavigationDirection.Next;
+            _medicationValidationSemaphore?.Release();
+        }
+
+        private void OnUserRequestedBack(object? sender, RoutedEventArgs e)
+        {
+            _navigationDirection = NavigationDirection.Back;
+            _medicationValidationSemaphore?.Release();
         }
 
         // True medication button click handler
@@ -933,6 +953,9 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
         private async Task StopMedicationValidation()
         {
+            _navigationDirection = NavigationDirection.Stop;
+            _medicationValidationSemaphore?.Release();
+
             // Cancel any ongoing parsing operation
             if (_cancellationTokenSource is not null)
             {

@@ -2,9 +2,12 @@ using MineguideEPOCParser.Core.Validation;
 
 namespace MineguideEPOCParser.Core.Parsers.Configurations
 {
+    public enum NavigationDirection { Next, Back, Stop }
+    public record ValidationStepResult(NavigationDirection Direction, MedicationResult[] Results);
+
     public class MedicationManualValidatorParserConfiguration : MedicationManualValidatorParserConfigurationBase
     {
-        public required Func<string, IEnumerable<MedicationResult>, CancellationToken, Task<MedicationResult[]>> ValidationFunction { get; set; }
+        public required Func<string, IEnumerable<MedicationResult>, CancellationToken, Task<ValidationStepResult>> ValidationFunction { get; set; }
     }
 
     public abstract class MedicationManualValidatorParserConfigurationBase : DataParserConfiguration

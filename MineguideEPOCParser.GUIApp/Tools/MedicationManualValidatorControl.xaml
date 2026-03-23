@@ -58,6 +58,7 @@
 
         <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
             <Button x:Name="BtnLoad" Content="Load" Margin="5" Click="LoadMedications" IsEnabled="{Binding IsNotParsing}" />
+            <Button x:Name="BtnBack" Content="Back" Margin="5" Click="OnUserRequestedBack" />
             <Button x:Name="BtnTrue" Content="True" Margin="5" Click="OnTrueMedicationClicked" />
             <Button x:Name="BtnFalse" Content="False" Margin="5" Click="OnFalseMedicationClicked" />
             <Button x:Name="BtnCorrect" Content="Correct" Margin="5" Click="OnCorrectMedicationClicked" />
