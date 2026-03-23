@@ -38,7 +38,7 @@ namespace MineguideEPOCParser.Core.Tools
 
     public class MedicationStatRow
     {
-        public string? ReportNumber { get; set; }
+        public int ReportNumber { get; set; }
         public string? Medication { get; set; }
         public string? Result { get; set; }
         public int StartIndex { get; set; }
@@ -87,6 +87,7 @@ namespace MineguideEPOCParser.Core.Tools
                 var startIndexStr = csv.GetField(startIndexHeader);
                 var matchInTextStr = csv.GetField(matchInTextHeader);
 
+                int.TryParse(reportNumberStr, out int reportNumber);
                 bool hasStartIndex = int.TryParse(startIndexStr, out int startIndex);
                 bool isHallucination = false;
 
@@ -120,7 +121,7 @@ namespace MineguideEPOCParser.Core.Tools
 
                 stats.Rows.Add(new MedicationStatRow
                 {
-                    ReportNumber = reportNumberStr,
+                    ReportNumber = reportNumber,
                     Medication = medicationStr,
                     Result = resultStr,
                     StartIndex = startIndex,
