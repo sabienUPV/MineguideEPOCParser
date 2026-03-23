@@ -13,6 +13,8 @@ namespace MineguideEPOCParser.Core.Tools
         public int FN { get; set; }
         public int Hallucinations { get; set; }
 
+        public List<MedicationStatRow> Rows { get; set; } = [];
+
         public int Correct => TP + TPStar;
         public int Predicted => TP + TPStar + FP;
         public int Actual => TP + TPStar + FN;
@@ -28,10 +30,20 @@ namespace MineguideEPOCParser.Core.Tools
                    $"FP: {FP}\n" +
                    $"FN: {FN}\n" +
                    $"Hallucinations: {Hallucinations}\n" +
-                   $"Precision: {Precision:P2}\n" +
-                   $"Recall: {Recall:P2}\n" +
-                   $"F1-Score: {F1Score:P2}";
+                   $"Precision: {Precision:F4}\n" +
+                   $"Recall: {Recall:F4}\n" +
+                   $"F1-Score: {F1Score:F4}";
         }
+    }
+
+    public class MedicationStatRow
+    {
+        public string? ReportNumber { get; set; }
+        public string? Medication { get; set; }
+        public string? Result { get; set; }
+        public int StartIndex { get; set; }
+        public string? MatchInText { get; set; }
+        public bool IsHallucination { get; set; }
     }
 
     public static class MedicationExperimentStatsCalculator
@@ -60,13 +72,22 @@ namespace MineguideEPOCParser.Core.Tools
             var experimentResultHeader = config.MatchExperimentResultHeaderName;
             var startIndexHeader = config.MatchStartIndexHeaderName;
             var matchInTextHeader = config.MatchInTextHeaderName;
+            var medicationHeader = config.MedicationHeaderName;
+            var reportNumberHeader = config.ReportNumberHeaderName;
 
             while (await csv.ReadAsync())
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 var resultStr = csv.GetField(experimentResultHeader);
-                
+                var medicationStr = csv.GetField(medicationHeader);
+                var reportNumberStr = csv.GetField(reportNumberHeader);
+                var startIndexStr = csv.GetField(startIndexHeader);
+                var matchInTextStr = csv.GetField(matchInTextHeader);
+
+                bool hasStartIndex = int.TryParse(startIndexStr, out int startIndex);
+                bool isHallucination = false;
+
                 if (string.IsNullOrEmpty(resultStr)) continue;
 
                 if (resultStr == MedicationResult.TPStar)
@@ -83,12 +104,10 @@ namespace MineguideEPOCParser.Core.Tools
                         case MedicationResult.ExperimentResultType.FP:
                             stats.FP++;
                             // Check for hallucinations
-                            var startIndexStr = csv.GetField(startIndexHeader);
-                            var matchInTextStr = csv.GetField(matchInTextHeader);
-                            
-                            if (startIndexStr == "-1" || string.IsNullOrWhiteSpace(matchInTextStr))
+                            if (!hasStartIndex || startIndex < 0 || string.IsNullOrWhiteSpace(matchInTextStr))
                             {
                                 stats.Hallucinations++;
+                                isHallucination = true;
                             }
                             break;
                         case MedicationResult.ExperimentResultType.FN:
@@ -96,6 +115,16 @@ namespace MineguideEPOCParser.Core.Tools
                             break;
                     }
                 }
+
+                stats.Rows.Add(new MedicationStatRow
+                {
+                    ReportNumber = reportNumberStr,
+                    Medication = medicationStr,
+                    Result = resultStr,
+                    StartIndex = startIndex,
+                    MatchInText = matchInTextStr,
+                    IsHallucination = isHallucination
+                });
             }
 
             return stats;

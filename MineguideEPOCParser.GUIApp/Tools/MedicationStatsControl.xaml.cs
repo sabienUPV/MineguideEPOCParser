@@ -2,16 +2,25 @@ using Microsoft.Win32;
 using MineguideEPOCParser.Core.Parsers.Configurations;
 using MineguideEPOCParser.Core.Tools;
 using MineguideEPOCParser.Core.Validation;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 
 namespace MineguideEPOCParser.GUIApp.Tools
 {
     public partial class MedicationStatsControl : UserControl
     {
+        private readonly ObservableCollection<MedicationStatRow> _allRows = [];
+        private readonly ICollectionView? _filteredView;
+
         public MedicationStatsControl()
         {
             InitializeComponent();
+            _filteredView = CollectionViewSource.GetDefaultView(_allRows);
+            _filteredView.Filter = FilterRows;
+            DetailsDataGrid.ItemsSource = _filteredView;
         }
 
         private void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -45,7 +54,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     CultureName = MedicationManualValidatorControl.DefaultCultureName, // TODO: Allow user to select culture if needed
                     InputFile = filePath,
                     OutputFile = string.Empty,
-                    ValidationFunction = (s, m, c) => Task.FromResult(Array.Empty<MedicationResult>()) // Not used here
+                    ValidationFunction = (s, m, c) => Task.FromResult(Array.Empty<MedicationResult>())
                 };
 
                 var stats = await MedicationExperimentStatsCalculator.CalculateStatsAsync(filePath, config);
@@ -65,6 +74,12 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 F1ScoreTextBox.Text = stats.F1Score.ToString("F4");
                 F1ScorePercentageTextBox.Text = stats.F1Score.ToString("P4");
 
+                _allRows.Clear();
+                foreach (var row in stats.Rows)
+                {
+                    _allRows.Add(row);
+                }
+
                 ResultsGrid.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
@@ -75,6 +90,45 @@ namespace MineguideEPOCParser.GUIApp.Tools
             {
                 CalculateButton.IsEnabled = true;
             }
+        }
+
+        private void FilterChanged(object sender, EventArgs e)
+        {
+            _filteredView?.Refresh();
+        }
+
+        private bool FilterRows(object obj)
+        {
+            if (obj is not MedicationStatRow row) return false;
+
+            // Result filter
+            if (ResultFilterComboBox.SelectedItem is ComboBoxItem selectedItem)
+            {
+                var filterValue = selectedItem.Content.ToString();
+                if (filterValue != "All")
+                {
+                    if (filterValue == "Hallucination")
+                    {
+                        if (!row.IsHallucination) return false;
+                    }
+                    else if (row.Result != filterValue)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // Medication filter
+            var medFilter = MedicationFilterTextBox.Text;
+            if (!string.IsNullOrWhiteSpace(medFilter))
+            {
+                if (row.Medication == null || !row.Medication.Contains(medFilter, StringComparison.OrdinalIgnoreCase))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
