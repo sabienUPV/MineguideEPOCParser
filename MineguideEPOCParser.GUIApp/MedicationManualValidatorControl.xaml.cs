@@ -451,7 +451,7 @@ namespace MineguideEPOCParser.GUIApp
             e.Handled = true;
         }
 
-        public const string DefaultCultureName = "es-ES";
+        public const string DefaultCultureName = "es-ES"; // TODO: Allow user to select culture if needed
 
         private CancellationTokenSource? _cancellationTokenSource;
         private async void LoadMedications(object? sender, RoutedEventArgs args) => await LoadMedications();
@@ -476,7 +476,7 @@ namespace MineguideEPOCParser.GUIApp
             // Create parser configuration
             var configuration = new MedicationManualValidatorParserConfiguration
             {
-                CultureName = DefaultCultureName,
+                CultureName = DefaultCultureName, // TODO: Allow user to select culture if needed
                 InputFile = inputFile,
                 OutputFile = outputFile,
                 ValidationFunction = ValidateMedications,

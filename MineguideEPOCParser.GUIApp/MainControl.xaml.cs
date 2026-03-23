@@ -19,7 +19,8 @@ namespace MineguideEPOCParser.GUIApp
             ("File Encoding Converter", () => new FileEncodingConverterControl()),
             ("Measurements Parser", () => new MeasurementsParserControl()),
             ("Medication Manual Validator", () => new MedicationManualValidatorControl()),
-            ("Random Sampler Parser", () => new RandomSamplerParserControl())
+            ("Random Sampler Parser", () => new RandomSamplerParserControl()),
+            ("Medication Experiment Stats", () => new MedicationStatsControl())
         ];
 
         public MainControl()
