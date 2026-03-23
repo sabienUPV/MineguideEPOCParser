@@ -420,7 +420,7 @@ namespace MineguideEPOCParser.Core.Parsers
                 // 4. Set the medication name (overwrites or sets for new rows)
                 newRow[medicationIndex] = validatedMedication.ExtractedMedication;
 
-                // 5. Graft the freshly calculated validation stats immediately after the InputRowNumber column
+                // 5. Insert the freshly calculated validation stats immediately after the InputRowNumber column
                 Array.Copy(medicationMatchValues, 0, newRow, firstIndexOfDetails, medicationMatchValues.Length);
 
                 yield return newRow;
