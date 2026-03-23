@@ -2,6 +2,7 @@
 using MineguideEPOCParser.Core.Parsers.Configurations;
 using MineguideEPOCParser.Core.Utils;
 using MineguideEPOCParser.Core.Validation;
+using MineguideEPOCParser.GUIApp.Utils;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,7 +10,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace MineguideEPOCParser.GUIApp
+namespace MineguideEPOCParser.GUIApp.Tools
 {
     /// <summary>
     /// Lógica de interacción para MedicationManualValidatorControl.xaml

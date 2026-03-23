@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 
-namespace MineguideEPOCParser.GUIApp
+namespace MineguideEPOCParser.GUIApp.Tools
 {
     /// <summary>
     /// Lógica de interacción para MeasurementsParserControl.xaml

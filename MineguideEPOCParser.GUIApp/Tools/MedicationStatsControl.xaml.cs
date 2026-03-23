@@ -5,7 +5,7 @@ using MineguideEPOCParser.Core.Validation;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace MineguideEPOCParser.GUIApp
+namespace MineguideEPOCParser.GUIApp.Tools
 {
     public partial class MedicationStatsControl : UserControl
     {

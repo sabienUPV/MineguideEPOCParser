@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MineguideEPOCParser.GUIApp.FileEncodingConverterControl"
+﻿<UserControl x:Class="MineguideEPOCParser.GUIApp.Tools.MedicationMapperGroupingControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -32,26 +32,53 @@
                 <RowDefinition Height="auto" />
                 <RowDefinition Height="10" />
                 <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
+                <RowDefinition Height="10" />
+                <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
-            <!-- Input file -->
-            <Label Grid.Row="0" Grid.Column="0" Content="Input file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
-            <TextBox Grid.Row="0" Grid.Column="2" x:Name="InputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
-            <Button Grid.Row="0" Grid.Column="4" x:Name="BrowseInputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseInputFileButton_Click" />
+            <!-- Input mapping file (CSV) -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Input mapping file (CSV):" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="0" Grid.Column="2" x:Name="InputMappingFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Button Grid.Row="0" Grid.Column="4" x:Name="BrowseInputMappingFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseInputMappingFileButton_Click" />
 
-            <!-- Output file -->
-            <Label Grid.Row="2" Grid.Column="0" Content="Output file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
-            <TextBox Grid.Row="2" Grid.Column="2" x:Name="OutputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
-            <Button Grid.Row="2" Grid.Column="4" x:Name="BrowseOutputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseOutputFileButton_Click" />
 
-            <!-- File culture -->
-            <Label Grid.Row="4" Grid.Column="0" Content="File encoding:" VerticalAlignment="Center" HorizontalAlignment="Left" />
-            <ComboBox Grid.Row="4" Grid.Column="2" x:Name="FileEncodingComboBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200" IsEnabled="False">
-                <ComboBoxItem Content="ISO-8859-1" IsSelected="True" />
+            <!-- Input grouping file (JSON) -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Input grouping file (JSON):" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="2" Grid.Column="2" x:Name="InputGroupingFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Button Grid.Row="2" Grid.Column="4" x:Name="BrowseInputGroupingFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseInputGroupingFileButton_Click" />
+
+            <!-- Output file (CSV) -->
+            <Label Grid.Row="4" Grid.Column="0" Content="Output file (CSV):" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="4" Grid.Column="2" x:Name="OutputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+            <Button Grid.Row="4" Grid.Column="4" x:Name="BrowseOutputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseOutputFileButton_Click" />
+
+            <!-- CSV File culture -->
+            <Label Grid.Row="6" Grid.Column="0" Content="CSV File culture:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <ComboBox Grid.Row="6" Grid.Column="2" x:Name="FileCultureComboBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
+                <ComboBoxItem Content="es-ES" IsSelected="True" />
+                <ComboBoxItem Content="en-US" />
+                <ComboBoxItem Content="en-GB" />
+                <ComboBoxItem Content="de-DE" />
+                <ComboBoxItem Content="fr-FR" />
+                <ComboBoxItem Content="it-IT" />
+                <ComboBoxItem Content="nl-NL" />
+                <ComboBoxItem Content="pl-PL" />
+                <ComboBoxItem Content="pt-PT" />
+                <ComboBoxItem Content="ru-RU" />
+                <ComboBoxItem Content="tr-TR" />
+                <ComboBoxItem Content="zh-CN" />
+                <ComboBoxItem Content="ja-JP" />
+                <ComboBoxItem Content="ko-KR" />
             </ComboBox>
 
+            <!-- Row count -->
+            <Label Grid.Row="8" Grid.Column="0" Content="Row count:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <TextBox Grid.Row="8" Grid.Column="2" x:Name="RowCountTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
+
             <!-- Parse button -->
-            <Button Grid.Row="6" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
+            <Button Grid.Row="10" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
         </Grid>
 
         <!-- Progress bar, cancel button and log viewer -->

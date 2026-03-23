@@ -1,4 +1,5 @@
-﻿using MineguideEPOCParser.Core.Tools;
+﻿using MineguideEPOCParser.Core.Parsers;
+using MineguideEPOCParser.Core.Parsers.Configurations;
 using MineguideEPOCParser.Core.Utils;
 using Serilog;
 using Serilog.Core;
@@ -8,18 +9,18 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 
-namespace MineguideEPOCParser.GUIApp
+namespace MineguideEPOCParser.GUIApp.Tools
 {
     /// <summary>
-    /// Lógica de interacción para MedicationGroupingToMapperControl.xaml
+    /// Lógica de interacción para RandomSamplerParserControl.xaml
     /// </summary>
-    public partial class MedicationGroupingToMapperControl : UserControl
+    public partial class RandomSamplerParserControl : UserControl, IDisposable, IAsyncDisposable
     {
         // Dependency property IsParsing
         public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
             nameof(IsParsing),
             typeof(bool),
-            typeof(MedicationGroupingToMapperControl),
+            typeof(RandomSamplerParserControl),
             new PropertyMetadata(false)
         );
 
@@ -27,7 +28,7 @@ namespace MineguideEPOCParser.GUIApp
         public static readonly DependencyProperty IsNotParsingProperty = DependencyProperty.Register(
             nameof(IsNotParsing),
             typeof(bool),
-            typeof(MedicationGroupingToMapperControl),
+            typeof(RandomSamplerParserControl),
             new PropertyMetadata(true)
         );
 
@@ -51,6 +52,9 @@ namespace MineguideEPOCParser.GUIApp
             }
         }
 
+        // Parser
+        private IDataParser? Parser { get; set; }
+
         // Timer
         private DispatcherTimer? _dispatcherTimer;
         private TimeSpan _elapsedTime = TimeSpan.Zero;
@@ -65,12 +69,19 @@ namespace MineguideEPOCParser.GUIApp
         // Progress reporting
         private Progress<ProgressValue>? Progress { get; set; }
 
-        public MedicationGroupingToMapperControl()
+        // Custom properties for UI fields
+        // Since the TextBox only contains a string, we can use this property to store the actual array of exclude files
+        private string[]? ExcludeFiles { get; set; }
+
+        public RandomSamplerParserControl()
         {
             InitializeComponent();
 
             // Create a new progress object
             CreateProgress();
+
+            // Set the default value for the sample size text box
+            SampleSizeTextBox.Text = RandomSamplerParserConfiguration.DefaultSampleSize.ToString();
 
 #if DEBUG
             // Setup test autocompletions
@@ -115,22 +126,22 @@ namespace MineguideEPOCParser.GUIApp
                 MinimumLevel = GetLogLevelFromComboBox()
             };
 
-            //// Get input file name without extension
-            //var inputFileName = Path.GetFileNameWithoutExtension(InputFileTextBox.Text);
+            // Get input file name without extension
+            var inputFileName = Path.GetFileNameWithoutExtension(InputFileTextBox.Text);
 
-            //// Get directory from output file path
-            //var outputDirectory = Path.GetDirectoryName(OutputFileTextBox.Text);
+            // Get directory from output file path
+            var outputDirectory = Path.GetDirectoryName(OutputFileTextBox.Text);
 
-            //// If the output directory is empty, use the current directory
-            //var logFileDirectory = string.IsNullOrEmpty(outputDirectory) ? "." : outputDirectory;
+            // If the output directory is empty, use the current directory
+            var logFileDirectory = string.IsNullOrEmpty(outputDirectory) ? "." : outputDirectory;
 
-            //var logFilePath = Path.Combine(logFileDirectory, $"MineguideEPOCParser-GroupingToMapper-{inputFileName}-.log");
+            var logFilePath = Path.Combine(logFileDirectory, $"MineguideEPOCParser-{inputFileName}-.log");
 
             // Create a new logger
             Logger = new LoggerConfiguration()
                 .MinimumLevel.ControlledBy(LoggingLevelSwitch)
                 .WriteTo.RichTextBox(LogRichTextBox)
-                //.WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
+                .WriteTo.File(logFilePath, rollingInterval: RollingInterval.Day)
                 .CreateLogger();
         }
 
@@ -169,6 +180,16 @@ namespace MineguideEPOCParser.GUIApp
                     ProgressRowsProcessedTextBlock.Text = $"Rows processed: {value.RowsProcessed}";
                 }
             });
+        }
+
+        private IDataParser CreateParser(RandomSamplerParserConfiguration configuration)
+        {
+            return new RandomSamplerParser()
+            {
+                Configuration = configuration,
+                Logger = Logger,
+                Progress = Progress,
+            };
         }
 
         public void Dispose()
@@ -219,18 +240,25 @@ namespace MineguideEPOCParser.GUIApp
             }
 
             // Get the culture name from the combo box
-            //string cultureName = FileCultureComboBox.Text;
+            string cultureName = FileCultureComboBox.Text;
 
-            //bool isRowCountValid = int.TryParse(RowCountTextBox.Text, out var rowCount);
-
-            // Get if only top categories should be included
-            bool onlyTopCategories = OnlyTopCategoriesCheckBox.IsChecked == true;
+            int sampleSize = int.Parse(SampleSizeTextBox.Text);
 
             // Create a new logger
             CreateLogger();
 
             // Run timer
             StartTimer();
+
+            var configuration = new RandomSamplerParserConfiguration()
+            {
+                CultureName = cultureName,
+                InputFile = inputFile,
+                OutputFile = outputFile,
+                SampleSize = sampleSize,
+                ExcludeFiles = ExcludeFiles,
+                // Seed = RandomSamplerParserConfiguration.DefaultSeed // 1947 is the default seed
+            };
 
             // Clear the log
             LogRichTextBox.Document.Blocks.Clear();
@@ -252,12 +280,9 @@ namespace MineguideEPOCParser.GUIApp
             {
                 try
                 {
-                    await GroupingToMapperTransformer.Transform(inputFile, outputFile, onlyTopCategories, CancellationTokenSource.Token);
+                    Parser = CreateParser(configuration);
 
-                    Logger?.Information("Parsing has been completed successfully.");
-
-                    // Manually report 100% progress
-                    (Progress as IProgress<ProgressValue>)?.Report(new ProgressValue { Value = 1 });
+                    await Parser.ParseData(CancellationTokenSource.Token);
                 }
                 finally
                 {
@@ -305,6 +330,9 @@ namespace MineguideEPOCParser.GUIApp
 
                 // Set the timer to null
                 _dispatcherTimer = null;
+
+                // Set the parser to null
+                Parser = null;
             }
 
         }
@@ -326,53 +354,72 @@ namespace MineguideEPOCParser.GUIApp
 
         private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            InputFileTextBox.Text = BrowseJsonFile<Microsoft.Win32.OpenFileDialog>(InputFileTextBox.Text) ?? string.Empty;
+            InputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.OpenFileDialog>(InputFileTextBox.Text) ?? string.Empty;
         }
 
         private void BrowseOutputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medicationGroupsMapper.csv") ?? string.Empty;
+            OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medication.csv") ?? string.Empty;
+        }
+
+        private void BrowseExcludeFilesButton_Click(object sender, RoutedEventArgs e)
+        {
+            ExcludeFiles = BrowseOpenCsvFiles();
+            ExcludeFilesTextBox.Text = ExcludeFiles is null || ExcludeFiles.Length == 0
+                ? string.Empty
+                : JoinCsvFilesForDisplayInTextBox(ExcludeFiles);
         }
 
         private static string? BrowseCsvFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
             where TFileDialog : Microsoft.Win32.FileDialog, new()
         {
-            return BrowseFile<TFileDialog>("CSV files (*.csv)|*.csv|All files (*.*)|*.*", currentPath, defaultFileName);
+            var dialog = GetBrowseCsvFileDialog<TFileDialog>(currentPath, defaultFileName);
+            if (dialog.ShowDialog() == true)
+            {
+                return dialog.FileName;
+            }
+            return null;
         }
 
-        private static string? BrowseJsonFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
-            where TFileDialog : Microsoft.Win32.FileDialog, new()
+        private static string[]? BrowseOpenCsvFiles(string? currentPath = null, string? defaultFileName = null)
         {
-            return BrowseFile<TFileDialog>("JSON files (*.json)|*.json|All files (*.*)|*.*", currentPath, defaultFileName);
+            var dialog = GetBrowseCsvFileDialog<Microsoft.Win32.OpenFileDialog>(currentPath, defaultFileName);
+            dialog.Multiselect = true;
+
+            if (dialog.ShowDialog() == true)
+            {
+                return dialog.FileNames;
+            }
+            return null;
         }
 
-        private static string? BrowseFile<TFileDialog>(string filter, string? currentPath = null, string? defaultFileName = null)
+        private static string JoinCsvFilesForDisplayInTextBox(string[] files)
+        {
+            // Do the same as Windows' file dialog does for showing it in the UI:
+            // wrap the file names in quotes and separate them with a space if there are multiple files
+            return string.Join(" ", files.Select(f => $"\"{f}\""));
+        }
+
+        private static TFileDialog GetBrowseCsvFileDialog<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
             where TFileDialog : Microsoft.Win32.FileDialog, new()
         {
             // Create a new file dialog
             var dialog = new TFileDialog()
             {
-                Filter = filter,
+                Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
             };
 
             if (!string.IsNullOrEmpty(currentPath))
             {
-                dialog.InitialDirectory = System.IO.Path.GetDirectoryName(currentPath);
-                dialog.FileName = System.IO.Path.GetFileName(currentPath);
+                dialog.InitialDirectory = Path.GetDirectoryName(currentPath);
+                dialog.FileName = Path.GetFileName(currentPath);
             }
             else if (defaultFileName is not null)
             {
                 dialog.FileName = defaultFileName;
             }
 
-            // Show the dialog
-            if (dialog.ShowDialog() == true)
-            {
-                // Return the selected file
-                return dialog.FileName;
-            }
-
-            return null;
+            return dialog;
         }
 
         private void LogLevelComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)

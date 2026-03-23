@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace MineguideEPOCParser.GUIApp
+namespace MineguideEPOCParser.GUIApp.Utils
 {
     public partial class InputBoxWindow : Window
     {

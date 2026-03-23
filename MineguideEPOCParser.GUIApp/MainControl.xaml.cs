@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using MineguideEPOCParser.GUIApp.Tools;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace MineguideEPOCParser.GUIApp

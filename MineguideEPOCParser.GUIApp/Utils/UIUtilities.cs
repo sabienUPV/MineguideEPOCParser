@@ -1,7 +1,7 @@
 ﻿using Serilog;
 using System.Windows.Threading;
 
-namespace MineguideEPOCParser.GUIApp
+namespace MineguideEPOCParser.GUIApp.Utils
 {
     public static class UIUtilities
     {

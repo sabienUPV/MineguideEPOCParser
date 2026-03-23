@@ -31,22 +31,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="FileEncodingConverterControl.xaml.cs">
+    <Compile Update="Tools\FileEncodingConverterControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="RandomSamplerParserControl.xaml.cs">
+    <Compile Update="Tools\RandomSamplerParserControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="MedicationMapperGroupingControl.xaml.cs">
+    <Compile Update="Tools\MedicationMapperGroupingControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="MeasurementsParserControl.xaml.cs">
+    <Compile Update="Tools\MeasurementsParserControl.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <Page Update="MeasurementsParserControl.xaml">
+    <Page Update="Tools\MeasurementsParserControl.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>

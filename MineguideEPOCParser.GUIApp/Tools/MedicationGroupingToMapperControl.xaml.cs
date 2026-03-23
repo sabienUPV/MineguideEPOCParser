@@ -1,26 +1,24 @@
-﻿using MineguideEPOCParser.Core.Parsers;
-using MineguideEPOCParser.Core.Parsers.Configurations;
+﻿using MineguideEPOCParser.Core.Tools;
 using MineguideEPOCParser.Core.Utils;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 
-namespace MineguideEPOCParser.GUIApp
+namespace MineguideEPOCParser.GUIApp.Tools
 {
     /// <summary>
-    /// Lógica de interacción para MedicationMapperGroupingControl.xaml
+    /// Lógica de interacción para MedicationGroupingToMapperControl.xaml
     /// </summary>
-    public partial class MedicationMapperGroupingControl : UserControl, IDisposable, IAsyncDisposable
+    public partial class MedicationGroupingToMapperControl : UserControl
     {
         // Dependency property IsParsing
         public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
             nameof(IsParsing),
             typeof(bool),
-            typeof(MedicationMapperGroupingControl),
+            typeof(MedicationGroupingToMapperControl),
             new PropertyMetadata(false)
         );
 
@@ -28,7 +26,7 @@ namespace MineguideEPOCParser.GUIApp
         public static readonly DependencyProperty IsNotParsingProperty = DependencyProperty.Register(
             nameof(IsNotParsing),
             typeof(bool),
-            typeof(MedicationMapperGroupingControl),
+            typeof(MedicationGroupingToMapperControl),
             new PropertyMetadata(true)
         );
 
@@ -52,9 +50,6 @@ namespace MineguideEPOCParser.GUIApp
             }
         }
 
-        // Parser
-        private MedicationMapperGroupingParser? MedicationParser { get; set; }
-
         // Timer
         private DispatcherTimer? _dispatcherTimer;
         private TimeSpan _elapsedTime = TimeSpan.Zero;
@@ -69,7 +64,7 @@ namespace MineguideEPOCParser.GUIApp
         // Progress reporting
         private Progress<ProgressValue>? Progress { get; set; }
 
-        public MedicationMapperGroupingControl()
+        public MedicationGroupingToMapperControl()
         {
             InitializeComponent();
 
@@ -120,7 +115,7 @@ namespace MineguideEPOCParser.GUIApp
             };
 
             //// Get input file name without extension
-            //var inputFileName = Path.GetFileNameWithoutExtension(InputMappingFileTextBox.Text);
+            //var inputFileName = Path.GetFileNameWithoutExtension(InputFileTextBox.Text);
 
             //// Get directory from output file path
             //var outputDirectory = Path.GetDirectoryName(OutputFileTextBox.Text);
@@ -128,7 +123,7 @@ namespace MineguideEPOCParser.GUIApp
             //// If the output directory is empty, use the current directory
             //var logFileDirectory = string.IsNullOrEmpty(outputDirectory) ? "." : outputDirectory;
 
-            //var logFilePath = Path.Combine(logFileDirectory, $"MineguideEPOCParser-Grouping-{inputFileName}-.log");
+            //var logFilePath = Path.Combine(logFileDirectory, $"MineguideEPOCParser-GroupingToMapper-{inputFileName}-.log");
 
             // Create a new logger
             Logger = new LoggerConfiguration()
@@ -212,39 +207,29 @@ namespace MineguideEPOCParser.GUIApp
         private async void ParseButton_Click(object sender, RoutedEventArgs e)
         {
             // Get the input and output files from the text boxes
-            string inputMappingFile = InputMappingFileTextBox.Text;
-            string inputGroupingFile = InputGroupingFileTextBox.Text;
+            string inputFile = InputFileTextBox.Text;
             string outputFile = OutputFileTextBox.Text;
 
-            // Check for empty input mapping, input grouping, or output file
-            if (string.IsNullOrEmpty(inputMappingFile) || string.IsNullOrEmpty(inputGroupingFile) || string.IsNullOrEmpty(outputFile))
+            // Check for empty input or output file
+            if (string.IsNullOrEmpty(inputFile) || string.IsNullOrEmpty(outputFile))
             {
-                MessageBox.Show("Please select an input mapping, input grouping, and output file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Please select an input and output file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             // Get the culture name from the combo box
-            string cultureName = FileCultureComboBox.Text;
+            //string cultureName = FileCultureComboBox.Text;
 
-            bool isRowCountValid = int.TryParse(RowCountTextBox.Text, out var rowCount);
+            //bool isRowCountValid = int.TryParse(RowCountTextBox.Text, out var rowCount);
+
+            // Get if only top categories should be included
+            bool onlyTopCategories = OnlyTopCategoriesCheckBox.IsChecked == true;
 
             // Create a new logger
             CreateLogger();
 
             // Run timer
             StartTimer();
-
-            var configuration = new MedicationMapperGroupingParserConfiguration()
-            {
-                CultureName = cultureName,
-                InputFile = inputMappingFile,
-                InputGroupingFile = inputGroupingFile,
-                OutputFile = outputFile,
-                RowLimit = isRowCountValid ? rowCount : null,
-                // Overwrite the column by default
-                // TODO: Add a checkbox to allow the user to choose whether to overwrite the column or add a new column
-                OverwriteInputTargetColumn = true,
-            };
 
             // Clear the log
             LogRichTextBox.Document.Blocks.Clear();
@@ -266,14 +251,12 @@ namespace MineguideEPOCParser.GUIApp
             {
                 try
                 {
-                    MedicationParser = new MedicationMapperGroupingParser()
-                    {
-                        Configuration = configuration,
-                        Logger = Logger,
-                        Progress = Progress,
-                    };
+                    await GroupingToMapperTransformer.Transform(inputFile, outputFile, onlyTopCategories, CancellationTokenSource.Token);
 
-                    await MedicationParser.ParseData(CancellationTokenSource.Token);
+                    Logger?.Information("Parsing has been completed successfully.");
+
+                    // Manually report 100% progress
+                    (Progress as IProgress<ProgressValue>)?.Report(new ProgressValue { Value = 1 });
                 }
                 finally
                 {
@@ -321,9 +304,6 @@ namespace MineguideEPOCParser.GUIApp
 
                 // Set the timer to null
                 _dispatcherTimer = null;
-
-                // Set the parser to null
-                MedicationParser = null;
             }
 
         }
@@ -343,19 +323,14 @@ namespace MineguideEPOCParser.GUIApp
             _dispatcherTimer = null;
         }
 
-        private void BrowseInputMappingFileButton_Click(object sender, RoutedEventArgs e)
+        private void BrowseInputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            InputMappingFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.OpenFileDialog>(InputMappingFileTextBox.Text) ?? string.Empty;
-        }
-
-        private void BrowseInputGroupingFileButton_Click(object sender, RoutedEventArgs e)
-        {
-            InputGroupingFileTextBox.Text = BrowseJsonFile<Microsoft.Win32.OpenFileDialog>(InputGroupingFileTextBox.Text) ?? string.Empty;
+            InputFileTextBox.Text = BrowseJsonFile<Microsoft.Win32.OpenFileDialog>(InputFileTextBox.Text) ?? string.Empty;
         }
 
         private void BrowseOutputFileButton_Click(object sender, RoutedEventArgs e)
         {
-            OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medicationMapper.csv") ?? string.Empty;
+            OutputFileTextBox.Text = BrowseCsvFile<Microsoft.Win32.SaveFileDialog>(OutputFileTextBox.Text, "medicationGroupsMapper.csv") ?? string.Empty;
         }
 
         private static string? BrowseCsvFile<TFileDialog>(string? currentPath = null, string? defaultFileName = null)
@@ -460,7 +435,7 @@ namespace MineguideEPOCParser.GUIApp
             ParametersGrid.Children.Add(testJuanOutputButton);
             ParametersGrid.Children.Add(testAlejandroOutputButton);
 
-            const int inputRow = 0, outputRow = 4;
+            const int inputRow = 0, outputRow = 2;
 
             int juanColumn = ParametersGrid.ColumnDefinitions.Count - 3;
             int alejandroColumn = ParametersGrid.ColumnDefinitions.Count - 1;
@@ -484,11 +459,11 @@ namespace MineguideEPOCParser.GUIApp
         }
         private void TEST_Juan_Input_Button_Click(object sender, RoutedEventArgs e)
         {
-            InputMappingFileTextBox.Text = TestConfigurations.JuanInputFile;
+            InputFileTextBox.Text = TestConfigurations.JuanInputFile;
         }
         private void TEST_Alejandro_Input_Button_Click(object sender, RoutedEventArgs e)
         {
-            InputMappingFileTextBox.Text = TestConfigurations.AlejandroInputFile;
+            InputFileTextBox.Text = TestConfigurations.AlejandroInputFile;
         }
         private void TEST_Juan_Output_Button_Click(object sender, RoutedEventArgs e)
         {

@@ -2,6 +2,7 @@
 using MineguideEPOCParser.Core.Parsers;
 using MineguideEPOCParser.Core.Parsers.Configurations;
 using MineguideEPOCParser.Core.Utils;
+using MineguideEPOCParser.GUIApp.Utils;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -11,7 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
 
-namespace MineguideEPOCParser.GUIApp
+namespace MineguideEPOCParser.GUIApp.Tools
 {
     /// <summary>
     /// Lógica de interacción para MedicationParserControl.xaml

@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="MineguideEPOCParser.GUIApp.MedicationParserControl"
+﻿<UserControl x:Class="MineguideEPOCParser.GUIApp.Tools.MeasurementsParserControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -7,7 +7,7 @@
              mc:Ignorable="d"
              DataContext="{Binding RelativeSource={RelativeSource Self}}"
              d:DesignHeight="618" d:DesignWidth="867">
-    <Grid Margin="10" VerticalAlignment="Stretch">
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto" />
             <RowDefinition Height="20" />
@@ -42,20 +42,22 @@
                 <RowDefinition Height="auto" />
             </Grid.RowDefinitions>
 
-            <!-- Input files -->
-            <Label Grid.Row="0" Grid.Column="0" Content="Input files:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <!-- Input file -->
+            <Label Grid.Row="0" Grid.Column="0" Content="Input file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
             <TextBox Grid.Row="0" Grid.Column="2" x:Name="InputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
             <Button Grid.Row="0" Grid.Column="4" x:Name="BrowseInputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseInputFileButton_Click" />
 
-            <!-- Output files -->
-            <Label Grid.Row="2" Grid.Column="0" Content="Output files:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <!-- Output file -->
+            <Label Grid.Row="2" Grid.Column="0" Content="Output file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
             <TextBox Grid.Row="2" Grid.Column="2" x:Name="OutputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
             <Button Grid.Row="2" Grid.Column="4" x:Name="BrowseOutputFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowseOutputFileButton_Click" />
 
-            <!-- Prompts file -->
-            <Label Grid.Row="4" Grid.Column="0" Content="Prompts file:" VerticalAlignment="Center" HorizontalAlignment="Left" />
-            <TextBox Grid.Row="4" Grid.Column="2" x:Name="PromptsFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="400" />
-            <Button Grid.Row="4" Grid.Column="4" x:Name="BrowsePromptsFileButton" Content="Browse" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BrowsePromptsFileButton_Click" />
+            <!-- Parser (simple/complex) -->
+            <Label Grid.Row="4" Grid.Column="0" Content="Parser:" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <ComboBox Grid.Row="4" Grid.Column="2" x:Name="ParserComboBox" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
+                <ComboBoxItem Content="Simple (ONLY FEV1 in %)" IsSelected="True" />
+                <ComboBoxItem Content="Complex (LLM, many types)" />
+            </ComboBox>
 
             <!-- File culture -->
             <Label Grid.Row="6" Grid.Column="0" Content="File culture:" VerticalAlignment="Center" HorizontalAlignment="Left" />
@@ -83,15 +85,15 @@
             <!-- Overwrite column -->
             <CheckBox Grid.Row="10" Grid.Column="2" x:Name="OverwriteColumnCheckBox" Content="Overwrite column" VerticalAlignment="Center" HorizontalAlignment="Left" />
 
-            <!-- Decode HTML from Input -->
-            <CheckBox Grid.Row="12" Grid.Column="2" x:Name="DecodeHtmlCheckBox" Content="Decode HTML from Input" VerticalAlignment="Center" HorizontalAlignment="Left" />
+            <!-- Decode HTML from Input (true by default) -->
+            <CheckBox Grid.Row="12" Grid.Column="2" x:Name="DecodeHtmlCheckBox" Content="Decode HTML from Input" VerticalAlignment="Center" HorizontalAlignment="Left" IsChecked="True" />
 
             <!-- Parse button -->
             <Button Grid.Row="14" Grid.Column="2" x:Name="ParseButton" Content="Parse" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="ParseButton_Click" IsEnabled="{Binding IsNotParsing}" />
         </Grid>
 
         <!-- Progress bar, cancel button and log viewer -->
-        <Grid Grid.Row="2" VerticalAlignment="Stretch">
+        <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="5" />
@@ -117,11 +119,7 @@
             <TextBlock Grid.Column="2" x:Name="ProgressPercentageTextBlock" Text="0%" VerticalAlignment="Center" HorizontalAlignment="Center" />
 
             <!-- Progress rows processed text -->
-            <StackPanel Grid.Column="4" Orientation="Vertical" VerticalAlignment="Center">
-                <TextBlock x:Name="ProgressRowsProcessedTextBlock" Text="Rows processed: 0" HorizontalAlignment="Left" />
-                <TextBlock x:Name="ProgressFilesProcessedTextBlock" Text="Files processed: 0" Margin="0 5 0 0" HorizontalAlignment="Left" Visibility="Collapsed" />
-                <TextBlock x:Name="ProgressPromptsProcessedTextBlock" Text="Prompts processed: 0" Margin="0 5 0 0" HorizontalAlignment="Left" Visibility="Collapsed" />
-            </StackPanel>
+            <TextBlock Grid.Column="4" x:Name="ProgressRowsProcessedTextBlock" Text="Rows processed: 0" VerticalAlignment="Center" HorizontalAlignment="Left" />
 
             <!-- Timer -->
             <TextBlock Grid.Column="6" x:Name="TimerTextBlock" Text="00:00:00" VerticalAlignment="Center" HorizontalAlignment="Left"/>
@@ -130,7 +128,7 @@
             <Button Grid.Column="8" x:Name="CancelButton" Content="Cancel" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="CancelButton_Click" IsEnabled="{Binding IsParsing}" Width="57" />
 
             <!-- Log viewer in expander (expanded by default) -->
-            <Expander Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="9" x:Name="LogExpander" Header="View logs" IsExpanded="True" VerticalAlignment="Stretch">
+            <Expander Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="9" x:Name="LogExpander" Header="View logs" IsExpanded="True">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="auto" />
@@ -147,10 +145,10 @@
                     <!-- Select log level -->
                     <Label Grid.Row="0" Grid.Column="0" Content="Log level:" VerticalAlignment="Center" HorizontalAlignment="Left" />
                     <ComboBox Grid.Row="0" Grid.Column="2" x:Name="LogLevelComboBox" SelectionChanged="LogLevelComboBox_SelectionChanged" VerticalAlignment="Center" HorizontalAlignment="Left" Width="200">
-                        <ComboBoxItem Content="Verbose" />
+                        <ComboBoxItem Content="Verbose" IsSelected="True" />
                         <ComboBoxItem Content="Debug" />
                         <ComboBoxItem Content="Information" />
-                        <ComboBoxItem Content="Warning" IsSelected="True" />
+                        <ComboBoxItem Content="Warning" />
                         <ComboBoxItem Content="Error" />
                         <ComboBoxItem Content="Fatal" />
                     </ComboBox>
@@ -159,7 +157,6 @@
                     <RichTextBox
                         Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
                         x:Name="LogRichTextBox"
-                        VerticalAlignment="Stretch"
                         Background="Black"
                         Foreground="LightGray"
                         FontFamily="Cascadia Mono, Consolas, Courier New, monospace"
