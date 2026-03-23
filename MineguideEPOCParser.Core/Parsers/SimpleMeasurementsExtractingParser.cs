@@ -1,8 +1,9 @@
-﻿using System.Net;
+﻿using MineguideEPOCParser.Core.Parsers.Configurations;
+using System.Net;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Parsers
 {
     /// <summary>
     /// Simple version of the parser (only FEV1 %, no LLM)

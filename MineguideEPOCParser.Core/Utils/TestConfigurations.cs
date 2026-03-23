@@ -1,4 +1,6 @@
-﻿namespace MineguideEPOCParser.Core
+﻿using MineguideEPOCParser.Core.Parsers.Configurations;
+
+namespace MineguideEPOCParser.Core.Utils
 {
 	public static class TestConfigurations
 	{

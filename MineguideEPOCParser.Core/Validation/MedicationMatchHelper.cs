@@ -1,4 +1,4 @@
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Validation
 {
     public static class MedicationMatchHelper
     {

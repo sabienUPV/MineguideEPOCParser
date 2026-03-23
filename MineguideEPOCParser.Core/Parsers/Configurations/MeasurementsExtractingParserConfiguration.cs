@@ -1,4 +1,4 @@
-﻿namespace MineguideEPOCParser.Core
+﻿namespace MineguideEPOCParser.Core.Parsers.Configurations
 {
     public class MeasurementsData
     {

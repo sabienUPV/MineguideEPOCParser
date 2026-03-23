@@ -1,4 +1,7 @@
-﻿using MineguideEPOCParser.Core;
+﻿using MineguideEPOCParser.Core.Parsers;
+using MineguideEPOCParser.Core.Parsers.Configurations;
+using MineguideEPOCParser.Core.Utils;
+using MineguideEPOCParser.Core.Validation;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;

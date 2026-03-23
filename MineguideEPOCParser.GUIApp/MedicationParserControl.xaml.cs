@@ -1,5 +1,7 @@
 ﻿using Microsoft.Win32;
-using MineguideEPOCParser.Core;
+using MineguideEPOCParser.Core.Parsers;
+using MineguideEPOCParser.Core.Parsers.Configurations;
+using MineguideEPOCParser.Core.Utils;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -7,8 +9,6 @@ using Serilog.Formatting.Compact;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
-using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace MineguideEPOCParser.GUIApp

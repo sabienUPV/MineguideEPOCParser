@@ -1,6 +1,8 @@
-﻿using Serilog;
+﻿using MineguideEPOCParser.Core.Parsers.Configurations;
+using MineguideEPOCParser.Core.Utils;
+using Serilog;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Parsers
 {
     public interface IDataParser
     {

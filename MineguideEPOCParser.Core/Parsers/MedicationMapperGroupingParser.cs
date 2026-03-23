@@ -1,7 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using MineguideEPOCParser.Core.Parsers.Configurations;
+using MineguideEPOCParser.Core.Utils;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Parsers
 {
     public class MedicationMapperGroupingParser : DataParser<MedicationMapperGroupingParserConfiguration>
     {
@@ -79,13 +81,5 @@ namespace MineguideEPOCParser.Core
                 yield return newRow;
             }
         }
-    }
-
-    public class MedicationMapperGroupingParserConfiguration : DataParserConfiguration
-    {
-        public required string InputGroupingFile { get; set; }
-
-        public const string ReplacementHeaderName = "NewName";
-        public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (ReplacementHeaderName, [ReplacementHeaderName]);
     }
 }

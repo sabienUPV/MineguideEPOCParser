@@ -1,7 +1,10 @@
-﻿using System.Net;
+﻿using MineguideEPOCParser.Core.LLM;
+using MineguideEPOCParser.Core.Parsers.Configurations;
+using MineguideEPOCParser.Core.Utils;
+using System.Net;
 using System.Runtime.CompilerServices;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Parsers
 {
     public class MeasurementsExtractingParser : DataParser<ComplexMeasurementsExtractingParserConfiguration>
     {

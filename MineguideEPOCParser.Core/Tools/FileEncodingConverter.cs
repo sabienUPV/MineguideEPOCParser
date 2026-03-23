@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Tools
 {
 	public static class FileEncodingConverter
 	{

@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Validation
 {
     public static partial class MedicationAnalyzers
     {

@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Utils
 {
     public static class Utilities
     {

@@ -4,8 +4,10 @@ using CsvHelper;
 using System.Text;
 using System.Runtime.CompilerServices;
 using Serilog;
+using MineguideEPOCParser.Core.Parsers.Configurations;
+using MineguideEPOCParser.Core.Utils;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Parsers
 {
     public abstract class DataParser<TConfiguration> : IDataParser<TConfiguration> where TConfiguration : DataParserConfiguration
     {

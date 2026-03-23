@@ -1,4 +1,6 @@
-﻿using MineguideEPOCParser.Core;
+﻿using MineguideEPOCParser.Core.Parsers;
+using MineguideEPOCParser.Core.Parsers.Configurations;
+using MineguideEPOCParser.Core.Utils;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;

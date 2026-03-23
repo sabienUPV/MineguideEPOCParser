@@ -1,7 +1,7 @@
 using CsvHelper.Configuration.Attributes;
-using static MineguideEPOCParser.Core.MedicationAnalyzers;
+using static MineguideEPOCParser.Core.Validation.MedicationAnalyzers;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Validation
 {
     public class MedicationResult
     {

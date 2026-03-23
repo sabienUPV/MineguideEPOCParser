@@ -1,4 +1,4 @@
-﻿namespace MineguideEPOCParser.Core
+﻿namespace MineguideEPOCParser.Core.Utils
 {
     public readonly struct ProgressValue
     {

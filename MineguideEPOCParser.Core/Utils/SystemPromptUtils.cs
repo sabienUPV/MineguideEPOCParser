@@ -2,7 +2,7 @@
 using CsvHelper;
 using System.Globalization;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Utils
 {
     public static class SystemPromptUtils
     {

@@ -1,5 +1,6 @@
 ﻿using ConsoleAppFramework;
-using MineguideEPOCParser.Core;
+using MineguideEPOCParser.Core.Parsers;
+using MineguideEPOCParser.Core.Parsers.Configurations;
 using Serilog;
 
 // 1. Configure Serilog statically and globally

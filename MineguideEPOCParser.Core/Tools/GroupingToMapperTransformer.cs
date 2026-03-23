@@ -1,6 +1,7 @@
-﻿using System.Text;
+﻿using MineguideEPOCParser.Core.Parsers;
+using System.Text;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.Tools
 {
     /// <summary>
     /// Transforms a JSON grouping file into a CSV mapper dictionary.

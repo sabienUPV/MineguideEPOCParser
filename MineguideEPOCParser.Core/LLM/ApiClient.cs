@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
+using MineguideEPOCParser.Core.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -7,7 +8,7 @@ using Polly.Retry;
 using Serilog;
 using System.Text;
 
-namespace MineguideEPOCParser.Core
+namespace MineguideEPOCParser.Core.LLM
 {
 	public class ApiClient
 	{

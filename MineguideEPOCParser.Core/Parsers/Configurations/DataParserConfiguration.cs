@@ -1,4 +1,6 @@
-﻿namespace MineguideEPOCParser.Core
+﻿using MineguideEPOCParser.Core.Validation;
+
+namespace MineguideEPOCParser.Core.Parsers.Configurations
 {
     public class DataParserConfiguration
     {
