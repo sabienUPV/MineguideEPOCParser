@@ -318,14 +318,26 @@ namespace MineguideEPOCParser.Core.Parsers
             }
 
             // --- 4. DATA RECONSTRUCTION & YIELD ---
-            // Now that validation is finished (or stopped), we reconstruct the CSV rows with the final validated data.
+            // Now that validation is finished (or stopped), we reconstruct the CSV rows.
+            // We iterate through ALL reports to ensure the output file is complete and 
+            // can be used to "Continue" later without having lost any data.
             foreach (var report in reports)
             {
                 if (resultsHistory.TryGetValue(report.ReportNumber, out var validatedResults))
                 {
+                    // Yield validated rows (either from this session, checkpoint, or review mode)
                     foreach (var row in GenerateValidatedRows(report, validatedResults, medicationIndex))
                     {
                         yield return row;
+                    }
+                }
+                else
+                {
+                    // If the report wasn't validated, yield its original rows.
+                    // We must ensure the column count matches the expected output to avoid shifting.
+                    foreach (var row in report.Rows)
+                    {
+                        yield return PadRowToMatchOutputHeaders(row, medicationIndex);
                     }
                 }
             }
@@ -335,6 +347,31 @@ namespace MineguideEPOCParser.Core.Parsers
             {
                 File.Delete(checkpointPath);
             }
+        }
+
+        private int GetFirstIndexOfDetails(string[] baseRow, int medicationIndex)
+        {
+            const int columnsAfterMedication = 1; // The InputRowNumber column added after the medication column
+            return Math.Min(medicationIndex + columnsAfterMedication + 1, baseRow.Length);
+        }
+
+        private string[] PadRowToMatchOutputHeaders(string[] rawRow, int medicationIndex)
+        {
+            // We use the configured additional header count to ensure structural consistency
+            int extraColumnCount = Configuration.OutputAdditionalHeaderNames.Length;
+            
+            int firstIndexOfDetails = GetFirstIndexOfDetails(rawRow, medicationIndex);
+            
+            // Create a new row with the correct total size
+            string[] newRow = new string[firstIndexOfDetails + extraColumnCount];
+            
+            // Copy the standard report data
+            Array.Copy(rawRow, 0, newRow, 0, Math.Min(rawRow.Length, firstIndexOfDetails));
+            
+            // The rest will remain as null/empty strings, which is exactly what we want 
+            // for unvalidated data.
+            
+            return newRow;
         }
 
         public class Report
@@ -374,8 +411,7 @@ namespace MineguideEPOCParser.Core.Parsers
 
                 // 2. Create the correctly sized array: 
                 // Base columns (up to medicationIndex) + The Medication Column (+1 for InputRowNumber) + The fresh stats
-                const int columnsAfterMedication = 1; // The InputRowNumber column added after the medication column
-                int firstIndexOfDetails = Math.Min(medicationIndex + columnsAfterMedication + 1, baseRow.Length);
+                int firstIndexOfDetails = GetFirstIndexOfDetails(baseRow, medicationIndex);
                 string[] newRow = new string[firstIndexOfDetails + medicationMatchValues.Length];
 
                 // 3. Copy the standard report data (everything UNTIL the medication details columns start)
