@@ -79,6 +79,84 @@ namespace MineguideEPOCParser.Core.Parsers
         {
             base.CleanupParsing();
             _hasMatchHeaders = false; // Reset the flag for the next parsing operation
+            _recoveredResults = null; // Clear recovered results
+        }
+
+        private Dictionary<string, MedicationResult[]>? _recoveredResults;
+
+        protected override async Task DoPreProcessing(CancellationToken cancellationToken)
+        {
+            await base.DoPreProcessing(cancellationToken);
+
+            // --- 0. SESSION RESUMPTION & REVIEW MODE ---
+            // This logic allows the parser to act as an editor for previously generated files.
+            // If a JSON checkpoint (the current session) isn't found, we attempt to "hydrate" 
+            // the validation history from an existing CSV output or its .tmp counterpart.
+            var checkpointPath = Configuration.OutputFile + ".json";
+            if (!File.Exists(checkpointPath))
+            {
+                var filesToTry = new[] { Configuration.OutputFile, Configuration.OutputFile + ".tmp" };
+                foreach (var file in filesToTry)
+                {
+                    if (File.Exists(file))
+                    {
+                        var recovered = await RecoverResultsFromCsv(file, cancellationToken);
+                        if (recovered.Count > 0)
+                        {
+                            _recoveredResults = recovered;
+                            Logger?.Information("Review Mode: Loaded {Count} report results from existing file: {FilePath}", recovered.Count, file);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task<Dictionary<string, MedicationResult[]>> RecoverResultsFromCsv(string filePath, CancellationToken cancellationToken)
+        {
+            var results = new Dictionary<string, List<MedicationResult>>();
+            try
+            {
+                using var reader = new StreamReader(filePath);
+                var csvConfig = new CsvConfiguration(Configuration.Culture)
+                {
+                    HeaderValidated = null,
+                    MissingFieldFound = null,
+                };
+                using var csv = new CsvReader(reader, csvConfig);
+
+                var classMap = new MedicationMatchClassMap(Configuration);
+                csv.Context.RegisterClassMap(classMap);
+
+                if (await csv.ReadAsync() && csv.ReadHeader())
+                {
+                    while (await csv.ReadAsync())
+                    {
+                        var reportNumber = csv.GetField<string>(Configuration.ReportNumberHeaderName);
+                        if (string.IsNullOrEmpty(reportNumber)) continue;
+
+                        var match = csv.GetRecord<MedicationMatch>();
+
+                        if (!results.TryGetValue(reportNumber, out var list))
+                        {
+                            list = new List<MedicationResult>();
+                            results[reportNumber] = list;
+                        }
+
+                        // Ensure we only store one result per unique medication name in a report
+                        if (!list.Any(m => m.ExtractedMedication == match.ExtractedMedication))
+                        {
+                            list.Add(match);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger?.Warning(ex, "Failed to recover results from {FilePath}. The file might be corrupted or in an incompatible format.", filePath);
+            }
+
+            return results.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
         }
 
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
@@ -157,9 +235,32 @@ namespace MineguideEPOCParser.Core.Parsers
                     Logger?.Warning(ex, "Failed to load checkpoint file {CheckpointPath}. Starting from scratch.", checkpointPath);
                 }
             }
+            else if (_recoveredResults != null)
+            {
+                // Fallback to results recovered from CSV during PreProcessing
+                resultsHistory = _recoveredResults;
+                _recoveredResults = null; // Free memory
+            }
 
             // --- 3. NAVIGATION & VALIDATION LOOP ---
             int i = 0;
+
+            // Smart Resumption: If we have history, skip ahead to the first report that hasn't been 
+            // validated yet to avoid redundant work. If the file is 100% complete, we start from 
+            // the beginning to allow for a full review/edit of the data.
+            if (resultsHistory.Count > 0)
+            {
+                while (i < reports.Count && resultsHistory.ContainsKey(reports[i].ReportNumber))
+                {
+                    i++;
+                }
+                
+                // If everything was already validated, we assume the user wants to review from the start.
+                if (i == reports.Count) i = 0;
+                
+                Logger?.Information("Resuming/Reviewing validation from report index {Index} ({ReportNumber})", i, reports[i].ReportNumber);
+            }
+
             while (i < reports.Count)
             {
                 var report = reports[i];
