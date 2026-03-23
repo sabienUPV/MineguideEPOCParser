@@ -1,3 +1,4 @@
+using CsvHelper;
 using CsvHelper.Configuration;
 using MineguideEPOCParser.Core.Parsers.Configurations;
 using MineguideEPOCParser.Core.Utils;
