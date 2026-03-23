@@ -574,6 +574,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
         }
 
+        // Call this method when the user clicks "Next" or "Finish" after validation
         private void OnUserFinishedMedicationValidation(object? sender, RoutedEventArgs e)
         {
             _navigationDirection = NavigationDirection.Next;
@@ -941,13 +942,6 @@ namespace MineguideEPOCParser.GUIApp.Tools
         // Find the match by start index and selected text
         private MedicationResultUI? FindMedicationMatchFromSelectedText(string selectedText, int startIndex) =>
             _currentMedicationResults?.FirstOrDefault(m => m.HasMatchInText && m.StartIndex == startIndex && m.MatchInText == selectedText);
-
-        // Call this method when the user clicks "Next" or "Finish" after validation
-        private void OnUserFinishedMedicationValidation(object? sender, RoutedEventArgs e) => OnUserFinishedMedicationValidation();
-        private void OnUserFinishedMedicationValidation()
-        {
-            _medicationValidationSemaphore?.Release();
-        }
 
         private async void StopMedicationValidation(object sender, RoutedEventArgs e) => await StopMedicationValidation();
 
