@@ -48,7 +48,9 @@ namespace MineguideEPOCParser.Core.Tools
 
     public static class MedicationExperimentStatsCalculator
     {
-        public static async Task<MedicationExperimentStats> CalculateStatsAsync(string csvPath, MedicationManualValidatorParserConfiguration config, CancellationToken cancellationToken = default)
+        public class CalculatorConfiguration : MedicationManualValidatorParserConfigurationBase { }
+
+        public static async Task<MedicationExperimentStats> CalculateStatsAsync(string csvPath, CalculatorConfiguration config, CancellationToken cancellationToken = default)
         {
             var stats = new MedicationExperimentStats();
 

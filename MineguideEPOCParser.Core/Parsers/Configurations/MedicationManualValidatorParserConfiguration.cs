@@ -2,7 +2,12 @@ using MineguideEPOCParser.Core.Validation;
 
 namespace MineguideEPOCParser.Core.Parsers.Configurations
 {
-    public class MedicationManualValidatorParserConfiguration : DataParserConfiguration
+    public class MedicationManualValidatorParserConfiguration : MedicationManualValidatorParserConfigurationBase
+    {
+        public required Func<string, IEnumerable<MedicationResult>, CancellationToken, Task<MedicationResult[]>> ValidationFunction { get; set; }
+    }
+
+    public abstract class MedicationManualValidatorParserConfigurationBase : DataParserConfiguration
     {
         public const string DefaultReportNumberHeaderName = "Numero";
 
@@ -23,9 +28,6 @@ namespace MineguideEPOCParser.Core.Parsers.Configurations
         public string MatchInTextHeaderName => BuildMedicationHeader(nameof(MedicationMatch.MatchInText));
         public string MatchExperimentResultHeaderName => BuildMedicationHeader(nameof(MedicationResult.ExperimentResult));
         public string MatchCorrectedMedicationHeaderName => BuildMedicationHeader(nameof(MedicationResult.CorrectedMedication));
-
-
-        public required Func<string, IEnumerable<MedicationResult>, CancellationToken, Task<MedicationResult[]>> ValidationFunction { get; set; }
 
         public string BuildMedicationHeader(string header) => $"{MedicationHeaderName}_{header}";
 

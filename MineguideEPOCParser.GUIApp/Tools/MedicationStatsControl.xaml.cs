@@ -1,7 +1,5 @@
 using Microsoft.Win32;
-using MineguideEPOCParser.Core.Parsers.Configurations;
 using MineguideEPOCParser.Core.Tools;
-using MineguideEPOCParser.Core.Validation;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
@@ -49,15 +47,12 @@ namespace MineguideEPOCParser.GUIApp.Tools
             CalculateButton.IsEnabled = false;
             try
             {
-                var config = new MedicationManualValidatorParserConfiguration
+                var stats = await MedicationExperimentStatsCalculator.CalculateStatsAsync(filePath, new()
                 {
                     CultureName = MedicationManualValidatorControl.DefaultCultureName, // TODO: Allow user to select culture if needed
                     InputFile = filePath,
-                    OutputFile = string.Empty,
-                    ValidationFunction = (s, m, c) => Task.FromResult(Array.Empty<MedicationResult>())
-                };
-
-                var stats = await MedicationExperimentStatsCalculator.CalculateStatsAsync(filePath, config);
+                    OutputFile = string.Empty
+                });
 
                 TPTextBox.Text = stats.TP.ToString();
                 TPStarTextBox.Text = stats.TPStar.ToString();
