@@ -107,6 +107,7 @@
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0" Orientation="Horizontal">
+                            <Label x:Name="TotalCountLabel" Content="Total: 0" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,20,0" />
                             <Label Content="Filter by Result:" VerticalAlignment="Center" />
                             <ComboBox x:Name="ResultFilterComboBox" Width="100" SelectionChanged="FilterChanged" Margin="5,0,20,0">
                                 <ComboBoxItem Content="All" IsSelected="True" />
