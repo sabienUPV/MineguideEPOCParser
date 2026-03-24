@@ -119,9 +119,17 @@ namespace MineguideEPOCParser.GUIApp.Tools
         {
             if (_filteredView != null)
             {
-                var rows = _filteredView.Cast<object>();
-                TotalMedicationsCountLabel.Content = $"Medications: {rows.Count()}";
-                TotalReportsCountLabel.Content = $"Reports: {rows.Select(r => ((MedicationStatRow)r).ReportNumber).Distinct().Count()}";
+                int totalMedications = 0;
+                var uniqueReports = new HashSet<int>();
+
+                foreach (MedicationStatRow row in _filteredView)
+                {
+                    totalMedications++;
+                    uniqueReports.Add(row.ReportNumber);
+                }
+
+                TotalMedicationsCountLabel.Content = $"Medications: {totalMedications}";
+                TotalReportsCountLabel.Content = $"Reports: {uniqueReports.Count}";
             }
         }
 
