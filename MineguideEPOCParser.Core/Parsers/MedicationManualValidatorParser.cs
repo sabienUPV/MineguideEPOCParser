@@ -243,13 +243,22 @@ namespace MineguideEPOCParser.Core.Parsers
             // --- 2. PROGRESS CHECKPOINT RECOVERY ---
             // Load progress from a sidecar JSON file if it exists to prevent losing work on crash/exit.
             var checkpointPath = Configuration.OutputFile + ".json";
+            var checkpointSerializationSettings = new JsonSerializerSettings
+            {
+                TypeNameHandling = TypeNameHandling.Auto,
+                SerializationBinder = new KnownTypesBinder
+                {
+                    KnownTypes = [typeof(MedicationResult), typeof(MedicationMatch)]
+                },
+                Formatting = Formatting.Indented
+            };
             var resultsHistory = new Dictionary<string, MedicationResult[]>();
             if (File.Exists(checkpointPath))
             {
                 try
                 {
                     var json = await File.ReadAllTextAsync(checkpointPath, cancellationToken);
-                    resultsHistory = JsonConvert.DeserializeObject<Dictionary<string, MedicationResult[]>>(json) ?? new();
+                    resultsHistory = JsonConvert.DeserializeObject<Dictionary<string, MedicationResult[]>>(json, checkpointSerializationSettings) ?? [];
                     Logger?.Information("Loaded progress from checkpoint: {CheckpointPath}", checkpointPath);
                 }
                 catch (Exception ex)
@@ -329,7 +338,7 @@ namespace MineguideEPOCParser.Core.Parsers
                 
                 try
                 {
-                    var json = JsonConvert.SerializeObject(resultsHistory, Formatting.Indented);
+                    var json = JsonConvert.SerializeObject(resultsHistory, checkpointSerializationSettings);
                     await File.WriteAllTextAsync(checkpointPath, json, cancellationToken);
                 }
                 catch (Exception ex)
