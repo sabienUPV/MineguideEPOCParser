@@ -207,11 +207,11 @@ namespace MineguideEPOCParser.Core.Parsers
                 if (currentReport is not null && currentReport.ReportNumber != reportNumberValue)
                 {
                     reports.Add(currentReport);
-                    currentReport = new Report(reportNumberValue, _hasMatchHeaders);
+                    currentReport = new Report(reportNumberValue);
                 }
 
                 // If we don't have a current report, create a new one
-                currentReport ??= new Report(reportNumberValue, _hasMatchHeaders);
+                currentReport ??= new Report(reportNumberValue);
 
                 // Add the row to the current report rows
                 currentReport.Rows.Add(row);
@@ -220,7 +220,15 @@ namespace MineguideEPOCParser.Core.Parsers
                 {
                     // If the medication matches are already present in the row,
                     // we can just get them from the row (the reader points to the current record).
-                    currentReport.MedicationMatches?.Add(CurrentCsvReader!.GetRecord<MedicationMatch>());
+                    try
+                    {
+                        var match = CurrentCsvReader!.GetRecord<MedicationMatch>();
+                        currentReport.AddMatch(match);
+                    }
+                    catch
+                    {
+                        // For unfinished files, some rows might not have the match information yet, so we just skip them.
+                    }
                 }
             }
 
@@ -264,7 +272,9 @@ namespace MineguideEPOCParser.Core.Parsers
             // the beginning to allow for a full review/edit of the data.
             if (resultsHistory.Count > 0)
             {
-                while (i < reports.Count && resultsHistory.ContainsKey(reports[i].ReportNumber))
+                while (i < reports.Count
+                    && (reports[i].MedicationMatches is not null
+                        || resultsHistory.ContainsKey(reports[i].ReportNumber)))
                 {
                     i++;
                 }
@@ -391,14 +401,20 @@ namespace MineguideEPOCParser.Core.Parsers
         {
             public required string ReportNumber { get; init; }
             public List<string[]> Rows { get; init; }
-            public List<MedicationResult>? MedicationMatches { get; init; }
+            public List<MedicationResult>? MedicationMatches { get; private set; }
 
             [SetsRequiredMembers]
-            public Report(string reportNumber, bool hasMatchHeaders)
+            public Report(string reportNumber)
             {
                 ReportNumber = reportNumber;
                 Rows = [];
-                MedicationMatches = hasMatchHeaders ? [] : null;
+                // MedicationMatches left to null on purpose
+            }
+
+            public void AddMatch(MedicationResult match)
+            {
+                if (MedicationMatches is null) MedicationMatches = [match];
+                else MedicationMatches.Add(match);
             }
         }
 

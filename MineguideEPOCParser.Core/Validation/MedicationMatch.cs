@@ -10,7 +10,8 @@ namespace MineguideEPOCParser.Core.Validation
         public string? CorrectedMedication { get; set; } // The corrected medication by the user after validating, if any
 
         // This property will be ignored in CSV Parser,
-        // since for import we don't need it since we calculate it ourselves,
+        // since for import we don't need it since we calculate it ourselves
+        // (or we import via ClassMap which overrides this Ignore),
         // and for export we use GetMedicationMatchValues() to include the details values in the output with full control of the order and formatting.
         [Ignore]
         public MedicationDetails? Details { get; set; }
