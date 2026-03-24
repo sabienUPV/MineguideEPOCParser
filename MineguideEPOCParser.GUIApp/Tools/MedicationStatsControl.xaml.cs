@@ -26,55 +26,75 @@ namespace MineguideEPOCParser.GUIApp.Tools
             var openFileDialog = new OpenFileDialog
             {
                 Filter = "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
-                Multiselect = false
+                Multiselect = true
             };
 
             if (openFileDialog.ShowDialog() == true)
             {
-                InputFileTextBox.Text = openFileDialog.FileName;
+                InputFileTextBox.Text = string.Join("|", openFileDialog.FileNames);
             }
         }
 
         private async void CalculateButton_Click(object sender, RoutedEventArgs e)
         {
-            var filePath = InputFileTextBox.Text;
-            if (string.IsNullOrWhiteSpace(filePath) || !System.IO.File.Exists(filePath))
+            var filePathsStr = InputFileTextBox.Text;
+            if (string.IsNullOrWhiteSpace(filePathsStr))
             {
-                MessageBox.Show("Please select a valid CSV file.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Please select one or more valid CSV files.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            var filePaths = filePathsStr.Split('|', StringSplitOptions.RemoveEmptyEntries);
+            var existingFiles = filePaths.Where(f => System.IO.File.Exists(f)).ToList();
+
+            if (existingFiles.Count == 0)
+            {
+                MessageBox.Show("None of the selected files exist.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 return;
             }
 
             CalculateButton.IsEnabled = false;
             try
             {
-                var stats = await MedicationExperimentStatsCalculator.CalculateStatsAsync(filePath, new()
-                {
-                    CultureName = MedicationManualValidatorControl.DefaultCultureName, // TODO: Allow user to select culture if needed
-                    InputFile = filePath,
-                    OutputFile = string.Empty
-                });
-
-                TPTextBox.Text = stats.TP.ToString();
-                TPStarTextBox.Text = stats.TPStar.ToString();
-                TPExactPlusFuzzyTextBox.Text = stats.TPExactPlusFuzzy.ToString();
-                FPTextBox.Text = stats.FP.ToString();
-                FNTextBox.Text = stats.FN.ToString();
-                HallucinationsTextBox.Text = stats.Hallucinations.ToString();
-
-                PrecisionTextBox.Text = stats.Precision.ToString("F4");
-                PrecisionPercentageTextBox.Text = stats.Precision.ToString("P4");
-
-                RecallTextBox.Text = stats.Recall.ToString("F4");
-                RecallPercentageTextBox.Text = stats.Recall.ToString("P4");
-
-                F1ScoreTextBox.Text = stats.F1Score.ToString("F4");
-                F1ScorePercentageTextBox.Text = stats.F1Score.ToString("P4");
-
+                var aggregateStats = new MedicationExperimentStats();
                 _allRows.Clear();
-                foreach (var row in stats.Rows)
+
+                foreach (var filePath in existingFiles)
                 {
-                    _allRows.Add(row);
+                    var stats = await MedicationExperimentStatsCalculator.CalculateStatsAsync(filePath, new()
+                    {
+                        CultureName = MedicationManualValidatorControl.DefaultCultureName, // TODO: Allow user to select culture if needed
+                        InputFile = filePath,
+                        OutputFile = string.Empty
+                    });
+
+                    aggregateStats.TP += stats.TP;
+                    aggregateStats.TPStar += stats.TPStar;
+                    aggregateStats.FP += stats.FP;
+                    aggregateStats.FN += stats.FN;
+                    aggregateStats.Hallucinations += stats.Hallucinations;
+
+                    foreach (var row in stats.Rows)
+                    {
+                        _allRows.Add(row);
+                    }
                 }
+
+                TPTextBox.Text = aggregateStats.TP.ToString();
+                TPStarTextBox.Text = aggregateStats.TPStar.ToString();
+                TPExactPlusFuzzyTextBox.Text = aggregateStats.TPExactPlusFuzzy.ToString();
+                FPTextBox.Text = aggregateStats.FP.ToString();
+                FNTextBox.Text = aggregateStats.FN.ToString();
+                HallucinationsTextBox.Text = aggregateStats.Hallucinations.ToString();
+
+                PrecisionTextBox.Text = aggregateStats.Precision.ToString("F4");
+                PrecisionPercentageTextBox.Text = aggregateStats.Precision.ToString("P4");
+
+                RecallTextBox.Text = aggregateStats.Recall.ToString("F4");
+                RecallPercentageTextBox.Text = aggregateStats.Recall.ToString("P4");
+
+                F1ScoreTextBox.Text = aggregateStats.F1Score.ToString("F4");
+                F1ScorePercentageTextBox.Text = aggregateStats.F1Score.ToString("P4");
 
                 ResultsGrid.Visibility = Visibility.Visible;
             }

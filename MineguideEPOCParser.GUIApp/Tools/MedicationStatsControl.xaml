@@ -22,7 +22,7 @@
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
             
-            <Label Grid.Column="0" Content="Input CSV file:" VerticalAlignment="Center" />
+            <Label Grid.Column="0" Content="Input CSV files:" VerticalAlignment="Center" />
             <TextBox Grid.Column="2" x:Name="InputFileTextBox" VerticalAlignment="Center" />
             <Button Grid.Column="4" x:Name="BrowseButton" Content="Browse" Click="BrowseButton_Click" Padding="10,2" />
         </Grid>
