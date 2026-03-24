@@ -15,7 +15,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
     /// <summary>
     /// Lógica de interacción para MedicationManualValidatorControl.xaml
     /// </summary>
-    public partial class MedicationManualValidatorControl : UserControl, IAsyncDisposable
+    public partial class MedicationManualValidatorControl : UserControl, IDisposable
     {
         // Dependency property IsParsing
         public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
@@ -60,9 +60,14 @@ namespace MineguideEPOCParser.GUIApp.Tools
             CreateProgress();
         }
 
-        public async ValueTask DisposeAsync()
+        public void Dispose()
         {
-            await StopMedicationValidation();
+            if (_cancellationTokenSource != null)
+            {
+                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource.Dispose();
+                _cancellationTokenSource = null;
+            }
         }
 
         public Progress<ProgressValue>? Progress { get; private set; }
@@ -503,15 +508,16 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 // Start the parser (with cancellation support)
                 await parser.ParseData(_cancellationTokenSource.Token);
 
-                // Show success message
-                MessageBox.Show($"Medication validation completed successfully.\nThe validated medications have been written to: {outputFile}", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                // Show success message (or stop message if it didn't finish)
+                bool stoppedMidway = _navigationDirection == NavigationDirection.Stop;
+                MessageBox.Show($"Medication validation {(stoppedMidway ? "stopped" : "completed")} successfully.\nThe validated medications have been written to: {outputFile}", (stoppedMidway ? "Stopped" : "Completed") + " successfully", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 // Reset validation (set parsing to false, clear the RichTextBox, and reset matches)
                 ResetMedicationValidation();
             }
             catch (OperationCanceledException)
             {
-                MessageBox.Show($"The validation process was cancelled.\nThe information that was already validated has been written to the output file.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("The validation process was cancelled.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -549,11 +555,9 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     await semaphore.WaitAsync(cancellationToken);
                 }
 
-                cancellationToken.ThrowIfCancellationRequested();
-
                 if (_navigationDirection == NavigationDirection.Back)
                 {
-                    return new ValidationStepResult(NavigationDirection.Back, Array.Empty<MedicationResult>());
+                    return new ValidationStepResult(NavigationDirection.Back, []);
                 }
 
                 // Add the current corrected medications to the dictionary
@@ -565,7 +569,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     }
                 }
 
-                return new ValidationStepResult(NavigationDirection.Next, _currentMedicationResults.Select(m => m.ToMedicationResult()).ToArray());
+                return new ValidationStepResult(_navigationDirection, _currentMedicationResults.Select(m => m.ToMedicationResult()).ToArray());
             }
             finally
             {
@@ -584,6 +588,12 @@ namespace MineguideEPOCParser.GUIApp.Tools
         private void OnUserRequestedBack(object? sender, RoutedEventArgs e)
         {
             _navigationDirection = NavigationDirection.Back;
+            _medicationValidationSemaphore?.Release();
+        }
+
+        private void StopMedicationValidation(object sender, RoutedEventArgs e)
+        {
+            _navigationDirection = NavigationDirection.Stop;
             _medicationValidationSemaphore?.Release();
         }
 
@@ -943,25 +953,6 @@ namespace MineguideEPOCParser.GUIApp.Tools
         private MedicationResultUI? FindMedicationMatchFromSelectedText(string selectedText, int startIndex) =>
             _currentMedicationResults?.FirstOrDefault(m => m.HasMatchInText && m.StartIndex == startIndex && m.MatchInText == selectedText);
 
-        private async void StopMedicationValidation(object sender, RoutedEventArgs e) => await StopMedicationValidation();
-
-        private async Task StopMedicationValidation()
-        {
-            _navigationDirection = NavigationDirection.Stop;
-            _medicationValidationSemaphore?.Release();
-
-            // Cancel any ongoing parsing operation
-            if (_cancellationTokenSource is not null)
-            {
-#if NET8_0_OR_GREATER
-                await _cancellationTokenSource.CancelAsync();
-#else
-                _cancellationTokenSource.Cancel();
-#endif
-            }
-
-            ResetMedicationValidation();
-        }
         private void ResetMedicationValidation()
         {
             // Clear the RichTextBox and reset matches
@@ -994,10 +985,10 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 return;
             }
 
-            // If Ctrl+Shift+S is pressed, clear the RichTextBox and reset matches
+            // If Ctrl+Shift+S is pressed, stop the process
             if (e.Key == Key.S && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift))
             {
-                await StopMedicationValidation();
+                BtnStop.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 e.Handled = true; // Prevent default ctrl+escape behavior
                 return;
             }
