@@ -96,7 +96,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 F1ScoreTextBox.Text = aggregateStats.F1Score.ToString("F4");
                 F1ScorePercentageTextBox.Text = aggregateStats.F1Score.ToString("P4");
 
-                UpdateTotalCount();
+                UpdateTotalCounts();
                 ResultsGrid.Visibility = Visibility.Visible;
             }
             catch (Exception ex)
@@ -112,15 +112,16 @@ namespace MineguideEPOCParser.GUIApp.Tools
         private void FilterChanged(object sender, EventArgs e)
         {
             _filteredView?.Refresh();
-            UpdateTotalCount();
+            UpdateTotalCounts();
         }
 
-        private void UpdateTotalCount()
+        private void UpdateTotalCounts()
         {
             if (_filteredView != null)
             {
-                int count = _filteredView.Cast<object>().Count();
-                TotalCountLabel.Content = $"Total: {count}";
+                var rows = _filteredView.Cast<object>();
+                TotalMedicationsCountLabel.Content = $"Medications: {rows.Count()}";
+                TotalReportsCountLabel.Content = $"Reports: {rows.Select(r => ((MedicationStatRow)r).ReportNumber).Distinct().Count()}";
             }
         }
 
