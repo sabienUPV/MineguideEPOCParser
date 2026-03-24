@@ -42,15 +42,28 @@ namespace MineguideEPOCParser.Core.Parsers
                     {
                         // Use reflection to set the properties of the MedicationDetails object based on the column names and values from the CSV
                         var propertyInfo = typeof(MedicationAnalyzers.MedicationDetails).GetProperty(propertyName);
-                        
+
                         if (propertyInfo == null || !propertyInfo.CanWrite) continue;
 
-                        var value = data.Row.GetField(propertyInfo.PropertyType, propertyName);
+                        object? value;
+                        try
+                        {
+                            // Attempt to get the value from the CSV and convert it to the correct type
+                            value = data.Row.GetField(propertyInfo.PropertyType, propertyName);
+                        }
+                        catch
+                        {
+                            // If there's an error (e.g., missing column, conversion failure),
+                            // we drop the entire details object to avoid partial/incorrect data.
+                            // This works because if the details are missing, the validator will just recalculate them.
+                            return null;
+                        }
+
                         propertyInfo.SetValue(details, value);
                     }
 
                     return details;
-                });
+                }).Optional();
             }
         }
 
