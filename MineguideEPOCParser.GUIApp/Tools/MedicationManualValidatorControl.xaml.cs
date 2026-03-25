@@ -591,10 +591,15 @@ namespace MineguideEPOCParser.GUIApp.Tools
             _medicationValidationSemaphore?.Release();
         }
 
-        private void StopMedicationValidation(object sender, RoutedEventArgs e)
+        private void OnStopMedicationValidation(object sender, RoutedEventArgs e)
         {
             _navigationDirection = NavigationDirection.Stop;
             _medicationValidationSemaphore?.Release();
+        }
+
+        private void OnCancelMedicationValidation(object sender, RoutedEventArgs e)
+        {
+            _cancellationTokenSource?.Cancel();
         }
 
         // True medication button click handler
@@ -992,6 +997,13 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 e.Handled = true; // Prevent default ctrl+escape behavior
                 return;
             }
+            // If Ctrl+Alt+C is pressed, cancel the process
+            else if (e.Key == Key.C && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Alt)) == (ModifierKeys.Control | ModifierKeys.Alt))
+            {
+                BtnCancel.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                e.Handled = true;
+                return;
+            }
             // If Tab key is pressed, navigate between medication matches
             else if (e.Key == Key.Tab)
             {
@@ -1062,6 +1074,12 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 else if (e.Key == Key.N)
                 {
                     BtnNext.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    e.Handled = true;
+                    return;
+                }
+                else if (e.Key == Key.B)
+                {
+                    BtnBack.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                     e.Handled = true;
                     return;
                 }
