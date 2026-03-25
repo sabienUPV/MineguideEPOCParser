@@ -460,7 +460,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             e.Handled = true;
         }
 
-        public const string DefaultCultureName = "es-ES"; // TODO: Allow user to select culture if needed
+        public static readonly string DefaultCultureName = System.Globalization.CultureInfo.CurrentCulture.Name; // TODO: Allow user to select culture if needed
 
         private CancellationTokenSource? _cancellationTokenSource;
         private async void LoadMedications(object? sender, RoutedEventArgs args) => await LoadMedications();
