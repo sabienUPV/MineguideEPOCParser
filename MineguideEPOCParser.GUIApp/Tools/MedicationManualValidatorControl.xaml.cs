@@ -549,7 +549,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
             catch (OperationCanceledException)
             {
-                MessageBox.Show("The validation process was cancelled. No progress was saved", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("The validation process was cancelled. No progress was saved.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
