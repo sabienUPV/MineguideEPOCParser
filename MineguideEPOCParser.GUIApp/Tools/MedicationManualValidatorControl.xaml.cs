@@ -58,6 +58,31 @@ namespace MineguideEPOCParser.GUIApp.Tools
             InitializeComponent();
 
             CreateProgress();
+
+            // Hook into the Loaded and Unloaded events
+            this.Loaded += MedicationManualValidatorControl_Loaded;
+            this.Unloaded += MedicationManualValidatorControl_Unloaded;
+        }
+
+        private void MedicationManualValidatorControl_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Find the parent window once the control is rendered in the UI tree
+            Window parentWindow = Window.GetWindow(this);
+            if (parentWindow != null)
+            {
+                // Subscribe to the window's PreviewKeyDown event
+                parentWindow.PreviewKeyDown += MainWindow_PreviewKeyDown;
+            }
+        }
+
+        private void MedicationManualValidatorControl_Unloaded(object sender, RoutedEventArgs e)
+        {
+            // ALWAYS unregister to prevent memory leaks!
+            Window parentWindow = Window.GetWindow(this);
+            if (parentWindow != null)
+            {
+                parentWindow.PreviewKeyDown -= MainWindow_PreviewKeyDown;
+            }
         }
 
         public void Dispose()
@@ -981,7 +1006,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
         }
 
         private int _currentMedicationFocusIndex = -1;
-        private async void MyRichTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        private async void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             // If Ctrl+L is pressed, trigger the load button
             if (e.Key == Key.L && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
