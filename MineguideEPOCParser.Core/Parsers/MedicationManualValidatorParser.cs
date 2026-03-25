@@ -96,7 +96,7 @@ namespace MineguideEPOCParser.Core.Parsers
             _recoveredResults = null; // Clear recovered results
         }
 
-        private Dictionary<string, MedicationResult[]>? _recoveredResults;
+        private Dictionary<string, List<MedicationResult>>? _recoveredResults;
 
         protected override async Task DoPreProcessing(CancellationToken cancellationToken)
         {
@@ -126,7 +126,7 @@ namespace MineguideEPOCParser.Core.Parsers
             }
         }
 
-        private async Task<Dictionary<string, MedicationResult[]>> RecoverResultsFromCsv(string filePath, CancellationToken cancellationToken)
+        private async Task<Dictionary<string, List<MedicationResult>>> RecoverResultsFromCsv(string filePath, CancellationToken cancellationToken)
         {
             var results = new Dictionary<string, List<MedicationResult>>();
             try
@@ -153,7 +153,7 @@ namespace MineguideEPOCParser.Core.Parsers
 
                         if (!results.TryGetValue(reportNumber, out var list))
                         {
-                            list = new List<MedicationResult>();
+                            list = [];
                             results[reportNumber] = list;
                         }
 
@@ -170,7 +170,7 @@ namespace MineguideEPOCParser.Core.Parsers
                 Logger?.Warning(ex, "Failed to recover results from {FilePath}. The file might be corrupted or in an incompatible format.", filePath);
             }
 
-            return results.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.ToArray());
+            return results;
         }
 
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
@@ -252,13 +252,13 @@ namespace MineguideEPOCParser.Core.Parsers
                 },
                 Formatting = Formatting.Indented
             };
-            var resultsHistory = new Dictionary<string, MedicationResult[]>();
+            var resultsHistory = new Dictionary<string, List<MedicationResult>>();
             if (File.Exists(checkpointPath))
             {
                 try
                 {
                     var json = await File.ReadAllTextAsync(checkpointPath, cancellationToken);
-                    resultsHistory = JsonConvert.DeserializeObject<Dictionary<string, MedicationResult[]>>(json, checkpointSerializationSettings) ?? [];
+                    resultsHistory = JsonConvert.DeserializeObject<Dictionary<string, List<MedicationResult>>>(json, checkpointSerializationSettings) ?? [];
                     Logger?.Information("Loaded progress from checkpoint: {CheckpointPath}", checkpointPath);
                 }
                 catch (Exception ex)
@@ -279,19 +279,19 @@ namespace MineguideEPOCParser.Core.Parsers
             // Smart Resumption: If we have history, skip ahead to the first report that hasn't been 
             // validated yet to avoid redundant work. If the file is 100% complete, we start from 
             // the beginning to allow for a full review/edit of the data.
-            if (resultsHistory.Count > 0)
-            {
-                while (i < reports.Count
+            while (i < reports.Count
                     && (reports[i].MedicationMatches is not null
                         || resultsHistory.ContainsKey(reports[i].ReportNumber)))
-                {
-                    i++;
-                }
-                
-                // If everything was already validated, we assume the user wants to review from the start.
-                if (i == reports.Count) i = 0;
-                
-                Logger?.Information("Resuming/Reviewing validation from report index {Index} ({ReportNumber})", i, reports[i].ReportNumber);
+            {
+                i++;
+            }
+
+            // If everything was already validated, we assume the user wants to review from the start.
+            if (i == reports.Count) i = 0;
+
+            if (i > 0)
+            {
+                Logger?.Information("Resuming validation from report index {Index} (Report Number: {ReportNumber}) based on existing progress.", i, reports[i].ReportNumber);
             }
 
             while (i < reports.Count)
@@ -305,7 +305,7 @@ namespace MineguideEPOCParser.Core.Parsers
                 List<MedicationResult> initialMatches;
                 if (resultsHistory.TryGetValue(report.ReportNumber, out var previousResults))
                 {
-                    initialMatches = previousResults.ToList();
+                    initialMatches = previousResults;
                 }
                 else if (report.MedicationMatches is not null)
                 {
@@ -359,6 +359,13 @@ namespace MineguideEPOCParser.Core.Parsers
                 {
                     // Yield validated rows (either from this session, checkpoint, or review mode)
                     foreach (var row in GenerateValidatedRows(report, validatedResults, medicationIndex))
+                    {
+                        yield return row;
+                    }
+                }
+                else if (report.MedicationMatches is not null)
+                {
+                    foreach (var row in GenerateValidatedRows(report, report.MedicationMatches, medicationIndex))
                     {
                         yield return row;
                     }
@@ -427,7 +434,7 @@ namespace MineguideEPOCParser.Core.Parsers
             }
         }
 
-        private IEnumerable<string[]> GenerateValidatedRows(Report report, MedicationResult[] validatedResults, int medicationIndex)
+        private IEnumerable<string[]> GenerateValidatedRows(Report report, IEnumerable<MedicationResult> validatedResults, int medicationIndex)
         {
             // Classify the duplicated report rows by their medication name.
             // Using GroupBy allows graceful handling of duplicates (we just take the first occurrence).

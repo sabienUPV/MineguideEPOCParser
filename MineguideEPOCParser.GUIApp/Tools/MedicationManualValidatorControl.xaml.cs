@@ -601,7 +601,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     }
                 }
 
-                return new ValidationStepResult(_navigationDirection, _currentMedicationResults.Select(m => m.ToMedicationResult()).ToArray());
+                return new ValidationStepResult(_navigationDirection, _currentMedicationResults.Select(m => m.ToMedicationResult()).ToList());
             }
             finally
             {

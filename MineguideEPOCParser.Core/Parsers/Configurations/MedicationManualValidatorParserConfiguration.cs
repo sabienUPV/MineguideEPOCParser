@@ -3,7 +3,7 @@ using MineguideEPOCParser.Core.Validation;
 namespace MineguideEPOCParser.Core.Parsers.Configurations
 {
     public enum NavigationDirection { Next, Back, Stop }
-    public record ValidationStepResult(NavigationDirection Direction, MedicationResult[] Results);
+    public record ValidationStepResult(NavigationDirection Direction, List<MedicationResult> Results);
 
     public class MedicationManualValidatorParserConfiguration : MedicationManualValidatorParserConfigurationBase
     {
