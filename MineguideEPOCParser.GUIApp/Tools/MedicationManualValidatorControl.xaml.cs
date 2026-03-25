@@ -510,14 +510,21 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
                 // Show success message (or stop message if it didn't finish)
                 bool stoppedMidway = _navigationDirection == NavigationDirection.Stop;
-                MessageBox.Show($"Medication validation {(stoppedMidway ? "stopped" : "completed")} successfully.\nThe validated medications have been written to: {outputFile}", (stoppedMidway ? "Stopped" : "Completed") + " successfully", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show(
+                    $"""
+                    Medication validation {(stoppedMidway ? "progress saved and stopped" : "completed")} successfully.
+
+                    The validated medications have been written to: {outputFile}.
+
+                    {(stoppedMidway ? "You can resume the validation later by using the output file as input, and your previous validations will be loaded automatically." : "All medications have been validated.")}
+                    """, (stoppedMidway ? "Progress saved and stopped" : "Completed") + " successfully", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 // Reset validation (set parsing to false, clear the RichTextBox, and reset matches)
                 ResetMedicationValidation();
             }
             catch (OperationCanceledException)
             {
-                MessageBox.Show("The validation process was cancelled.", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("The validation process was cancelled. No progress was saved", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
