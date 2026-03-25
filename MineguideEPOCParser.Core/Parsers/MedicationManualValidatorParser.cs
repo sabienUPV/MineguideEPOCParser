@@ -355,17 +355,10 @@ namespace MineguideEPOCParser.Core.Parsers
             // can be used to "Continue" later without having lost any data.
             foreach (var report in reports)
             {
-                if (resultsHistory.TryGetValue(report.ReportNumber, out var validatedResults))
+                if (resultsHistory.TryGetValue(report.ReportNumber, out var validatedResults) || report.MedicationMatches is not null)
                 {
                     // Yield validated rows (either from this session, checkpoint, or review mode)
-                    foreach (var row in GenerateValidatedRows(report, validatedResults, medicationIndex))
-                    {
-                        yield return row;
-                    }
-                }
-                else if (report.MedicationMatches is not null)
-                {
-                    foreach (var row in GenerateValidatedRows(report, report.MedicationMatches, medicationIndex))
+                    foreach (var row in GenerateValidatedRows(report, validatedResults ?? report.MedicationMatches!, medicationIndex))
                     {
                         yield return row;
                     }
