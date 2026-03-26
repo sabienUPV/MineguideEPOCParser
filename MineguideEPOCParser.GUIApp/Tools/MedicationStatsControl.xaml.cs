@@ -12,6 +12,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
     {
         private readonly ObservableCollection<MedicationStatRow> _allRows = [];
         private readonly ICollectionView? _filteredView;
+        private MedicationExperimentStats? _aggregateStats;
 
         public MedicationStatsControl()
         {
@@ -56,7 +57,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             CalculateButton.IsEnabled = false;
             try
             {
-                var aggregateStats = new MedicationExperimentStats();
+                _aggregateStats = new MedicationExperimentStats();
                 _allRows.Clear();
 
                 foreach (var filePath in existingFiles)
@@ -68,11 +69,11 @@ namespace MineguideEPOCParser.GUIApp.Tools
                         OutputFile = string.Empty
                     });
 
-                    aggregateStats.TP += stats.TP;
-                    aggregateStats.TPStar += stats.TPStar;
-                    aggregateStats.FP += stats.FP;
-                    aggregateStats.FN += stats.FN;
-                    aggregateStats.Hallucinations += stats.Hallucinations;
+                    _aggregateStats.TP += stats.TP;
+                    _aggregateStats.TPStar += stats.TPStar;
+                    _aggregateStats.FP += stats.FP;
+                    _aggregateStats.FN += stats.FN;
+                    _aggregateStats.Hallucinations += stats.Hallucinations;
 
                     foreach (var row in stats.Rows)
                     {
@@ -80,21 +81,14 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     }
                 }
 
-                TPTextBox.Text = aggregateStats.TP.ToString();
-                TPStarTextBox.Text = aggregateStats.TPStar.ToString();
-                TPExactPlusFuzzyTextBox.Text = aggregateStats.TPExactPlusFuzzy.ToString();
-                FPTextBox.Text = aggregateStats.FP.ToString();
-                FNTextBox.Text = aggregateStats.FN.ToString();
-                HallucinationsTextBox.Text = aggregateStats.Hallucinations.ToString();
+                TPTextBox.Text = _aggregateStats.TP.ToString();
+                TPStarTextBox.Text = _aggregateStats.TPStar.ToString();
+                TPExactPlusFuzzyTextBox.Text = _aggregateStats.TPRelaxed.ToString();
+                FPTextBox.Text = _aggregateStats.FP.ToString();
+                FNTextBox.Text = _aggregateStats.FN.ToString();
+                HallucinationsTextBox.Text = _aggregateStats.Hallucinations.ToString();
 
-                PrecisionTextBox.Text = aggregateStats.Precision.ToString("F4");
-                PrecisionPercentageTextBox.Text = aggregateStats.Precision.ToString("P4");
-
-                RecallTextBox.Text = aggregateStats.Recall.ToString("F4");
-                RecallPercentageTextBox.Text = aggregateStats.Recall.ToString("P4");
-
-                F1ScoreTextBox.Text = aggregateStats.F1Score.ToString("F4");
-                F1ScorePercentageTextBox.Text = aggregateStats.F1Score.ToString("P4");
+                UpdateMetricsDisplay();
 
                 UpdateTotalCounts();
                 ResultsGrid.Visibility = Visibility.Visible;
@@ -107,6 +101,31 @@ namespace MineguideEPOCParser.GUIApp.Tools
             {
                 CalculateButton.IsEnabled = true;
             }
+        }
+
+        private void EvaluationModeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateMetricsDisplay();
+        }
+
+        private void UpdateMetricsDisplay()
+        {
+            if (_aggregateStats == null || PrecisionTextBox == null) return;
+
+            bool strict = EvaluationModeComboBox.SelectedIndex == 0; // Strict is first
+
+            double precision = strict ? _aggregateStats.StrictPrecision : _aggregateStats.RelaxedPrecision;
+            double recall = strict ? _aggregateStats.StrictRecall : _aggregateStats.RelaxedRecall;
+            double f1Score = strict ? _aggregateStats.StrictF1Score : _aggregateStats.RelaxedF1Score;
+
+            PrecisionTextBox.Text = precision.ToString("F4");
+            PrecisionPercentageTextBox.Text = precision.ToString("P4");
+
+            RecallTextBox.Text = recall.ToString("F4");
+            RecallPercentageTextBox.Text = recall.ToString("P4");
+
+            F1ScoreTextBox.Text = f1Score.ToString("F4");
+            F1ScorePercentageTextBox.Text = f1Score.ToString("P4");
         }
 
         private void FilterChanged(object sender, EventArgs e)

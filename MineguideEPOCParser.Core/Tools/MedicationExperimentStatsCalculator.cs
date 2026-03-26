@@ -5,24 +5,63 @@ using MineguideEPOCParser.Core.Validation;
 
 namespace MineguideEPOCParser.Core.Tools
 {
+    /// <summary>
+    /// Represents the statistics for a medication extraction experiment.
+    /// Supports two evaluation modes:
+    /// 1. Strict: Only exact matches (TP) are considered correct. TP* (fuzzy matches) are treated as errors.
+    ///    In this mode, a TP* effectively counts as both a False Positive (FP) (it predicted something incorrectly)
+    ///    and a False Negative (FN) (it failed to perfectly extract a real entity).
+    /// 2. Relaxed: Both exact (TP) and fuzzy (TP*) matches are considered correct.
+    /// </summary>
     public class MedicationExperimentStats
     {
         public int TP { get; set; }
         public int TPStar { get; set; }
-        public int TPExactPlusFuzzy => TP + TPStar;
+        /// <summary>
+        /// Relaxed = Exact (<see cref="TP"/>) + Fuzzy (<see cref="TPStar"/>).
+        /// </summary>
+        public int TPRelaxed => TP + TPStar;
         public int FP { get; set; }
         public int FN { get; set; }
         public int Hallucinations { get; set; }
 
         public List<MedicationStatRow> Rows { get; set; } = [];
 
-        public int Correct => TP + TPStar;
+        /// <summary>
+        /// Total number of predictions made by the model (TP + TP* + FP).
+        /// <para>
+        /// Note: TP* is included because in strict mode each TP* counts as BOTH one FP (the wrong value) and one FN (the correct value it didn't get),
+        /// and in relaxed mode it counts as a TP.
+        /// So in Predicted, we count them to count the FP part in strict mode and the TP part in relaxed mode.
+        /// </para>
+        /// </summary>
         public int Predicted => TP + TPStar + FP;
+
+        /// <summary>
+        /// Total number of actual entities present in the gold standard (TP + TP* + FN).
+        /// <para>
+        /// Note: TP* is included because in strict mode each TP* counts as BOTH one FP (the wrong value) and one FN (the correct value it didn't get),
+        /// and in relaxed mode it counts as a TP.
+        /// So in Actual, we count them to count the FN part in strict mode and the TP part in relaxed mode.
+        /// </para>
+        /// </summary>
         public int Actual => TP + TPStar + FN;
 
-        public double Precision => Predicted == 0 ? 0 : (double)Correct / Predicted;
-        public double Recall => Actual == 0 ? 0 : (double)Correct / Actual;
-        public double F1Score => (Precision + Recall) == 0 ? 0 : 2 * (Precision * Recall) / (Precision + Recall);
+        public double StrictPrecision => CalculatePrecision(TP, Predicted);
+        public double StrictRecall => CalculateRecall(TP, Actual);
+        public double StrictF1Score => CalculateF1Score(StrictPrecision, StrictRecall);
+
+        public double RelaxedPrecision => CalculatePrecision(TPRelaxed, Predicted);
+        public double RelaxedRecall => CalculateRecall(TPRelaxed, Actual);
+        public double RelaxedF1Score => CalculateF1Score(RelaxedPrecision, RelaxedRecall);
+
+        public double Precision => RelaxedPrecision;
+        public double Recall => RelaxedRecall;
+        public double F1Score => RelaxedF1Score;
+
+        private static double CalculatePrecision(int correct, int predicted) => predicted == 0 ? 0 : (double)correct / predicted;
+        private static double CalculateRecall(int correct, int actual) => actual == 0 ? 0 : (double)correct / actual;
+        private static double CalculateF1Score(double precision, double recall) => (precision + recall) == 0 ? 0 : 2 * (precision * recall) / (precision + recall);
 
         public override string ToString()
         {
@@ -31,9 +70,12 @@ namespace MineguideEPOCParser.Core.Tools
                    $"FP: {FP}\n" +
                    $"FN: {FN}\n" +
                    $"Hallucinations: {Hallucinations}\n" +
-                   $"Precision: {Precision:F4}\n" +
-                   $"Recall: {Recall:F4}\n" +
-                   $"F1-Score: {F1Score:F4}";
+                   $"Strict Precision: {StrictPrecision:F4}\n" +
+                   $"Strict Recall: {StrictRecall:F4}\n" +
+                   $"Strict F1-Score: {StrictF1Score:F4}\n" +
+                   $"Relaxed Precision: {RelaxedPrecision:F4}\n" +
+                   $"Relaxed Recall: {RelaxedRecall:F4}\n" +
+                   $"Relaxed F1-Score: {RelaxedF1Score:F4}";
         }
     }
 
