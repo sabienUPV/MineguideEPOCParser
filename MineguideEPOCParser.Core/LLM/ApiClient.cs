@@ -11,7 +11,11 @@ namespace MineguideEPOCParser.Core.LLM
 {
 	public class ApiClient
 	{
-        public static ApiConfiguration Configuration = new AppSettingsApiConfiguration();
+        public static ApiConfiguration Configuration
+        {
+            get => field ?? throw new InvalidOperationException("API configuration is not set. Please set the Configuration property before making API calls.");
+            set;
+        }
         public static string ApiUrl => Configuration.ApiUrl;
         public static string ApiKey => Configuration.ApiKey;
 

@@ -21,15 +21,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
 
-    <!-- Configuration packages for reading local settings (like the API URL or the API key) from appsettings.json -->
-    <!-- 
-      NOTE: For now, we CANNOT update their versions beyond 8.X.X, because that's the latest version that supports .NET 6,
-      and we still need to support .NET 6 in the GUI app. Once we can drop .NET 6 support, we can update these packages to the latest version.
-     -->
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="[8.0.0, 9.0.0)" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="[8.0.0, 9.0.0)" />
-    <!-- Note 2: We bump System.Text.Json to at least 8.0.6 since there is a vulnerability in version 8.0.0 that gets patched in 8.0.5 -->
-    <PackageReference Include="System.Text.Json" Version="[8.0.6, 9.0.0)" />
+    <PackageReference Include="System.Text.Json" Version="[8.0.6,)" />
   </ItemGroup>
 
 </Project>

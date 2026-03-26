@@ -1,24 +1,29 @@
 ﻿using ConsoleAppFramework;
+using MineguideEPOCParser.ConsoleApp;
+using MineguideEPOCParser.Core.LLM;
 using MineguideEPOCParser.Core.Parsers;
 using MineguideEPOCParser.Core.Parsers.Configurations;
 using Serilog;
 
-// 1. Configure Serilog statically and globally
+// Configure Serilog statically and globally
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Verbose() // Log everything by default
     .WriteTo.Console()
     .CreateLogger();
 
-// 2. Initialize the app
+// Configure API settings from appsettings.json
+ApiClient.Configuration = new AppSettingsApiConfiguration();
+
+// Initialize the app
 var app = ConsoleApp.Create();
 
-// 3. Register the main command pointing to our method
+// Register the main command pointing to our method
 app.Add("", ParserCommands.RunAsync);
 
-// 4. Run the app
+// Run the app
 await app.RunAsync(args);
 
-// 5. Ensure all logs are written and flushed before exiting
+// Ensure all logs are written and flushed before exiting
 await Log.CloseAndFlushAsync();
 
 /// <summary>
