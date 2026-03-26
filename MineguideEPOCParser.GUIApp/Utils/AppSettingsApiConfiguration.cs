@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿// NOTE: THIS FILE IS ONLY USED IN THE .NET 10 VERSION OF THE GUI APPLICATION.
+// THE .NET 6 VERSION EXCLUDES THIS FILE FROM COMPILATION, BECAUSE WE DON'T SUPPORT Microsoft.Extensions.Configuration IN THE .NET 6 VERSION, AS EXPLAINED IN App.xaml.cs.
+
+using Microsoft.Extensions.Configuration;
 using MineguideEPOCParser.Core.LLM;
 using System.IO;
 

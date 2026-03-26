@@ -18,5 +18,4 @@ namespace MineguideEPOCParser.GUIApp
 			ApiClient.Configuration = new AppSettingsApiConfiguration();
 		}
 	}
-
 }
