@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using MineguideEPOCParser.Core.Utils;
+﻿using MineguideEPOCParser.Core.Utils;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -12,13 +11,9 @@ namespace MineguideEPOCParser.Core.LLM
 {
 	public class ApiClient
 	{
-        private static readonly IConfiguration Configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .Build();
-
-        private static readonly string ApiUrl = Configuration["ApiUrl"] ?? "https://mineguide.itaca.upv.es:11434/api/generate";
-        private static readonly string ApiKey = Configuration["ApiKey"] ?? throw new InvalidOperationException("Ollama API key ('ApiKey' property) is not set in appsettings.json.");
+        public static ApiConfiguration Configuration = new AppSettingsApiConfiguration();
+        public static string ApiUrl => Configuration.ApiUrl;
+        public static string ApiKey => Configuration.ApiKey;
 
         private static readonly HttpClient _sharedClient = new() { Timeout = Timeout.InfiniteTimeSpan };
 
