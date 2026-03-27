@@ -419,11 +419,14 @@ namespace MineguideEPOCParser.GUIApp.Tools
             var columnSpacing2 = new ColumnDefinition { Width = new GridLength(10) };
             var column2 = new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) };
 
-            // Add the columns to the grid
-            ParametersGrid.ColumnDefinitions.Add(columnSpacing1);
-            ParametersGrid.ColumnDefinitions.Add(column1);
-            ParametersGrid.ColumnDefinitions.Add(columnSpacing2);
-            ParametersGrid.ColumnDefinitions.Add(column2);
+            // Get the last column index
+            var lastColumnIndex = ParametersGrid.ColumnDefinitions.Count - 1;
+
+            // Add the columns to the grid (insert them before the last column, which is the star column for centering)
+            ParametersGrid.ColumnDefinitions.Insert(lastColumnIndex, columnSpacing1);
+            ParametersGrid.ColumnDefinitions.Insert(lastColumnIndex, column1);
+            ParametersGrid.ColumnDefinitions.Insert(lastColumnIndex, columnSpacing2);
+            ParametersGrid.ColumnDefinitions.Insert(lastColumnIndex, column2);
 
             // Create the test buttons
             var testJuanInputButton = new Button
