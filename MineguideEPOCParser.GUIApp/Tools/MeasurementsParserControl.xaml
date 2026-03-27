@@ -127,7 +127,7 @@
             <TextBlock Grid.Column="6" x:Name="TimerTextBlock" Text="00:00:00" VerticalAlignment="Center" HorizontalAlignment="Left"/>
 
             <!-- Cancel button -->
-            <Button Grid.Column="8" x:Name="CancelButton" Content="Cancel" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="CancelButton_Click" IsEnabled="{Binding IsParsing}" Width="57" />
+            <Button Grid.Column="8" x:Name="CancelButton" Content="Cancel" VerticalAlignment="Center" HorizontalAlignment="Center" Padding="10 0 10 0" Click="CancelButton_Click" IsEnabled="{Binding IsParsing}" />
 
             <!-- Log viewer in expander (expanded by default) -->
             <Expander Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="9" x:Name="LogExpander" Header="View logs" IsExpanded="True">
