@@ -543,9 +543,6 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
                     {(stoppedMidway ? "You can resume the validation later by using the output file as input, and your previous validations will be loaded automatically." : "All medications have been validated.")}
                     """, (stoppedMidway ? "Progress saved and stopped" : "Completed") + " successfully", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                // Reset validation (set parsing to false, clear the RichTextBox, and reset matches)
-                ResetMedicationValidation();
             }
             catch (OperationCanceledException)
             {
@@ -557,7 +554,8 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
             finally
             {
-                IsParsing = false; // Set parsing state to false
+                // Reset validation (set parsing to false, clear the RichTextBox, and reset matches)
+                ResetMedicationValidation();
             }
         }
 
