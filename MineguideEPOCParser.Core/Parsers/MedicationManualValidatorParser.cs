@@ -211,17 +211,20 @@ namespace MineguideEPOCParser.Core.Parsers
 
                 if (_hasMatchHeaders)
                 {
+                    // The Match headers are present, but we need to check first if the current row actually has match information to avoid exceptions on unfinished files.
+                    // We check the MatchInText header that should always have a value if the match information is present, since it's required and comes from the CSV.
+                    // (Note: We technically could also check StartIndex, but we sometimes save it as -1 for non-matches,
+                    // so we would have to parse it and check that it's >= 0, which is more expensive than just checking if MatchInText is null or whitespace.)
+                    string? rawMatchInText = CurrentCsvReader!.GetField<string>(Configuration.MatchInTextHeaderName);
+
                     // If the medication matches are already present in the row,
                     // we can just get them from the row (the reader points to the current record).
-                    try
+                    if (!string.IsNullOrWhiteSpace(rawMatchInText))
                     {
                         var match = CurrentCsvReader!.GetRecord<MedicationMatch>();
                         currentReport.AddMatch(match);
                     }
-                    catch
-                    {
-                        // For unfinished files, some rows might not have the match information yet, so we just skip them.
-                    }
+                    // else: For unfinished files, some rows might not have the match information yet, so we just skip them.
                 }
             }
 
