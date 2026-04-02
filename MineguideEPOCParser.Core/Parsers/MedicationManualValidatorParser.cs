@@ -32,26 +32,19 @@ namespace MineguideEPOCParser.Core.Parsers
 
                 // Also map the details columns
                 var detailsColumns = MedicationAnalyzers.MedicationDetails.GetDetailsColumnsExceptMedication();
+                // Use reflection to get the properties of the MedicationDetails type that can be set, and cache them for performance since this mapping function is called for every row.
+                var cachedProperties = typeof(MedicationAnalyzers.MedicationDetails).GetProperties()
+                    .Where(prop => prop.CanWrite && detailsColumns.Contains(prop.Name))
+                    .ToList();
                 Map(m => m.Details).Convert(convertFromStringFunction: data =>
                 {
                     var medication = data.Row.GetField<string>(DataParserConfiguration.DefaultMedicationHeaderName)
                         ?? throw new InvalidOperationException($"The medication header '{DataParserConfiguration.DefaultMedicationHeaderName}' was not found in the input file. Cannot map the MedicationDetails without the medication name.");
 
                     var details = new MedicationAnalyzers.MedicationDetails() { Medication = medication };
-                    foreach (var propertyName in detailsColumns)
+                    foreach (var prop in cachedProperties)
                     {
-                        // Use reflection to set the properties of the MedicationDetails object based on the column names and values from the CSV
-                        var propertyInfo = typeof(MedicationAnalyzers.MedicationDetails).GetProperty(propertyName);
-
-                        if (propertyInfo == null || !propertyInfo.CanWrite) continue;
-
-                        object? value;
-                        try
-                        {
-                            // Attempt to get the value from the CSV and convert it to the correct type
-                            value = data.Row.GetField(propertyInfo.PropertyType, propertyName);
-                        }
-                        catch
+                        if (!data.Row.TryGetField(prop.PropertyType, prop.Name, out object? value))
                         {
                             // If there's an error (e.g., missing column, conversion failure),
                             // we drop the entire details object to avoid partial/incorrect data.
@@ -59,7 +52,7 @@ namespace MineguideEPOCParser.Core.Parsers
                             return null;
                         }
 
-                        propertyInfo.SetValue(details, value);
+                        prop.SetValue(details, value);
                     }
 
                     return details;
