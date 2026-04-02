@@ -655,6 +655,20 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
                 if (selectedMatch is null)
                 {
+                    // If an exact match was not found, check for partial substring matches (TP*)
+                    selectedMatch = FindPartialMedicationMatchInsideSelectedText(selectedText, startIndex);
+
+                    if (selectedMatch is not null)
+                    {
+                        // If a partial match was found, ask the user if they want to mark it as TP* (since it's not an exact match)
+                        if (AskUserToMarkMedicationAsPartialSubstringTruePositive(selectedMatch, selectedText))
+                        {
+                            RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
+                            FocusMedicationMatch(selectedMatch); // Focus the match after marking it
+                        }
+                        return;
+                    }
+
                     // If no match was found, we can add the selected text as a new medication (it's a false negative)
                     var newMatch = AddFalseNegativeMedication(selectedText, startIndex);
                     RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
@@ -671,11 +685,11 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
         private static void MarkMedicationAsTruePositive(MedicationResultUI match)
         {
-            if (match.ExperimentResult != MedicationMatch.ExperimentResultType.FP)
+            if (match.ExperimentResult != MedicationResult.ExperimentResultType.FP)
             {
                 // If it isn't a false positive, either it is already a true positive,
                 // or it is a false negative, which shouldn't be able to change into a true positive
-                if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FN)
+                if (match.ExperimentResult == MedicationResult.ExperimentResultType.FN)
                 {
                     MessageBox.Show("A false negative (FN) medication match cannot be marked as true positive (TP).");
                 }
@@ -685,13 +699,39 @@ namespace MineguideEPOCParser.GUIApp.Tools
             if (match.MatchInText == match.ExtractedMedication)
             {
                 // Change the experiment result to TP
-                match.ExperimentResult = MedicationMatch.ExperimentResultType.TP;
+                match.ExperimentResult = MedicationResult.ExperimentResultType.TP;
             }
             else
             {
                 // Change the experiment result to TP*, since the match is not exact
-                match.ExperimentResult = MedicationMatch.ExperimentResultType.TP_;
+                match.ExperimentResult = MedicationResult.ExperimentResultType.TP_;
             }
+        }
+
+        private static bool AskUserToMarkMedicationAsPartialSubstringTruePositive(MedicationResultUI match, string selectedText)
+        {
+            var result = MessageBox.Show(
+                $"""
+                A medication match found in the text: '{match.MatchInText}' is a partial substring of the selected text '{selectedText}'.
+                Do you want to mark this medication as a partial substring true positive (TP*) of the selected text?
+                This will also set the corrected medication to the selected text, but will keep the original match in text for reference.
+                """,
+                "Mark as Partial Substring True Positive (TP*)?",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+            {
+                return false;
+            }
+
+            // Change the experiment result to TP*, since it's a partial match
+            match.ExperimentResult = MedicationResult.ExperimentResultType.TP_;
+
+            // Update the corrected medication to the selected text
+            match.CorrectedMedication = selectedText;
+
+            return true;
         }
 
         private MedicationResultUI AddFalseNegativeMedication(string selectedText, int startIndex)
@@ -989,6 +1029,12 @@ namespace MineguideEPOCParser.GUIApp.Tools
         // Find the match by start index and selected text
         private MedicationResultUI? FindMedicationMatchFromSelectedText(string selectedText, int startIndex) =>
             _currentMedicationResults?.FirstOrDefault(m => m.HasMatchInText && m.StartIndex == startIndex && m.MatchInText == selectedText);
+
+        // Find a match that's inside of the selected text but it's not the entire text
+        // (to account for partial matches, this would make the partial match found a TP* instead of FN for the selection and FP for the match,
+        // since the medication found was a substring of the selected text, so it is partially correct instead of completely incorrect)
+        private MedicationResultUI? FindPartialMedicationMatchInsideSelectedText(string selectedText, int startIndex) =>
+            _currentMedicationResults?.FirstOrDefault(m => m.HasMatchInText && m.StartIndex >= startIndex && (m.StartIndex + m.Length) <= (startIndex + selectedText.Length) && selectedText.Contains(m.MatchInText));
 
         private void ResetMedicationValidation()
         {
