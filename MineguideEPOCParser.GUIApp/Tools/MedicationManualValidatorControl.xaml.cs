@@ -656,15 +656,15 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 if (selectedMatch is null)
                 {
                     // If an exact match was not found, check for partial substring matches (TP*)
-                    selectedMatch = FindPartialMedicationMatchInsideSelectedText(selectedText, startIndex);
+                    var partialMatches = FindPartialMedicationMatchesInsideSelectedText(selectedText, startIndex);
 
-                    if (selectedMatch is not null)
+                    if (partialMatches is not null && partialMatches.Count > 0)
                     {
                         // If a partial match was found, ask the user if they want to mark it as TP* (since it's not an exact match)
-                        if (AskUserToMarkMedicationAsPartialSubstringTruePositive(selectedMatch, selectedText))
+                        if (AskUserToMarkMedicationsAsPartialSubstringTruePositive(partialMatches, selectedText))
                         {
                             RenderMedicationsText(); // Redraw the RichTextBox with updated highlights
-                            FocusMedicationMatch(selectedMatch); // Focus the match after marking it
+                            FocusMedicationMatch(partialMatches[^1]); // Focus the last partial match after marking them
                         }
                         return;
                     }
@@ -708,13 +708,17 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
         }
 
-        private static bool AskUserToMarkMedicationAsPartialSubstringTruePositive(MedicationResultUI match, string selectedText)
+        private static bool AskUserToMarkMedicationsAsPartialSubstringTruePositive(ICollection<MedicationResultUI> matches, string selectedText)
         {
+            var matchTexts = string.Join("\n", matches.Select(m => $"- '{m.MatchInText}'"));
             var result = MessageBox.Show(
                 $"""
-                A medication match found in the text: '{match.MatchInText}' is a partial substring of the selected text '{selectedText}'.
-                Do you want to mark this medication as a partial substring true positive (TP*) of the selected text?
-                This will also set the corrected medication to the selected text, but will keep the original match in text for reference.
+                The following medication matches were found in the selected text '{selectedText}' as partial substrings:
+
+                {matchTexts}
+
+                Do you want to mark these medications as partial substring true positives (TP*) of the selected text?
+                This will also set the corrected medication to the selected text for all of them, but will keep the original match in text for reference.
                 """,
                 "Mark as Partial Substring True Positive (TP*)?",
                 MessageBoxButton.YesNo,
@@ -725,11 +729,14 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 return false;
             }
 
-            // Change the experiment result to TP*, since it's a partial match
-            match.ExperimentResult = MedicationResult.ExperimentResultType.TP_;
+            foreach (var match in matches)
+            {
+                // Change the experiment result to TP*, since it's a partial match
+                match.ExperimentResult = MedicationResult.ExperimentResultType.TP_;
 
-            // Update the corrected medication to the selected text
-            match.CorrectedMedication = selectedText;
+                // Update the corrected medication to the selected text
+                match.CorrectedMedication = selectedText;
+            }
 
             return true;
         }
@@ -1033,8 +1040,8 @@ namespace MineguideEPOCParser.GUIApp.Tools
         // Find a match that's inside of the selected text but it's not the entire text
         // (to account for partial matches, this would make the partial match found a TP* instead of FN for the selection and FP for the match,
         // since the medication found was a substring of the selected text, so it is partially correct instead of completely incorrect)
-        private MedicationResultUI? FindPartialMedicationMatchInsideSelectedText(string selectedText, int startIndex) =>
-            _currentMedicationResults?.FirstOrDefault(m => m.HasMatchInText && m.StartIndex >= startIndex && (m.StartIndex + m.Length) <= (startIndex + selectedText.Length) && selectedText.Contains(m.MatchInText));
+        private List<MedicationResultUI>? FindPartialMedicationMatchesInsideSelectedText(string selectedText, int startIndex) =>
+            _currentMedicationResults?.Where(m => m.HasMatchInText && m.StartIndex >= startIndex && (m.StartIndex + m.Length) <= (startIndex + selectedText.Length) && selectedText.Contains(m.MatchInText)).ToList();
 
         private void ResetMedicationValidation()
         {
