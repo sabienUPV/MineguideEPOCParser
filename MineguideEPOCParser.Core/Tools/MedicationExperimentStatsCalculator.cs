@@ -5,6 +5,14 @@ using MineguideEPOCParser.Core.Validation;
 
 namespace MineguideEPOCParser.Core.Tools
 {
+    public enum ErrorType
+    {
+        Hallucination,
+        SemanticAmbiguity,
+        UnderExtraction,
+        OverExtraction
+    }
+
     /// <summary>
     /// Represents the statistics for a medication extraction experiment.
     /// Supports two evaluation modes:
@@ -24,6 +32,10 @@ namespace MineguideEPOCParser.Core.Tools
         public int FP { get; set; }
         public int FN { get; set; }
         public int Hallucinations { get; set; }
+
+        public int UnderExtractions { get; set; }
+        public int OverExtractions { get; set; }
+        public int SemanticAmbiguities { get; set; } // Contextual Errors / Non-Pharmacological Entities (FP with match in text)
 
         public List<MedicationStatRow> Rows { get; set; } = [];
 
@@ -46,6 +58,11 @@ namespace MineguideEPOCParser.Core.Tools
         /// </para>
         /// </summary>
         public int Actual => TP + TPStar + FN;
+
+        /// <summary>
+        /// Total number of errors for qualitative analysis (Hallucinations + SemanticAmbiguity + UnderExtraction + OverExtraction).
+        /// </summary>
+        public int TotalErrorsForAnalysis => Hallucinations + SemanticAmbiguities + UnderExtractions + OverExtractions;
 
         public double StrictPrecision => CalculatePrecision(TP, Predicted);
         public double StrictRecall => CalculateRecall(TP, Actual);
@@ -70,6 +87,9 @@ namespace MineguideEPOCParser.Core.Tools
                    $"FP: {FP}\n" +
                    $"FN: {FN}\n" +
                    $"Hallucinations: {Hallucinations}\n" +
+                   $"Under-extractions: {UnderExtractions}\n" +
+                   $"Over-extractions: {OverExtractions}\n" +
+                   $"Semantic Ambiguities: {SemanticAmbiguities}\n" +
                    $"Strict Precision: {StrictPrecision:F4}\n" +
                    $"Strict Recall: {StrictRecall:F4}\n" +
                    $"Strict F1-Score: {StrictF1Score:F4}\n" +
@@ -86,7 +106,8 @@ namespace MineguideEPOCParser.Core.Tools
         public string? Result { get; set; }
         public int StartIndex { get; set; }
         public string? MatchInText { get; set; }
-        public bool IsHallucination { get; set; }
+        public string? CorrectedMedication { get; set; }
+        public ErrorType? Error { get; set; }
     }
 
     public static class MedicationExperimentStatsCalculator
@@ -119,6 +140,7 @@ namespace MineguideEPOCParser.Core.Tools
             var matchInTextHeader = config.MatchInTextHeaderName;
             var medicationHeader = config.MedicationHeaderName;
             var reportNumberHeader = config.ReportNumberHeaderName;
+            var correctedMedicationHeader = config.MatchCorrectedMedicationHeaderName;
 
             while (await csv.ReadAsync())
             {
@@ -129,16 +151,33 @@ namespace MineguideEPOCParser.Core.Tools
                 var reportNumberStr = csv.GetField(reportNumberHeader);
                 var startIndexStr = csv.GetField(startIndexHeader);
                 var matchInTextStr = csv.GetField(matchInTextHeader);
+                
+                csv.TryGetField(correctedMedicationHeader, out string? correctedMedicationStr);
 
                 int.TryParse(reportNumberStr, out int reportNumber);
                 bool hasStartIndex = int.TryParse(startIndexStr, out int startIndex);
-                bool isHallucination = false;
+                ErrorType? error = null;
 
                 if (string.IsNullOrEmpty(resultStr)) continue;
 
                 if (resultStr == MedicationResult.TPStar)
                 {
                     stats.TPStar++;
+
+                    // Boundary Errors logic (Mutually exclusive: can't be both under and over due to length check)
+                    if (!string.IsNullOrEmpty(correctedMedicationStr) && !string.IsNullOrEmpty(matchInTextStr))
+                    {
+                        if (correctedMedicationStr.Length > matchInTextStr.Length && correctedMedicationStr.Contains(matchInTextStr, StringComparison.OrdinalIgnoreCase))
+                        {
+                            stats.UnderExtractions++;
+                            error = ErrorType.UnderExtraction;
+                        }
+                        else if (matchInTextStr.Length > correctedMedicationStr.Length && matchInTextStr.Contains(correctedMedicationStr, StringComparison.OrdinalIgnoreCase))
+                        {
+                            stats.OverExtractions++;
+                            error = ErrorType.OverExtraction;
+                        }
+                    }
                 }
                 else if (Enum.TryParse<MedicationResult.ExperimentResultType>(resultStr, out var resultType))
                 {
@@ -149,11 +188,16 @@ namespace MineguideEPOCParser.Core.Tools
                             break;
                         case MedicationResult.ExperimentResultType.FP:
                             stats.FP++;
-                            // Check for hallucinations
+                            // Check for hallucinations vs Semantic Ambiguity (Mutually exclusive)
                             if (!hasStartIndex || startIndex < 0 || string.IsNullOrWhiteSpace(matchInTextStr))
                             {
                                 stats.Hallucinations++;
-                                isHallucination = true;
+                                error = ErrorType.Hallucination;
+                            }
+                            else
+                            {
+                                stats.SemanticAmbiguities++;
+                                error = ErrorType.SemanticAmbiguity;
                             }
                             break;
                         case MedicationResult.ExperimentResultType.FN:
@@ -169,7 +213,8 @@ namespace MineguideEPOCParser.Core.Tools
                     Result = resultStr,
                     StartIndex = startIndex,
                     MatchInText = matchInTextStr,
-                    IsHallucination = isHallucination
+                    CorrectedMedication = correctedMedicationStr,
+                    Error = error
                 });
             }
 

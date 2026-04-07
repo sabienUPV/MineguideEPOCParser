@@ -74,6 +74,9 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     _aggregateStats.FP += stats.FP;
                     _aggregateStats.FN += stats.FN;
                     _aggregateStats.Hallucinations += stats.Hallucinations;
+                    _aggregateStats.UnderExtractions += stats.UnderExtractions;
+                    _aggregateStats.OverExtractions += stats.OverExtractions;
+                    _aggregateStats.SemanticAmbiguities += stats.SemanticAmbiguities;
 
                     foreach (var row in stats.Rows)
                     {
@@ -86,9 +89,9 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 TPExactPlusFuzzyTextBox.Text = _aggregateStats.TPRelaxed.ToString();
                 FPTextBox.Text = _aggregateStats.FP.ToString();
                 FNTextBox.Text = _aggregateStats.FN.ToString();
-                HallucinationsTextBox.Text = _aggregateStats.Hallucinations.ToString();
 
                 UpdateMetricsDisplay();
+                UpdateErrorAnalysisDisplay();
 
                 UpdateTotalCounts();
                 ResultsGrid.Visibility = Visibility.Visible;
@@ -128,6 +131,35 @@ namespace MineguideEPOCParser.GUIApp.Tools
             F1ScorePercentageTextBox.Text = f1Score.ToString("P4");
         }
 
+        private void UpdateErrorAnalysisDisplay()
+        {
+            if (_aggregateStats == null) return;
+
+            int totalErrors = _aggregateStats.TotalErrorsForAnalysis;
+
+            // Percentage is based on the total of all 4 error types (for pie chart analysis)
+            
+            // Semantic Ambiguity
+            SemanticAmbiguitiesTextBox.Text = _aggregateStats.SemanticAmbiguities.ToString();
+            double semanticPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.SemanticAmbiguities / totalErrors;
+            SemanticAmbiguitiesPercentageTextBox.Text = semanticPerc.ToString("P4");
+
+            // Hallucinations
+            HallucinationsErrorTextBox.Text = _aggregateStats.Hallucinations.ToString();
+            double hallucinationPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.Hallucinations / totalErrors;
+            HallucinationsPercentageTextBox.Text = hallucinationPerc.ToString("P4");
+
+            // Under-extraction
+            UnderExtractionsTextBox.Text = _aggregateStats.UnderExtractions.ToString();
+            double underExtractionPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.UnderExtractions / totalErrors;
+            UnderExtractionsPercentageTextBox.Text = underExtractionPerc.ToString("P4");
+
+            // Over-extraction
+            OverExtractionsTextBox.Text = _aggregateStats.OverExtractions.ToString();
+            double overExtractionPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.OverExtractions / totalErrors;
+            OverExtractionsPercentageTextBox.Text = overExtractionPerc.ToString("P4");
+        }
+
         private void FilterChanged(object sender, EventArgs e)
         {
             _filteredView?.Refresh();
@@ -162,9 +194,19 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 var filterValue = selectedItem.Content.ToString();
                 if (filterValue != "All")
                 {
-                    if (filterValue == "Hallucination")
+                    // Map filter string to ErrorType enum
+                    ErrorType? errorTypeToFilter = filterValue switch
                     {
-                        if (!row.IsHallucination) return false;
+                        "Hallucination" => ErrorType.Hallucination,
+                        "Semantic Ambiguity" => ErrorType.SemanticAmbiguity,
+                        "Under-extraction" => ErrorType.UnderExtraction,
+                        "Over-extraction" => ErrorType.OverExtraction,
+                        _ => null
+                    };
+
+                    if (errorTypeToFilter.HasValue)
+                    {
+                        if (row.Error != errorTypeToFilter.Value) return false;
                     }
                     else if (row.Result != filterValue)
                     {
