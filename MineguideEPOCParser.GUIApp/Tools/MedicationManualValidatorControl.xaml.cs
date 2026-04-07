@@ -801,37 +801,11 @@ namespace MineguideEPOCParser.GUIApp.Tools
             FocusMedicationMatch(selectedMatch); // Focus the match after correction
         }
 
-        private void CorrectMedication(MedicationResultUI medicationMatch)
+        private static void CorrectMedication(MedicationResultUI medicationMatch)
         {
-            // If the match is marked as a False Positive (FP),
-            // ask the user if the correct medication was already contained in the matched text
-            // (if so, there would be a False Negative (FN) as well in that subtext which we should add)
-            bool isFalsePositive = medicationMatch.ExperimentResult == MedicationMatch.ExperimentResultType.FP;
-            if (isFalsePositive)
-            {
-                var result = MessageBox.Show(
-                    $"""
-                    NOTE: The selected medication '{medicationMatch.ExtractedMedication}' was marked as a **False Positive** (FP).
-                    
-                    If you continue, you will be prompted to mark part of the original text as a False Negative (FN).
-                    You NEED to ensure that the corrected medication you enter is part of the original text EXPLICITLY.
-                    If you later need to correct that medication as well (e.g., due to a typo, or a need to convert brands to generic names),
-                    you can do so afterwards by doing the same 'Correct' action on the newly created FN text.
-
-                    Do you want to continue?
-                    """,
-                    "Mark part of the original text as False Negative (FN)",
-                    MessageBoxButton.OKCancel,
-                    MessageBoxImage.Information);
-                if (result != MessageBoxResult.OK)
-                {
-                    return; // User cancelled the operation
-                }
-            }
-
             // Prompt user for corrected medication
             string? input;
-            int subTextIndex = -1;
+            bool isPartialTruePositive = false;
             while (true)
             {
                 input = InputBoxWindow.Show(
@@ -857,40 +831,23 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 
                 input = input.Trim(); // Trim whitespace
 
-                if (isFalsePositive)
+                // If the medication is a True Positive (TP),
+                // we support that if the corrected medication is a subtext of the original match in text,
+                // it means that it is a correction of the same match removing additional information (e.g. "salbutamol 500mg" corrected to "salbutamol").
+                // This should be considered a partial match (TP*) rather than a full match (TP),
+                // since the corrected medication doesn't match the full original text,
+                // so that strict match evaluation punishes this behavior (as FP+FN) while relaxed match evaluation still allows it (as TP).
+                //
+                // NOTE: This is the only case in which CorrectedMedication is anything more than informational metadata and affects the evaluation directly.
+                // This is because CorrectedMedication was meant for correcting misspellings by both the LLM and the person who wrote the original text,
+                // which is useful for downstream processing but doesn't usually affect the match evaluation.
+                if (medicationMatch.ExperimentResult == MedicationResult.ExperimentResultType.TP)
                 {
-                    subTextIndex = medicationMatch.MatchInText.IndexOf(input, StringComparison.OrdinalIgnoreCase);
-                    if (subTextIndex < 0)
+                    // If the original match in text contains the correction (e.g. "salbutamol 500mg" contains "salbutamol"),
+                    // then we can consider this correction as a partial true positive (TP*)
+                    if (medicationMatch.MatchInText.Contains(input, StringComparison.OrdinalIgnoreCase))
                     {
-                        // The corrected medication is not part of the original text,
-                        // so we can't add a False Negative (FN) here.
-                        // Prompt the user that they need to enter a valid subtext.
-                        var result = MessageBox.Show(
-                            $"""
-                            The corrected medication '{input}' as **False Negative (FN)** was not found in the original text:
-                            
-                            {medicationMatch.MatchInText}
-                            
-                            Please ensure that the corrected medication is part of the original text.
-
-                            Remember: If you meant to correct a **True Positive** (TP or TP*) medication instead,
-                            please change its status from **False Positive** (FP) to **True Positive** (TP or TP*) first,
-                            and then use the 'Correct' action again to correct it.
-
-                            Do you want to try again?
-                            """,
-                            "Warning: False Negative (FN) not found in text",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Warning);
-
-                        if (result == MessageBoxResult.Yes)
-                        {
-                            continue; // Try again
-                        }
-                        else
-                        {
-                            return; // User cancelled the operation
-                        }
+                        isPartialTruePositive = true;
                     }
                 }
                 break; // Valid input, exit loop
@@ -899,10 +856,9 @@ namespace MineguideEPOCParser.GUIApp.Tools
             // Update the corrected medication
             medicationMatch.CorrectedMedication = input;
 
-            if (isFalsePositive)
+            if (isPartialTruePositive)
             {
-                var subText = medicationMatch.MatchInText.Substring(subTextIndex, medicationMatch.CorrectedMedication.Length);
-                AddFalseNegativeMedication(subText, medicationMatch.StartIndex + subTextIndex);
+                medicationMatch.ExperimentResult = MedicationMatch.ExperimentResultType.TP_;
             }
         }
 
