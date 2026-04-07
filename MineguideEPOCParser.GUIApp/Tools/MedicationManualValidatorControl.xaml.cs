@@ -311,6 +311,9 @@ namespace MineguideEPOCParser.GUIApp.Tools
             // so we replace them back with newlines for better readability in the RichTextBox
             var textToVisualize = _currentText.Replace("\t", "\n");
 
+            // Track which match texts we've already seen (case-insensitive)
+            var seenMatches = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var result in _currentMedicationResults)
             {
                 if (result.StartIndex < 0)
@@ -318,15 +321,20 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     continue; // Skip non-matches for now, we will add them at the end with a separator
                 }
 
-                // Add normal text
+                // Add normal text between matches, checking for subsequent occurrences
                 if (result.StartIndex > currentIndex)
                 {
                     var normalText = textToVisualize.Substring(currentIndex, result.StartIndex - currentIndex);
-                    paragraph.Inlines.Add(new Run(normalText));
+                    // Highlight any subsequent occurrences of previously seen matches in the normal text
+                    AddTextWithSubsequentMatchHighlighting(paragraph, normalText, seenMatches);
                 }
 
                 var hyperlink = CreateMedicationHyperlink(result, richTextBox, onMedicationClick);
                 paragraph.Inlines.Add(hyperlink);
+
+                // Mark this match text as seen
+                seenMatches.Add(result.MatchInText);
+
                 currentIndex = result.StartIndex + result.Length;
             }
 
@@ -334,7 +342,8 @@ namespace MineguideEPOCParser.GUIApp.Tools
             if (currentIndex < textToVisualize.Length)
             {
                 var remainingText = textToVisualize.Substring(currentIndex);
-                paragraph.Inlines.Add(new Run(remainingText));
+                // Highlight any subsequent occurrences of previously seen matches in the remaining text
+                AddTextWithSubsequentMatchHighlighting(paragraph, remainingText, seenMatches);
             }
 
             // Add non-matches that are not part of the original text at the end, separated by a line break
@@ -358,6 +367,92 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
 
             richTextBox.Document.Blocks.Add(paragraph);
+        }
+
+        private void AddTextWithSubsequentMatchHighlighting(Paragraph paragraph, string text, HashSet<string> seenMatches)
+        {
+            if (string.IsNullOrEmpty(text) || seenMatches.Count == 0)
+            {
+                paragraph.Inlines.Add(new Run(text));
+                return;
+            }
+
+            var currentIndex = 0;
+
+            // Find all subsequent occurrences of seen matches in this text
+            var subsequentOccurrences = new List<(int startIndex, int length, string matchText)>();
+
+            // Get word anchors for word-boundary-aware matching
+            var textAnchors = MedicationAnalyzers.SplitIntoWordsRegex().Matches(text);
+
+            foreach (var seenMatch in seenMatches)
+            {
+                // Get word anchors for the medication to compare
+                var medAnchors = MedicationAnalyzers.SplitIntoWordsRegex().Matches(seenMatch);
+                int medWordCount = medAnchors.Count;
+                if (medWordCount == 0) continue; // Skip if no words found
+
+                // Slide a window of words to find complete word matches
+                for (int i = 0; i <= textAnchors.Count - medWordCount; i++)
+                {
+                    int startIndex = textAnchors[i].Index;
+                    var lastAnchor = textAnchors[i + medWordCount - 1];
+                    int length = (lastAnchor.Index + lastAnchor.Length) - startIndex;
+
+                    string candidate = text.Substring(startIndex, length);
+
+                    // Check if this candidate matches the seen match (case-insensitive)
+                    if (candidate.Equals(seenMatch, StringComparison.OrdinalIgnoreCase))
+                    {
+                        subsequentOccurrences.Add((startIndex, length, seenMatch));
+                    }
+                }
+            }
+
+            // Sort by start index to process in order (in-place for efficiency)
+            subsequentOccurrences.Sort((a, b) => a.startIndex.CompareTo(b.startIndex));
+
+            // Remove overlapping occurrences (keep the first one at each position)
+            var nonOverlapping = new List<(int startIndex, int length, string matchText)>();
+            var lastEndIndex = -1;
+            foreach (var occurrence in subsequentOccurrences)
+            {
+                if (occurrence.startIndex >= lastEndIndex)
+                {
+                    nonOverlapping.Add(occurrence);
+                    lastEndIndex = occurrence.startIndex + occurrence.length;
+                }
+            }
+
+            // Render the text with highlighted subsequent occurrences
+            foreach (var occurrence in nonOverlapping)
+            {
+                // Add normal text before this occurrence
+                if (occurrence.startIndex > currentIndex)
+                {
+                    var normalText = text.Substring(currentIndex, occurrence.startIndex - currentIndex);
+                    paragraph.Inlines.Add(new Run(normalText));
+                }
+
+                // Add the subsequent occurrence with special formatting (bold + italic)
+                var subsequentRun = new Run(text.Substring(occurrence.startIndex, occurrence.length))
+                {
+                    FontWeight = FontWeights.Bold,
+                    FontStyle = FontStyles.Italic,
+                    Foreground = new SolidColorBrush(Colors.Gray),
+                    ToolTip = $"This text matches a medication found earlier: '{occurrence.matchText}'"
+                };
+                paragraph.Inlines.Add(subsequentRun);
+
+                currentIndex = occurrence.startIndex + occurrence.length;
+            }
+
+            // Add remaining text
+            if (currentIndex < text.Length)
+            {
+                var remainingText = text.Substring(currentIndex);
+                paragraph.Inlines.Add(new Run(remainingText));
+            }
         }
 
         private Hyperlink CreateMedicationHyperlink(MedicationResultUI result, RichTextBox richTextBox, Func<MedicationResultUI, Task> onMedicationClick)

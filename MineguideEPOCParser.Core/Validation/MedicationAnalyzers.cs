@@ -242,13 +242,13 @@ namespace MineguideEPOCParser.Core.Validation
 
 #if NET7_0_OR_GREATER
         [GeneratedRegex(@"\b\w+\b", RegexOptions.CultureInvariant)]
-        private static partial Regex SplitIntoWordsRegex();
+        public static partial Regex SplitIntoWordsRegex();
 #else
         private static readonly Regex _splitIntoWordsRegex = new(
             @"\b\w+\b",
             RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-        private static Regex SplitIntoWordsRegex() => _splitIntoWordsRegex;
+        public static Regex SplitIntoWordsRegex() => _splitIntoWordsRegex;
 #endif
     }
 }
