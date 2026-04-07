@@ -32,26 +32,19 @@ namespace MineguideEPOCParser.Core.Parsers
 
                 // Also map the details columns
                 var detailsColumns = MedicationAnalyzers.MedicationDetails.GetDetailsColumnsExceptMedication();
+                // Use reflection to get the properties of the MedicationDetails type that can be set, and cache them for performance since this mapping function is called for every row.
+                var cachedProperties = typeof(MedicationAnalyzers.MedicationDetails).GetProperties()
+                    .Where(prop => prop.CanWrite && detailsColumns.Contains(prop.Name))
+                    .ToList();
                 Map(m => m.Details).Convert(convertFromStringFunction: data =>
                 {
                     var medication = data.Row.GetField<string>(DataParserConfiguration.DefaultMedicationHeaderName)
                         ?? throw new InvalidOperationException($"The medication header '{DataParserConfiguration.DefaultMedicationHeaderName}' was not found in the input file. Cannot map the MedicationDetails without the medication name.");
 
                     var details = new MedicationAnalyzers.MedicationDetails() { Medication = medication };
-                    foreach (var propertyName in detailsColumns)
+                    foreach (var prop in cachedProperties)
                     {
-                        // Use reflection to set the properties of the MedicationDetails object based on the column names and values from the CSV
-                        var propertyInfo = typeof(MedicationAnalyzers.MedicationDetails).GetProperty(propertyName);
-
-                        if (propertyInfo == null || !propertyInfo.CanWrite) continue;
-
-                        object? value;
-                        try
-                        {
-                            // Attempt to get the value from the CSV and convert it to the correct type
-                            value = data.Row.GetField(propertyInfo.PropertyType, propertyName);
-                        }
-                        catch
+                        if (!data.Row.TryGetField(prop.PropertyType, prop.Name, out object? value))
                         {
                             // If there's an error (e.g., missing column, conversion failure),
                             // we drop the entire details object to avoid partial/incorrect data.
@@ -59,7 +52,7 @@ namespace MineguideEPOCParser.Core.Parsers
                             return null;
                         }
 
-                        propertyInfo.SetValue(details, value);
+                        prop.SetValue(details, value);
                     }
 
                     return details;
@@ -218,17 +211,20 @@ namespace MineguideEPOCParser.Core.Parsers
 
                 if (_hasMatchHeaders)
                 {
+                    // The Match headers are present, but we need to check first if the current row actually has match information to avoid exceptions on unfinished files.
+                    // We check the MatchInText header that should always have a value if the match information is present, since it's required and comes from the CSV.
+                    // (Note: We technically could also check StartIndex, but we sometimes save it as -1 for non-matches,
+                    // so we would have to parse it and check that it's >= 0, which is more expensive than just checking if MatchInText is null or whitespace.)
+                    string? rawMatchInText = CurrentCsvReader!.GetField<string>(Configuration.MatchInTextHeaderName);
+
                     // If the medication matches are already present in the row,
                     // we can just get them from the row (the reader points to the current record).
-                    try
+                    if (!string.IsNullOrWhiteSpace(rawMatchInText))
                     {
                         var match = CurrentCsvReader!.GetRecord<MedicationMatch>();
                         currentReport.AddMatch(match);
                     }
-                    catch
-                    {
-                        // For unfinished files, some rows might not have the match information yet, so we just skip them.
-                    }
+                    // else: For unfinished files, some rows might not have the match information yet, so we just skip them.
                 }
             }
 
