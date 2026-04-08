@@ -949,7 +949,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             while (true)
             {
                 input = InputBoxWindow.Show(
-                $"Extracted medication (from LLM): {medicationMatch.ExtractedMedication}\n\nEnter the corrected medication name:",
+                $"Extracted medication (from LLM): {medicationMatch.ExtractedMedication}\n\nEnter the corrected medication name:\n\n(Note: To enter multiple medications, separate them using the '{MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator}' character)",
                 $"Correct Medication ({medicationMatch.ExtractedMedication})",
                 medicationMatch.CorrectedMedication ?? medicationMatch.ExtractedMedication);
                 
