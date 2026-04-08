@@ -10,7 +10,8 @@ namespace MineguideEPOCParser.Core.Tools
         Hallucination,
         SemanticAmbiguity,
         UnderExtraction,
-        OverExtraction
+        OverExtraction,
+        EntityMerging
     }
 
     /// <summary>
@@ -36,6 +37,7 @@ namespace MineguideEPOCParser.Core.Tools
         public int UnderExtractions { get; set; }
         public int OverExtractions { get; set; }
         public int SemanticAmbiguities { get; set; } // Contextual Errors / Non-Pharmacological Entities (FP with match in text)
+        public int EntityMergingErrors { get; set; }
 
         public List<MedicationStatRow> Rows { get; set; } = [];
 
@@ -60,9 +62,9 @@ namespace MineguideEPOCParser.Core.Tools
         public int Actual => TP + TPStar + FN;
 
         /// <summary>
-        /// Total number of errors for qualitative analysis (Hallucinations + SemanticAmbiguity + UnderExtraction + OverExtraction).
+        /// Total number of errors for qualitative analysis (Hallucinations + SemanticAmbiguity + UnderExtraction + OverExtraction + EntityMerging).
         /// </summary>
-        public int TotalErrorsForAnalysis => Hallucinations + SemanticAmbiguities + UnderExtractions + OverExtractions;
+        public int TotalErrorsForAnalysis => Hallucinations + SemanticAmbiguities + UnderExtractions + OverExtractions + EntityMergingErrors;
 
         public double StrictPrecision => CalculatePrecision(TP, Predicted);
         public double StrictRecall => CalculateRecall(TP, Actual);
@@ -90,6 +92,7 @@ namespace MineguideEPOCParser.Core.Tools
                    $"Under-extractions: {UnderExtractions}\n" +
                    $"Over-extractions: {OverExtractions}\n" +
                    $"Semantic Ambiguities: {SemanticAmbiguities}\n" +
+                   $"Entity Merging Errors: {EntityMergingErrors}\n" +
                    $"Strict Precision: {StrictPrecision:F4}\n" +
                    $"Strict Recall: {StrictRecall:F4}\n" +
                    $"Strict F1-Score: {StrictF1Score:F4}\n" +
@@ -164,10 +167,28 @@ namespace MineguideEPOCParser.Core.Tools
                 {
                     stats.TPStar++;
 
-                    // Boundary Errors logic (Mutually exclusive: can't be both under and over due to length check)
+                    // Boundary Errors logic
+                    // (Mutually exclusive: can't be both under and over due to length check,
+                    // and can't be entity merging at the same time since it's a different case)
                     if (!string.IsNullOrEmpty(correctedMedicationStr) && !string.IsNullOrEmpty(matchInTextStr))
                     {
-                        if (correctedMedicationStr.Length > matchInTextStr.Length && correctedMedicationStr.Contains(matchInTextStr, StringComparison.OrdinalIgnoreCase))
+                        bool correctionHasMultipleMedications = correctedMedicationStr.Contains(MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator);
+                        var correctedMedications = correctionHasMultipleMedications
+                            ? correctedMedicationStr.Split(MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries).Select(m => m.Trim()).ToArray()
+                            : null;
+
+                        if (correctedMedications != null && correctedMedications.Length > 1 // You need at least 2 elements for an entity merging error to make sense
+                            // Check that all included medications are part of the match in the text
+                            // (we have it in the same if and not nested because if they are not, then we still need to check for other types of boundary errors)
+                            // It can happen that they are not included if the user is normalizing an informal name that combines multiple medications
+                            // in a way that we cannot fault the LLM for not knowing or normalizing since it is not the LLM's purpose
+                            // (e.g. "triple terapia inhalatoria" means "salbutamol + budesonida + bromuro de ipratropio")
+                            && correctedMedications.All(cm => matchInTextStr.Contains(cm, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            stats.EntityMergingErrors++;
+                            error = ErrorType.EntityMerging;
+                        }
+                        else if (correctedMedicationStr.Length > matchInTextStr.Length && correctedMedicationStr.Contains(matchInTextStr, StringComparison.OrdinalIgnoreCase))
                         {
                             stats.UnderExtractions++;
                             error = ErrorType.UnderExtraction;

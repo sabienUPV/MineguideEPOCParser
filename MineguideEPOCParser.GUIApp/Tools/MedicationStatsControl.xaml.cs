@@ -158,6 +158,11 @@ namespace MineguideEPOCParser.GUIApp.Tools
             OverExtractionsTextBox.Text = _aggregateStats.OverExtractions.ToString();
             double overExtractionPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.OverExtractions / totalErrors;
             OverExtractionsPercentageTextBox.Text = overExtractionPerc.ToString("P4");
+
+            // Entity Merging Errors
+            EntityMergingErrorsTextBox.Text = _aggregateStats.EntityMergingErrors.ToString();
+            double entityMergingPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.EntityMergingErrors / totalErrors;
+            EntityMergingErrorsPercentageTextBox.Text = entityMergingPerc.ToString("P4");
         }
 
         private void FilterChanged(object sender, EventArgs e)
@@ -191,24 +196,16 @@ namespace MineguideEPOCParser.GUIApp.Tools
             // Result filter
             if (ResultFilterComboBox.SelectedItem is ComboBoxItem selectedItem)
             {
-                var filterValue = selectedItem.Content.ToString();
-                if (filterValue != "All")
+                // 1. Check if the selected item has an ErrorType enum in its Tag
+                if (selectedItem.Tag is ErrorType errorTypeToFilter)
                 {
-                    // Map filter string to ErrorType enum
-                    ErrorType? errorTypeToFilter = filterValue switch
-                    {
-                        "Hallucination" => ErrorType.Hallucination,
-                        "Semantic Ambiguity" => ErrorType.SemanticAmbiguity,
-                        "Under-extraction" => ErrorType.UnderExtraction,
-                        "Over-extraction" => ErrorType.OverExtraction,
-                        _ => null
-                    };
-
-                    if (errorTypeToFilter.HasValue)
-                    {
-                        if (row.Error != errorTypeToFilter.Value) return false;
-                    }
-                    else if (row.Result != filterValue)
+                    if (row.Error != errorTypeToFilter) return false;
+                }
+                else
+                {
+                    // 2. Fallback for "All" or string-based Result matches
+                    var filterValue = selectedItem.Content?.ToString();
+                    if (filterValue != "All" && row.Result != filterValue)
                     {
                         return false;
                     }

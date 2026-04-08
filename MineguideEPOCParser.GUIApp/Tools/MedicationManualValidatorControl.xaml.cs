@@ -984,10 +984,24 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 if (medicationMatch.ExperimentResult == MedicationResult.ExperimentResultType.TP)
                 {
                     // If the original match in text contains the correction (e.g. "salbutamol 500mg" contains "salbutamol"),
-                    // then we can consider this correction as a partial true positive (TP*)
+                    // then we can consider this correction as a partial true positive (TP*) (Boundary error - Over-extraction)
                     if (medicationMatch.MatchInText.Contains(input, StringComparison.OrdinalIgnoreCase))
                     {
                         isPartialTruePositive = true;
+                    }
+                    // If the user said there were multiple medications in a single match, it means that the LLM failed to extract them separately,
+                    // which is a partial TP* (Boundary error - Entity Merging)
+                    else if (input.Contains(MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator))
+                    {
+                        var correctedMedications = input.Split(MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        // Check that we have at least 2 medications, and that all included medications are part of the match in the text
+                        if (correctedMedications.Length > 1 && correctedMedications.All(cm => medicationMatch.MatchInText.Contains(cm, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            isPartialTruePositive = true;
+                        }
+                        // else: This can happen if the user is normalizing an informal name that combines multiple medications
+                        // in a way that we cannot fault the LLM for not knowing or normalizing since it is not the LLM's purpose
+                        // (e.g. "triple terapia inhalatoria" means "salbutamol + budesonida + bromuro de ipratropio")
                     }
                 }
                 break; // Valid input, exit loop

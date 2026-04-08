@@ -12,6 +12,8 @@ namespace MineguideEPOCParser.Core.Parsers.Configurations
 
     public abstract class MedicationManualValidatorParserConfigurationBase : DataParserConfiguration
     {
+        public const char MultipleMedicationsSeparator = '+';
+
         public const string DefaultReportNumberHeaderName = "Numero";
 
         public string ReportNumberHeaderName { get; set; } = DefaultReportNumberHeaderName;
