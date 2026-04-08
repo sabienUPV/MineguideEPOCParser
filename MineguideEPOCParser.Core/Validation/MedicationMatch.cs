@@ -50,16 +50,16 @@ namespace MineguideEPOCParser.Core.Validation
         // Instead of leaving those fields empty,
         // we put StartIndex = -1 and Length = 0
         // to indicate that it didn't match (and it is not just missing values).
-        public virtual string[] GetMedicationMatchValues(IFormatProvider? culture) => PrependDetailsToMatchValuesIfPresent([
+        public virtual string[] GetMedicationMatchValues() => PrependDetailsToMatchValuesIfPresent([
                 "-1",
                 "0",
                 string.Empty,
                 ExperimentResult.ToResultString(),
                 CorrectedMedication ?? string.Empty
-            ], culture);
+            ]);
 
-        protected string[] PrependDetailsToMatchValuesIfPresent(string[] matchValues, IFormatProvider? culture) => [
-            ..Details?.GetDetailsValuesExceptMedication(culture)
+        protected string[] PrependDetailsToMatchValuesIfPresent(string[] matchValues) => [
+            ..Details?.GetDetailsValuesExceptMedication()
                 ?? Enumerable.Repeat(string.Empty, MedicationDetails.GetDetailsColumnsExceptMedication().Length).ToArray(),
             ..matchValues
         ];
@@ -71,13 +71,13 @@ namespace MineguideEPOCParser.Core.Validation
         public int Length { get; set; }
         public required string MatchInText { get; set; }
 
-        public override string[] GetMedicationMatchValues(IFormatProvider? culture) => PrependDetailsToMatchValuesIfPresent([
+        public override string[] GetMedicationMatchValues() => PrependDetailsToMatchValuesIfPresent([
             StartIndex.ToString(),
             Length.ToString(),
             MatchInText,
             ExperimentResult.ToResultString(),
             CorrectedMedication ?? string.Empty
-        ], culture);
+        ]);
 
         // Comparer by StartIndex
         public class StartIndexComparer : IComparer<MedicationResult>

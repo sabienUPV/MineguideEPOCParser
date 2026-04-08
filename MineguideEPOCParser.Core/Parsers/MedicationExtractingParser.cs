@@ -124,7 +124,7 @@ namespace MineguideEPOCParser.Core.Parsers
             [
                 medication,
                 CurrentRowNumber.ToString(),
-                ..details.GetDetailsValuesExceptMedication(Configuration.Culture)
+                ..details.GetDetailsValuesExceptMedication()
             ];
         }
     }

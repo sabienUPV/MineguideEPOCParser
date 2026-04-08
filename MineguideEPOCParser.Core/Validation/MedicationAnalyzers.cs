@@ -220,10 +220,10 @@ namespace MineguideEPOCParser.Core.Validation
                 nameof(MatchType)
             ];
 
-            public string[] GetDetailsValuesExceptMedication(IFormatProvider? culture) => [
+            public string[] GetDetailsValuesExceptMedication() => [
                 ExactMatch.ToString(),
                 SimilarityScore.ToString(),
-                GetSimilarityScorePercentage(culture),
+                SimilarityScorePercentage, // We use the invariant culture for the percentage format to ensure consistent formatting in CSV
                 BestMatch ?? string.Empty,
                 LevenshteinDistance.ToString(),
                 MatchType.ToString()

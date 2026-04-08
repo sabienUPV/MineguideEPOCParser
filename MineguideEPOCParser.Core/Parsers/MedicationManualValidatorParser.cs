@@ -433,7 +433,7 @@ namespace MineguideEPOCParser.Core.Parsers
 
             foreach (var validatedMedication in validatedResults)
             {
-                var medicationMatchValues = validatedMedication.GetMedicationMatchValues(Configuration.Culture);
+                var medicationMatchValues = validatedMedication.GetMedicationMatchValues();
 
                 // We know that all columns after the medication column are related to that medication.
                 // We keep the columns before, add the validated medication name, then add the fresh stats.
