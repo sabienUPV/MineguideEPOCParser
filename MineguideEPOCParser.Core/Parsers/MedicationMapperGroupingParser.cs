@@ -47,7 +47,7 @@ namespace MineguideEPOCParser.Core.Parsers
             return groups.SelectMany(g => g.Value.Select(m => (m, g.Key))).ToDictionary(p => p.m, p => p.Key);
         }
 
-        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] headers, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        protected override async IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] inputHeaders, string[] outputHeaders, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             await foreach (var row in rows.WithCancellation(cancellationToken))
             {

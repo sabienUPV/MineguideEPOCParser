@@ -76,7 +76,7 @@ namespace MineguideEPOCParser.Core.Parsers
                 string[]? newHeaders = GenerateNewHeaders(dataRead);
 
                 // Apply transformations
-                var newRows = ApplyTransformations(dataRead.Rows, dataRead.InputTargetColumnIndex, dataRead.Headers, cancellationToken);
+                var newRows = ApplyTransformations(dataRead.Rows, dataRead.InputTargetColumnIndex, dataRead.Headers, newHeaders, cancellationToken);
 
                 // Write
                 await using var writer = new StreamWriter(Configuration.OutputFile, false, Encoding.UTF8);
@@ -115,32 +115,22 @@ namespace MineguideEPOCParser.Core.Parsers
             }
         }
 
-        protected string[] GenerateNewHeaders(DataReadContent dataRead)
+        protected virtual string[] GenerateNewHeaders(DataReadContent dataRead)
         {
             var outputHeaders = Configuration.OutputAdditionalHeaderNames;
 
-            IEnumerable<string> headersEnumerable;
+            // Ensure the output headers are unique (their names might already exist in the input headers)
+            IEnumerable<string> headersEnumerable = outputHeaders.Select(outputHeader =>
+            {
+                var finalOutputHeader = Utilities.ArrayEnsureUniqueHeader(dataRead.Headers, outputHeader);
 
-            if (Configuration.SkipDuplicateHeaders)
-            {
-                // We skip duplicates at the end, so we consider the input headers as well
-                headersEnumerable = outputHeaders;
-            }
-            else
-            {
-                // Ensure the output headers are unique (their names might already exist in the input headers)
-                headersEnumerable = outputHeaders.Select(outputHeader =>
+                if (finalOutputHeader != outputHeader)
                 {
-                    var finalOutputHeader = Utilities.ArrayEnsureUniqueHeader(dataRead.Headers, outputHeader);
+                    Logger?.Warning("The output header name {OriginalHeaderName} was changed to {OutputHeaderName} because it already existed in the input file.", outputHeader, finalOutputHeader);
+                }
 
-                    if (finalOutputHeader != outputHeader)
-                    {
-                        Logger?.Warning("The output header name {OriginalHeaderName} was changed to {OutputHeaderName} because it already existed in the input file.", outputHeader, finalOutputHeader);
-                    }
-
-                    return finalOutputHeader;
-                });
-            }
+                return finalOutputHeader;
+            });
 
             // If we are "overwriting" the input column, replace it with the output columns
             if (Configuration.OverwriteInputTargetColumn)
@@ -153,16 +143,10 @@ namespace MineguideEPOCParser.Core.Parsers
                 headersEnumerable = dataRead.Headers.Concat(headersEnumerable);
             }
 
-            if (Configuration.SkipDuplicateHeaders)
-            {
-                // For specific cases where the parser handles it, we just skip duplicate headers by making them distinct
-                headersEnumerable = headersEnumerable.Distinct();
-            }
-
             return headersEnumerable.ToArray();
         }
 
-        private IEnumerable<string> GenerateNewHeadersWithOverwrite(IEnumerable<string> headers, IEnumerable<string> finalOutputHeaders)
+        protected IEnumerable<string> GenerateNewHeadersWithOverwrite(IEnumerable<string> headers, IEnumerable<string> finalOutputHeaders)
         {
             if (Configuration.InputTargetColumnHeaderName is null)
             {
@@ -212,7 +196,7 @@ namespace MineguideEPOCParser.Core.Parsers
             // Override this method to validate the headers if needed
         }
 
-        protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] headers, CancellationToken cancellationToken = default);
+        protected abstract IAsyncEnumerable<string[]> ApplyTransformations(IAsyncEnumerable<string[]> rows, int inputTargetColumnIndex, string[] inputHeaders, string[] outputHeaders, CancellationToken cancellationToken = default);
 
         protected virtual Task DoPostProcessing(CancellationToken cancellationToken = default)
         {

@@ -166,20 +166,33 @@ namespace MineguideEPOCParser.Core.Parsers
             return results;
         }
 
+        protected override string[] GenerateNewHeaders(DataReadContent dataRead)
+        {
+            // Instead of just appending the new headers at the end,
+            // we need to preserve the positions of the original headers that are related to the medication details
+            // (e.g., if the input file already has some of the match headers, we keep them in place,
+            // and add any missing ones at the end).
+
+            var originalHeaders = dataRead.Headers;
+            var missingAdditionalHeaders = Configuration.OutputAdditionalHeaderNames.Where(h => !originalHeaders.Contains(h));
+
+            return originalHeaders.Concat(missingAdditionalHeaders).ToArray();
+        }
+
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
             IAsyncEnumerable<string[]> rows,
             int inputTargetColumnIndex,
-            string[] headers, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+            string[] inputHeaders, string[] outputHeaders, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             // Get the report number from the specified header
-            var reportNumberIndex = GetColumnIndex(headers, Configuration.ReportNumberHeaderName);
+            var reportNumberIndex = GetColumnIndex(inputHeaders, Configuration.ReportNumberHeaderName);
 
             if (reportNumberIndex < 0)
             {
                 throw new InvalidOperationException($"The report number header '{Configuration.ReportNumberHeaderName}' was not found in the input file.");
             }
 
-            var medicationIndex = GetColumnIndex(headers, Configuration.MedicationHeaderName);
+            var medicationIndex = GetColumnIndex(inputHeaders, Configuration.MedicationHeaderName);
 
             if (medicationIndex < 0)
             {
@@ -349,12 +362,18 @@ namespace MineguideEPOCParser.Core.Parsers
             // Now that validation is finished (or stopped), we reconstruct the CSV rows.
             // We iterate through ALL reports to ensure the output file is complete and 
             // can be used to "Continue" later without having lost any data.
+
+            // First, we calculate the indexes of the match related columns in the new headers to know where to place the validated data and how to pad unvalidated rows.
+            var additionalRowIndexes = outputHeaders.Select((h, index) => new { Header = h, Index = index })
+                .Where(h => Configuration.OutputAdditionalHeaderNames.Contains(h.Header))
+                .ToDictionary(h => h.Header, h => h.Index);
+
             foreach (var report in reports)
             {
                 if (resultsHistory.TryGetValue(report.ReportNumber, out var validatedResults) || report.MedicationMatches is not null)
                 {
                     // Yield validated rows (either from this session, checkpoint, or review mode)
-                    foreach (var row in GenerateValidatedRows(report, validatedResults ?? report.MedicationMatches!, medicationIndex))
+                    foreach (var row in GenerateValidatedRows(report, validatedResults ?? report.MedicationMatches!, outputHeaders.Length, medicationIndex, additionalRowIndexes))
                     {
                         yield return row;
                     }
@@ -365,7 +384,7 @@ namespace MineguideEPOCParser.Core.Parsers
                     // We must ensure the column count matches the expected output to avoid shifting.
                     foreach (var row in report.Rows)
                     {
-                        yield return PadRowToMatchOutputHeaders(row, medicationIndex);
+                        yield return PadRowToMatchOutputHeaders(row, outputHeaders.Length);
                     }
                 }
             }
@@ -377,28 +396,17 @@ namespace MineguideEPOCParser.Core.Parsers
             }
         }
 
-        private int GetFirstIndexOfDetails(string[] baseRow, int medicationIndex)
+        private string[] PadRowToMatchOutputHeaders(string[] rawRow, int newRowLength)
         {
-            const int columnsAfterMedication = 1; // The InputRowNumber column added after the medication column
-            return Math.Min(medicationIndex + columnsAfterMedication + 1, baseRow.Length);
-        }
-
-        private string[] PadRowToMatchOutputHeaders(string[] rawRow, int medicationIndex)
-        {
-            // We use the configured additional header count to ensure structural consistency
-            int extraColumnCount = Configuration.OutputAdditionalHeaderNames.Length;
-            
-            int firstIndexOfDetails = GetFirstIndexOfDetails(rawRow, medicationIndex);
-            
             // Create a new row with the correct total size
-            string[] newRow = new string[firstIndexOfDetails + extraColumnCount];
-            
+            string[] newRow = new string[newRowLength];
+
             // Copy the standard report data
-            Array.Copy(rawRow, 0, newRow, 0, Math.Min(rawRow.Length, firstIndexOfDetails));
-            
+            Array.Copy(rawRow, 0, newRow, 0, rawRow.Length);
+
             // The rest will remain as null/empty strings, which is exactly what we want 
             // for unvalidated data.
-            
+
             return newRow;
         }
 
@@ -423,7 +431,7 @@ namespace MineguideEPOCParser.Core.Parsers
             }
         }
 
-        private IEnumerable<string[]> GenerateValidatedRows(Report report, IEnumerable<MedicationResult> validatedResults, int medicationIndex)
+        private IEnumerable<string[]> GenerateValidatedRows(Report report, IEnumerable<MedicationResult> validatedResults, int newRowLength, int medicationIndex, Dictionary<string, int> additionalRowIndexes)
         {
             // Classify the duplicated report rows by their medication name.
             // Using GroupBy allows graceful handling of duplicates (we just take the first occurrence).
@@ -444,18 +452,36 @@ namespace MineguideEPOCParser.Core.Parsers
                     : report.Rows[0];
 
                 // 2. Create the correctly sized array: 
-                // Base columns (up to medicationIndex) + The Medication Column (+1 for InputRowNumber) + The fresh stats
-                int firstIndexOfDetails = GetFirstIndexOfDetails(baseRow, medicationIndex);
-                string[] newRow = new string[firstIndexOfDetails + medicationMatchValues.Length];
+                string[] newRow = new string[newRowLength];
 
-                // 3. Copy the standard report data (everything UNTIL the medication details columns start)
-                Array.Copy(baseRow, 0, newRow, 0, firstIndexOfDetails);
+                // 3. Copy the standard report data
+                Array.Copy(baseRow, 0, newRow, 0, baseRow.Length);
 
                 // 4. Set the medication name (overwrites or sets for new rows)
                 newRow[medicationIndex] = validatedMedication.ExtractedMedication;
 
-                // 5. Insert the freshly calculated validation stats immediately after the InputRowNumber column
-                Array.Copy(medicationMatchValues, 0, newRow, firstIndexOfDetails, medicationMatchValues.Length);
+                // 5. Set the medication details and match values in the correct columns
+                for (int i = 0; i < Configuration.OutputAdditionalHeaderNames.Length; i++)
+                {
+                    if (i >= medicationMatchValues.Length)
+                    {
+                        // This could happen if the validator returns fewer details than the number of additional headers (e.g., if some details are missing).
+                        // It should never happen, but to make sure we don't throw an exception and lose all the data,
+                        // we just break out of the loop and leave the remaining columns as null/empty.
+                        break;
+                    }
+
+                    string header = Configuration.OutputAdditionalHeaderNames[i];
+
+                    // There should be a 1-1 mapping between the additional header names, the medication match values, AND the additionalRowIndexes,
+                    // since the additional header names are defined as the headers corresponding to the medication match values (see MedicationManualValidatorParserConfigurationBase),
+                    // and the additionalRowIndexes is based on OutputAdditionalHeaderNames (see above in ApplyTransformations).
+                    // However, we add a safety check just in case to avoid exceptions and data loss in case of misconfiguration.
+                    if (additionalRowIndexes.TryGetValue(header, out int index))
+                    {
+                        newRow[index] = medicationMatchValues[i];
+                    }
+                }
 
                 yield return newRow;
             }

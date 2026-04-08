@@ -19,11 +19,6 @@ namespace MineguideEPOCParser.Core.Parsers.Configurations
         public string ReportNumberHeaderName { get; set; } = DefaultReportNumberHeaderName;
         public string MedicationHeaderName { get; set; } = DefaultMedicationHeaderName;
 
-        // This parser is special! And it is meant to be used with the output of the MedicationExtractingParser,
-        // so we want to skip adding duplicate headers because we want to overwrite
-        // the existing medication details columns with the new validated values, instead of adding new columns with duplicate header names.
-        public override bool SkipDuplicateHeaders => true;
-
         // NOTE: DON'T MANUALLY SET THE OutputAdditionalHeaderNames for this config (publicly),
         // since we are not supporting that for detecting existing medication matches.
 
@@ -37,26 +32,26 @@ namespace MineguideEPOCParser.Core.Parsers.Configurations
         public string BuildMedicationHeader(string header) => $"{MedicationHeaderName}_{header}";
 
         // StartIndex, Length, MatchInText, ExtractedMedication, CorrectedMedication, + all the details columns except medication (since that would be redundant with the ExtractedMedication column)
-        public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName, [
+        public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (DefaultTHeaderName,
+        [
             // The order is important here! We want the details columns to go first to match the columns from the input file (which comes from MedicationExtractingParser)
             ..MedicationAnalyzers.MedicationDetails.GetDetailsColumnsExceptMedication(),
+            ..GetMedicationMatchHeaders()
+        ]);
+
+        private string[] GetMedicationMatchHeaders() =>
+        [
+            ..GetRequiredMedicationMatchHeaders(),
+            MatchCorrectedMedicationHeaderName // This one is optional
+        ];
+
+        // Return the headers that are required for the medication matches
+        public string[] GetRequiredMedicationMatchHeaders() =>
+        [
             MatchStartIndexHeaderName,
             MatchLengthHeaderName,
             MatchInTextHeaderName,
             MatchExperimentResultHeaderName,
-            MatchCorrectedMedicationHeaderName
-        ]);
-
-        public string[] GetRequiredMedicationMatchHeaders()
-        {
-            // Return the headers that are required for the medication matches
-            return [
-                MatchStartIndexHeaderName,
-                MatchLengthHeaderName,
-                MatchInTextHeaderName,
-                MatchExperimentResultHeaderName,
-                //MatchCorrectedMedicationHeaderName // This one is optional, so we purposefully don't include it here
-            ];
-        }
+        ];
     }
 }

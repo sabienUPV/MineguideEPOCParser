@@ -39,19 +39,6 @@ namespace MineguideEPOCParser.Core.Parsers.Configurations
         /// </summary>
         public int? RowLimit { get; set; }
 
-        /// <summary>
-        /// If true, the parser will skip adding the output column(s) if they already exist in the input file (i.e., if there are duplicate headers).
-        /// This is false by default, since the parser needs to be able to support this behavior for specific cases,
-        /// but it is not meant to be used by all parsers.
-        /// <para>
-        /// NOTE: This is only meant for specific parser types that are meant to overwrite some existing headers by default
-        /// (e.g. <see cref="MedicationManualValidatorParserConfiguration"/>,
-        /// where the output overwrites the <see cref="MedicationAnalyzers.MedicationDetails"/> columns
-        /// that are already present in the input file, since its input is the output of the <see cref="MedicationExtractingParser"/>).
-        /// </para>
-        /// </summary>
-        public virtual bool SkipDuplicateHeaders => false;
-
         public DataParserConfiguration()
         {
             (InputTargetColumnHeaderName, OutputAdditionalHeaderNames) = GetDefaultColumns();

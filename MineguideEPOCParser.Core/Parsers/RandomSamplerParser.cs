@@ -60,7 +60,7 @@ namespace MineguideEPOCParser.Core.Parsers
         protected override async IAsyncEnumerable<string[]> ApplyTransformations(
             IAsyncEnumerable<string[]> rows,
             int inputTargetColumnIndex,
-            string[] headers, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+            string[] inputHeaders, string[] outputHeaders, [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             // Use a dictionary to ensure unique keys efficiently
             var randomizedRows = new Dictionary<int, string[]>();
@@ -70,7 +70,7 @@ namespace MineguideEPOCParser.Core.Parsers
                 if (_excludeReportNumbers != null)
                 {
                     // Get the report number from the specified header
-                    var reportNumberIndex = GetColumnIndex(headers, Configuration.ReportNumberHeaderName);
+                    var reportNumberIndex = GetColumnIndex(inputHeaders, Configuration.ReportNumberHeaderName);
 
                     if (reportNumberIndex < 0)
                     {
