@@ -228,6 +228,16 @@ namespace MineguideEPOCParser.Core.Validation
                 LevenshteinDistance.ToString(),
                 MatchType.ToString()
             ];
+
+            public string ToStringExceptMedication() => $"""
+            Exact Match: {ExactMatch}
+            Similarity Score: {SimilarityScorePercentage}
+            Best Match in Text: {BestMatch} (Index: {BestMatchIndex})
+            Levenshtein Distance: {LevenshteinDistance}
+            Match Type: {MatchType}
+            """;
+
+            public override string ToString() => $"Medication: {Medication}\n{ToStringExceptMedication()}";
         }
 
         public enum MatchSimilarityType

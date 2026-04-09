@@ -469,6 +469,15 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 tooltipBuilder.AppendLine();
                 tooltipBuilder.Append($"Corrected medication: {result.CorrectedMedication}");
             }
+            if (result.Details is not null)
+            {
+                // 2 empty lines to separate details from the rest of the info in the tooltip,
+                // since details can be quite long and we want to make sure they are visually separated for better readability
+                tooltipBuilder.AppendLine();
+                tooltipBuilder.AppendLine();
+                tooltipBuilder.AppendLine($"--- Details ---");
+                tooltipBuilder.Append(result.Details.ToStringExceptMedication());
+            }
 
             // Create clickable hyperlink for medication
             var hyperlink = new Hyperlink(new Run(result.DisplayText))
