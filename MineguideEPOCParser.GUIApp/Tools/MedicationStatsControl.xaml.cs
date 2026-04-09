@@ -129,7 +129,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             UnderExtractionsPercentageTextBox.Visibility = visibility;
             OverExtractionsPercentageTextBox.Visibility = visibility;
             EntityMergingErrorsPercentageTextBox.Visibility = visibility;
-            HallucinationsPercentageTextBox.Visibility = visibility;
+            MorphAlterationsPercentageTextBox.Visibility = visibility;
             MorphHallucinationsPercentageTextBox.Visibility = visibility;
             GenTyposPercentageTextBox.Visibility = visibility;
         }
@@ -178,11 +178,11 @@ namespace MineguideEPOCParser.GUIApp.Tools
             double boundaryErrorsPerc = totalErrors == 0 ? 0 : (double)totalBoundaryErrors / totalErrors;
             BoundaryErrorsPercentageTextBox.Text = boundaryErrorsPerc.ToString(percentageFormat, NumberFormat);
 
-            // Total hallucinations
-            var totalHallucinations = _aggregateStats.Hallucinations;
-            HallucinationsErrorTextBox.Text = totalHallucinations.ToString();
-            double hallucinationPerc = totalErrors == 0 ? 0 : (double)totalHallucinations / totalErrors;
-            HallucinationsPercentageTextBox.Text = hallucinationPerc.ToString(percentageFormat, NumberFormat);
+            // Morphological alterations
+            var totalMorphAlterations = _aggregateStats.MorphologicalAlterations;
+            MorphAlterationsErrorTextBox.Text = totalMorphAlterations.ToString();
+            double morphAlterationPerc = totalErrors == 0 ? 0 : (double)totalMorphAlterations / totalErrors;
+            MorphAlterationsPercentageTextBox.Text = morphAlterationPerc.ToString(percentageFormat, NumberFormat);
 
             // Semantic Ambiguity
             SemanticAmbiguitiesTextBox.Text = _aggregateStats.SemanticAmbiguities.ToString();
@@ -212,12 +212,12 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
             // Morph. hallucinations
             MorphHallucinationsErrorTextBox.Text = _aggregateStats.MorphologicalHallucinations.ToString();
-            double morphHallucinationPerc = totalHallucinations == 0 ? 0 : (double)_aggregateStats.MorphologicalHallucinations / totalHallucinations;
+            double morphHallucinationPerc = totalMorphAlterations == 0 ? 0 : (double)_aggregateStats.MorphologicalHallucinations / totalMorphAlterations;
             MorphHallucinationsPercentageTextBox.Text = morphHallucinationPerc.ToString(percentageFormat, NumberFormat);
 
             // Gen. Typos
             GenTyposErrorTextBox.Text = _aggregateStats.GenerativeTypos.ToString();
-            double genTypoPerc = totalHallucinations == 0 ? 0 : (double)_aggregateStats.GenerativeTypos / totalHallucinations;
+            double genTypoPerc = totalMorphAlterations == 0 ? 0 : (double)_aggregateStats.GenerativeTypos / totalMorphAlterations;
             GenTyposPercentageTextBox.Text = genTypoPerc.ToString(percentageFormat, NumberFormat);
         }
 

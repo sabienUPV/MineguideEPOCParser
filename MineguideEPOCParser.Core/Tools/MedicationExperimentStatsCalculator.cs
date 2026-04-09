@@ -49,10 +49,10 @@ namespace MineguideEPOCParser.Core.Tools
         public int EntityMergingErrors { get; set; }
 
         /// <summary>
-        /// Hallucinations: more general category of error in which the LLM produced something not present in the original text,
+        /// General error category in which the LLM produced something not present in the original text,
         /// and can be subcategorized into benign and mappable Generative typos, or critical morphological hallucinations. 
         /// </summary>
-        public int Hallucinations => MorphologicalHallucinations + GenerativeTypos;
+        public int MorphologicalAlterations => MorphologicalHallucinations + GenerativeTypos;
 
         public int MorphologicalHallucinations { get; set; }
         public int GenerativeTypos { get; set; }
@@ -62,7 +62,7 @@ namespace MineguideEPOCParser.Core.Tools
         /// <summary>
         /// Total number of errors for qualitative analysis (Boundary Errors + Hallucinations + Semantic Ambiguities).
         /// </summary>
-        public int TotalErrorsForAnalysis => BoundaryErrors + Hallucinations + SemanticAmbiguities;
+        public int TotalErrorsForAnalysis => BoundaryErrors + MorphologicalAlterations + SemanticAmbiguities;
 
         public List<MedicationStatRow> Rows { get; set; } = [];
 
@@ -108,7 +108,10 @@ namespace MineguideEPOCParser.Core.Tools
                    $"TP*: {TPStar}\n" +
                    $"FP: {FP}\n" +
                    $"FN: {FN}\n" +
-                   $"Hallucinations: {Hallucinations}\n" +
+                   $"Morphological Alterations: {MorphologicalAlterations}\n" +
+                   $"Morphological Hallucinations: {MorphologicalHallucinations}\n" +
+                   $"Generative Typos: {GenerativeTypos}\n" +
+                   $"Boundary Errors: {BoundaryErrors}\n" +
                    $"Under-extractions: {UnderExtractions}\n" +
                    $"Over-extractions: {OverExtractions}\n" +
                    $"Semantic Ambiguities: {SemanticAmbiguities}\n" +

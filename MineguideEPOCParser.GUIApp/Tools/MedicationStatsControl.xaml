@@ -149,15 +149,15 @@
                     <TextBox Grid.Row="8" Grid.Column="14" x:Name="EntityMergingErrorsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
                     <!-- Column 4: Detailed Error Breakdown (part 2) -->
-                    <Label Grid.Row="2" Grid.Column="16" Content="Total hallucinations:" FontWeight="Bold" ToolTip="All hallucinations (morphological + gen. typos)" />
-                    <TextBox Grid.Row="2" Grid.Column="18" x:Name="HallucinationsErrorTextBox" IsReadOnly="True" VerticalAlignment="Center" />
-                    <TextBox Grid.Row="2" Grid.Column="20" x:Name="HallucinationsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
+                    <Label Grid.Row="2" Grid.Column="16" Content="Morph. Alterations:" FontWeight="Bold" ToolTip="All morphological alterations (morph. hallucinations + gen. typos)" />
+                    <TextBox Grid.Row="2" Grid.Column="18" x:Name="MorphAlterationsErrorTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="2" Grid.Column="20" x:Name="MorphAlterationsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
-                    <Label Grid.Row="4" Grid.Column="16" Content="- Morph. hallucinations:" FontWeight="Bold" ToolTip="Hallucinations: Morphological hallucinations (FP without match in text)" />
+                    <Label Grid.Row="4" Grid.Column="16" Content="- Morph. Hallucinations:" FontWeight="Bold" ToolTip="Morphological Alterations: Morphological hallucinations (FP without match in text)" />
                     <TextBox Grid.Row="4" Grid.Column="18" x:Name="MorphHallucinationsErrorTextBox" IsReadOnly="True" VerticalAlignment="Center" />
                     <TextBox Grid.Row="4" Grid.Column="20" x:Name="MorphHallucinationsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
-                    <Label Grid.Row="6" Grid.Column="16" Content="- Gen. typos:" FontWeight="Bold" ToolTip="Hallucinations: Generative Typos (TP* without match in text)" />
+                    <Label Grid.Row="6" Grid.Column="16" Content="- Gen. typos:" FontWeight="Bold" ToolTip="Morphological Alterations: Generative Typos (TP* without match in text)" />
                     <TextBox Grid.Row="6" Grid.Column="18" x:Name="GenTyposErrorTextBox" IsReadOnly="True" VerticalAlignment="Center" />
                     <TextBox Grid.Row="6" Grid.Column="20" x:Name="GenTyposPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
