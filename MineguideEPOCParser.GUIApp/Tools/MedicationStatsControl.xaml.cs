@@ -2,6 +2,7 @@ using Microsoft.Win32;
 using MineguideEPOCParser.Core.Tools;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -10,6 +11,8 @@ namespace MineguideEPOCParser.GUIApp.Tools
 {
     public partial class MedicationStatsControl : UserControl
     {
+        public static readonly NumberFormatInfo NumberFormat = CultureInfo.InvariantCulture.NumberFormat;
+
         private readonly ObservableCollection<MedicationStatRow> _allRows = [];
         private readonly ICollectionView? _filteredView;
         private MedicationExperimentStats? _aggregateStats;
@@ -142,15 +145,17 @@ namespace MineguideEPOCParser.GUIApp.Tools
             double f1Score = strict ? _aggregateStats.StrictF1Score : _aggregateStats.RelaxedF1Score;
 
             // For the metrics we use more precise formatting (4 decimal places) and also show the percentage format for better readability
+            const string metricFormat = "F4"; // 4 decimal places for metrics, as they can be close together and we want to show small differences
+            const string percentageFormat = "P4"; // 4 decimal places for percentages to match the precision of the metrics
 
-            PrecisionTextBox.Text = precision.ToString("F4");
-            PrecisionPercentageTextBox.Text = precision.ToString("P4");
+            PrecisionTextBox.Text = precision.ToString(metricFormat, NumberFormat);
+            PrecisionPercentageTextBox.Text = precision.ToString(percentageFormat, NumberFormat);
 
-            RecallTextBox.Text = recall.ToString("F4");
-            RecallPercentageTextBox.Text = recall.ToString("P4");
+            RecallTextBox.Text = recall.ToString(metricFormat, NumberFormat);
+            RecallPercentageTextBox.Text = recall.ToString(percentageFormat, NumberFormat);
 
-            F1ScoreTextBox.Text = f1Score.ToString("F4");
-            F1ScorePercentageTextBox.Text = f1Score.ToString("P4");
+            F1ScoreTextBox.Text = f1Score.ToString(metricFormat, NumberFormat);
+            F1ScorePercentageTextBox.Text = f1Score.ToString(percentageFormat, NumberFormat);
         }
 
         private void UpdateErrorAnalysisDisplay()
@@ -161,6 +166,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
             // For error analysis, we don't need to be as precise as for metrics, so we can use 2 decimal places for percentages.
             // The absolute counts are more important here, but the percentages help to understand the distribution of error types.
+            const string percentageFormat = "P2"; // 2 decimal places for error type percentages
 
             // Percentages are based on the total of all error types (for pie chart analysis)
 
@@ -170,18 +176,18 @@ namespace MineguideEPOCParser.GUIApp.Tools
             var totalBoundaryErrors = _aggregateStats.BoundaryErrors;
             BoundaryErrorsTextBox.Text = totalBoundaryErrors.ToString();
             double boundaryErrorsPerc = totalErrors == 0 ? 0 : (double)totalBoundaryErrors / totalErrors;
-            BoundaryErrorsPercentageTextBox.Text = boundaryErrorsPerc.ToString("P2");
+            BoundaryErrorsPercentageTextBox.Text = boundaryErrorsPerc.ToString(percentageFormat, NumberFormat);
 
             // Total hallucinations
             var totalHallucinations = _aggregateStats.Hallucinations;
             HallucinationsErrorTextBox.Text = totalHallucinations.ToString();
             double hallucinationPerc = totalErrors == 0 ? 0 : (double)totalHallucinations / totalErrors;
-            HallucinationsPercentageTextBox.Text = hallucinationPerc.ToString("P2");
+            HallucinationsPercentageTextBox.Text = hallucinationPerc.ToString(percentageFormat, NumberFormat);
 
             // Semantic Ambiguity
             SemanticAmbiguitiesTextBox.Text = _aggregateStats.SemanticAmbiguities.ToString();
             double semanticPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.SemanticAmbiguities / totalErrors;
-            SemanticAmbiguitiesPercentageTextBox.Text = semanticPerc.ToString("P2");
+            SemanticAmbiguitiesPercentageTextBox.Text = semanticPerc.ToString(percentageFormat, NumberFormat);
 
             // Subcategories (percentages based per category)
 
@@ -190,29 +196,29 @@ namespace MineguideEPOCParser.GUIApp.Tools
             // Under-extraction
             UnderExtractionsTextBox.Text = _aggregateStats.UnderExtractions.ToString();
             double underExtractionPerc = totalBoundaryErrors == 0 ? 0 : (double)_aggregateStats.UnderExtractions / totalBoundaryErrors;
-            UnderExtractionsPercentageTextBox.Text = underExtractionPerc.ToString("P2");
+            UnderExtractionsPercentageTextBox.Text = underExtractionPerc.ToString(percentageFormat, NumberFormat);
 
             // Over-extraction
             OverExtractionsTextBox.Text = _aggregateStats.OverExtractions.ToString();
             double overExtractionPerc = totalBoundaryErrors == 0 ? 0 : (double)_aggregateStats.OverExtractions / totalBoundaryErrors;
-            OverExtractionsPercentageTextBox.Text = overExtractionPerc.ToString("P2");
+            OverExtractionsPercentageTextBox.Text = overExtractionPerc.ToString(percentageFormat, NumberFormat);
 
             // Entity Merging Errors
             EntityMergingErrorsTextBox.Text = _aggregateStats.EntityMergingErrors.ToString();
             double entityMergingPerc = totalBoundaryErrors == 0 ? 0 : (double)_aggregateStats.EntityMergingErrors / totalBoundaryErrors;
-            EntityMergingErrorsPercentageTextBox.Text = entityMergingPerc.ToString("P2");
+            EntityMergingErrorsPercentageTextBox.Text = entityMergingPerc.ToString(percentageFormat, NumberFormat);
 
             // Hallucinations
 
             // Morph. hallucinations
             MorphHallucinationsErrorTextBox.Text = _aggregateStats.MorphologicalHallucinations.ToString();
             double morphHallucinationPerc = totalHallucinations == 0 ? 0 : (double)_aggregateStats.MorphologicalHallucinations / totalHallucinations;
-            MorphHallucinationsPercentageTextBox.Text = morphHallucinationPerc.ToString("P2");
+            MorphHallucinationsPercentageTextBox.Text = morphHallucinationPerc.ToString(percentageFormat, NumberFormat);
 
             // Gen. Typos
             GenTyposErrorTextBox.Text = _aggregateStats.GenerativeTypos.ToString();
             double genTypoPerc = totalHallucinations == 0 ? 0 : (double)_aggregateStats.GenerativeTypos / totalHallucinations;
-            GenTyposPercentageTextBox.Text = genTypoPerc.ToString("P2");
+            GenTyposPercentageTextBox.Text = genTypoPerc.ToString(percentageFormat, NumberFormat);
         }
 
         private void FilterChanged(object sender, EventArgs e)
