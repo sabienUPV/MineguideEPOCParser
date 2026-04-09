@@ -73,7 +73,8 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     _aggregateStats.TPStar += stats.TPStar;
                     _aggregateStats.FP += stats.FP;
                     _aggregateStats.FN += stats.FN;
-                    _aggregateStats.Hallucinations += stats.Hallucinations;
+                    _aggregateStats.MorphologicalHallucinations += stats.MorphologicalHallucinations;
+                    _aggregateStats.GenerativeTypos += stats.GenerativeTypos;
                     _aggregateStats.UnderExtractions += stats.UnderExtractions;
                     _aggregateStats.OverExtractions += stats.OverExtractions;
                     _aggregateStats.SemanticAmbiguities += stats.SemanticAmbiguities;
@@ -111,6 +112,25 @@ namespace MineguideEPOCParser.GUIApp.Tools
             UpdateMetricsDisplay();
         }
 
+        private void ShowPercentagesCheckBox_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            if (ShowPercentagesCheckBox == null) return;
+
+            var visibility = ShowPercentagesCheckBox.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+
+            PrecisionPercentageTextBox.Visibility = visibility;
+            RecallPercentageTextBox.Visibility = visibility;
+            F1ScorePercentageTextBox.Visibility = visibility;
+            BoundaryErrorsPercentageTextBox.Visibility = visibility;
+            SemanticAmbiguitiesPercentageTextBox.Visibility = visibility;
+            UnderExtractionsPercentageTextBox.Visibility = visibility;
+            OverExtractionsPercentageTextBox.Visibility = visibility;
+            EntityMergingErrorsPercentageTextBox.Visibility = visibility;
+            HallucinationsPercentageTextBox.Visibility = visibility;
+            MorphHallucinationsPercentageTextBox.Visibility = visibility;
+            GenTyposPercentageTextBox.Visibility = visibility;
+        }
+
         private void UpdateMetricsDisplay()
         {
             if (_aggregateStats == null || PrecisionTextBox == null) return;
@@ -120,6 +140,8 @@ namespace MineguideEPOCParser.GUIApp.Tools
             double precision = strict ? _aggregateStats.StrictPrecision : _aggregateStats.RelaxedPrecision;
             double recall = strict ? _aggregateStats.StrictRecall : _aggregateStats.RelaxedRecall;
             double f1Score = strict ? _aggregateStats.StrictF1Score : _aggregateStats.RelaxedF1Score;
+
+            // For the metrics we use more precise formatting (4 decimal places) and also show the percentage format for better readability
 
             PrecisionTextBox.Text = precision.ToString("F4");
             PrecisionPercentageTextBox.Text = precision.ToString("P4");
@@ -137,32 +159,60 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
             int totalErrors = _aggregateStats.TotalErrorsForAnalysis;
 
-            // Percentage is based on the total of all 4 error types (for pie chart analysis)
-            
+            // For error analysis, we don't need to be as precise as for metrics, so we can use 2 decimal places for percentages.
+            // The absolute counts are more important here, but the percentages help to understand the distribution of error types.
+
+            // Percentages are based on the total of all error types (for pie chart analysis)
+
+            // Categories
+
+            // Boundary errors
+            var totalBoundaryErrors = _aggregateStats.BoundaryErrors;
+            BoundaryErrorsTextBox.Text = totalBoundaryErrors.ToString();
+            double boundaryErrorsPerc = totalErrors == 0 ? 0 : (double)totalBoundaryErrors / totalErrors;
+            BoundaryErrorsPercentageTextBox.Text = boundaryErrorsPerc.ToString("P2");
+
+            // Total hallucinations
+            var totalHallucinations = _aggregateStats.Hallucinations;
+            HallucinationsErrorTextBox.Text = totalHallucinations.ToString();
+            double hallucinationPerc = totalErrors == 0 ? 0 : (double)totalHallucinations / totalErrors;
+            HallucinationsPercentageTextBox.Text = hallucinationPerc.ToString("P2");
+
             // Semantic Ambiguity
             SemanticAmbiguitiesTextBox.Text = _aggregateStats.SemanticAmbiguities.ToString();
             double semanticPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.SemanticAmbiguities / totalErrors;
-            SemanticAmbiguitiesPercentageTextBox.Text = semanticPerc.ToString("P4");
+            SemanticAmbiguitiesPercentageTextBox.Text = semanticPerc.ToString("P2");
 
-            // Hallucinations
-            HallucinationsErrorTextBox.Text = _aggregateStats.Hallucinations.ToString();
-            double hallucinationPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.Hallucinations / totalErrors;
-            HallucinationsPercentageTextBox.Text = hallucinationPerc.ToString("P4");
+            // Subcategories (percentages based per category)
+
+            // Boundary errors
 
             // Under-extraction
             UnderExtractionsTextBox.Text = _aggregateStats.UnderExtractions.ToString();
-            double underExtractionPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.UnderExtractions / totalErrors;
-            UnderExtractionsPercentageTextBox.Text = underExtractionPerc.ToString("P4");
+            double underExtractionPerc = totalBoundaryErrors == 0 ? 0 : (double)_aggregateStats.UnderExtractions / totalBoundaryErrors;
+            UnderExtractionsPercentageTextBox.Text = underExtractionPerc.ToString("P2");
 
             // Over-extraction
             OverExtractionsTextBox.Text = _aggregateStats.OverExtractions.ToString();
-            double overExtractionPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.OverExtractions / totalErrors;
-            OverExtractionsPercentageTextBox.Text = overExtractionPerc.ToString("P4");
+            double overExtractionPerc = totalBoundaryErrors == 0 ? 0 : (double)_aggregateStats.OverExtractions / totalBoundaryErrors;
+            OverExtractionsPercentageTextBox.Text = overExtractionPerc.ToString("P2");
 
             // Entity Merging Errors
             EntityMergingErrorsTextBox.Text = _aggregateStats.EntityMergingErrors.ToString();
-            double entityMergingPerc = totalErrors == 0 ? 0 : (double)_aggregateStats.EntityMergingErrors / totalErrors;
-            EntityMergingErrorsPercentageTextBox.Text = entityMergingPerc.ToString("P4");
+            double entityMergingPerc = totalBoundaryErrors == 0 ? 0 : (double)_aggregateStats.EntityMergingErrors / totalBoundaryErrors;
+            EntityMergingErrorsPercentageTextBox.Text = entityMergingPerc.ToString("P2");
+
+            // Hallucinations
+
+            // Morph. hallucinations
+            MorphHallucinationsErrorTextBox.Text = _aggregateStats.MorphologicalHallucinations.ToString();
+            double morphHallucinationPerc = totalHallucinations == 0 ? 0 : (double)_aggregateStats.MorphologicalHallucinations / totalHallucinations;
+            MorphHallucinationsPercentageTextBox.Text = morphHallucinationPerc.ToString("P2");
+
+            // Gen. Typos
+            GenTyposErrorTextBox.Text = _aggregateStats.GenerativeTypos.ToString();
+            double genTypoPerc = totalHallucinations == 0 ? 0 : (double)_aggregateStats.GenerativeTypos / totalHallucinations;
+            GenTyposPercentageTextBox.Text = genTypoPerc.ToString("P2");
         }
 
         private void FilterChanged(object sender, EventArgs e)

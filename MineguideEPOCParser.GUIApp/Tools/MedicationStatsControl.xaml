@@ -22,7 +22,7 @@
                 <ColumnDefinition Width="10" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            
+
             <Label Grid.Column="0" Content="Input CSV files:" VerticalAlignment="Center" />
             <TextBox Grid.Column="2" x:Name="InputFileTextBox" VerticalAlignment="Center" HorizontalAlignment="Stretch" />
             <Button Grid.Column="4" x:Name="BrowseButton" Content="Browse" Click="BrowseButton_Click" Padding="10,2" />
@@ -31,106 +31,136 @@
         <Grid Grid.Row="2">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="20" />
+                <RowDefinition Height="15" />
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
 
             <Button Grid.Row="0" x:Name="CalculateButton" Content="Calculate Stats" Click="CalculateButton_Click" HorizontalAlignment="Center" Padding="20,5" />
 
             <Grid x:Name="ResultsGrid" Grid.Row="2" Visibility="Collapsed">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="10" />
-                    <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="10" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="10" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="10" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="10" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="10" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="10" />
+                    <RowDefinition Height="5" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <!-- Evaluation Mode -->
-                <Label Grid.Row="0" Grid.Column="4" Content="Evaluation Mode:" FontWeight="Bold" VerticalAlignment="Center" />
-                <ComboBox Grid.Row="0" Grid.Column="6" Grid.ColumnSpan="3" x:Name="EvaluationModeComboBox" SelectionChanged="EvaluationModeComboBox_SelectionChanged" VerticalAlignment="Center">
-                    <ComboBoxItem Content="Strict (Exact matches only)" IsSelected="True" />
-                    <ComboBoxItem Content="Relaxed (Exact + Fuzzy matches)" />
-                </ComboBox>
+                <!-- Evaluation Mode & Show/Hide percentages -->
+                <StackPanel Orientation="Horizontal" Grid.Row="0">
+                    <Label Content="Evaluation Mode:" FontWeight="Bold" VerticalAlignment="Center" />
+                    <ComboBox Grid.Row="0" Grid.Column="2" Margin="10 0 20 0" x:Name="EvaluationModeComboBox" SelectionChanged="EvaluationModeComboBox_SelectionChanged" VerticalAlignment="Center">
+                        <ComboBoxItem Content="Strict (Exact matches only)" IsSelected="True" />
+                        <ComboBoxItem Content="Relaxed (Exact + Fuzzy matches)" />
+                    </ComboBox>
 
-                <!-- Counts -->
-                <Label Grid.Row="2" Grid.Column="0" Content="TP (Exact):" FontWeight="Bold" />
-                <TextBox Grid.Row="2" Grid.Column="2" x:Name="TPTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <CheckBox Grid.Row="0" Grid.Column="12" Grid.ColumnSpan="3" x:Name="ShowPercentagesCheckBox" Content="Show percentages" VerticalAlignment="Center" Checked="ShowPercentagesCheckBox_CheckedChanged" Unchecked="ShowPercentagesCheckBox_CheckedChanged" />
+                </StackPanel>
 
-                <Label Grid.Row="4" Grid.Column="0" Content="TP* (Fuzzy):" FontWeight="Bold" />
-                <TextBox Grid.Row="4" Grid.Column="2" x:Name="TPStarTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                <Grid Grid.Row="2">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="40" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="5" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="40" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="5" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="40" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="10" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="5" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
-                <Label Grid.Row="6" Grid.Column="0" Content="TP (Exact+Fuzzy):" FontWeight="Bold" />
-                <TextBox Grid.Row="6" Grid.Column="2" x:Name="TPExactPlusFuzzyTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <!-- Column 1: Counts -->
+                    <Label Grid.Row="2" Grid.Column="0" Content="TP (Exact):" FontWeight="Bold" />
+                    <TextBox Grid.Row="2" Grid.Column="2" x:Name="TPTextBox" IsReadOnly="True" VerticalAlignment="Center" />
 
-                <Label Grid.Row="8" Grid.Column="0" Content="FP:" FontWeight="Bold" />
-                <TextBox Grid.Row="8" Grid.Column="2" x:Name="FPTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <Label Grid.Row="4" Grid.Column="0" Content="TP* (Partial):" FontWeight="Bold" />
+                    <TextBox Grid.Row="4" Grid.Column="2" x:Name="TPStarTextBox" IsReadOnly="True" VerticalAlignment="Center" />
 
-                <Label Grid.Row="10" Grid.Column="0" Content="FN:" FontWeight="Bold" />
-                <TextBox Grid.Row="10" Grid.Column="2" x:Name="FNTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <Label Grid.Row="6" Grid.Column="0" Content="TP (Relaxed):" ToolTip="Relaxed = Exact + Partial" FontWeight="Bold" />
+                    <TextBox Grid.Row="6" Grid.Column="2" x:Name="TPExactPlusFuzzyTextBox" IsReadOnly="True" VerticalAlignment="Center" />
 
-                <!-- Metrics -->
-                <Label Grid.Row="2" Grid.Column="4" Content="Precision:" FontWeight="Bold" />
-                <TextBox Grid.Row="2" Grid.Column="6" x:Name="PrecisionTextBox" IsReadOnly="True" VerticalAlignment="Center" />
-                <TextBox Grid.Row="2" Grid.Column="8" x:Name="PrecisionPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <Label Grid.Row="8" Grid.Column="0" Content="FP:" FontWeight="Bold" />
+                    <TextBox Grid.Row="8" Grid.Column="2" x:Name="FPTextBox" IsReadOnly="True" VerticalAlignment="Center" />
 
-                <Label Grid.Row="4" Grid.Column="4" Content="Recall:" FontWeight="Bold" />
-                <TextBox Grid.Row="4" Grid.Column="6" x:Name="RecallTextBox" IsReadOnly="True" VerticalAlignment="Center" />
-                <TextBox Grid.Row="4" Grid.Column="8" x:Name="RecallPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <Label Grid.Row="10" Grid.Column="0" Content="FN:" FontWeight="Bold" />
+                    <TextBox Grid.Row="10" Grid.Column="2" x:Name="FNTextBox" IsReadOnly="True" VerticalAlignment="Center" />
 
-                <Label Grid.Row="6" Grid.Column="4" Content="F1-Score:" FontWeight="Bold" />
-                <TextBox Grid.Row="6" Grid.Column="6" x:Name="F1ScoreTextBox" IsReadOnly="True" VerticalAlignment="Center" />
-                <TextBox Grid.Row="6" Grid.Column="8" x:Name="F1ScorePercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <!-- Column 2: Metrics -->
+                    <Label Grid.Row="2" Grid.Column="4" Content="Precision:" FontWeight="Bold" />
+                    <TextBox Grid.Row="2" Grid.Column="6" x:Name="PrecisionTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="2" Grid.Column="8" x:Name="PrecisionPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
-                <!-- Detailed Error Analysis -->
-                <Label Grid.Row="2" Grid.Column="10" Content="Semantic Ambiguities:" FontWeight="Bold" ToolTip="Contextual Errors / Non-Pharmacological Entities (FP with match in text)" />
-                <TextBox Grid.Row="2" Grid.Column="12" x:Name="SemanticAmbiguitiesTextBox" IsReadOnly="True" VerticalAlignment="Center" />
-                <TextBox Grid.Row="2" Grid.Column="14" x:Name="SemanticAmbiguitiesPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <Label Grid.Row="4" Grid.Column="4" Content="Recall:" FontWeight="Bold" />
+                    <TextBox Grid.Row="4" Grid.Column="6" x:Name="RecallTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="4" Grid.Column="8" x:Name="RecallPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
-                <Label Grid.Row="4" Grid.Column="10" Content="Hallucinations:" FontWeight="Bold" ToolTip="Hallucinations (FP without match in text)" />
-                <TextBox Grid.Row="4" Grid.Column="12" x:Name="HallucinationsErrorTextBox" IsReadOnly="True" VerticalAlignment="Center" />
-                <TextBox Grid.Row="4" Grid.Column="14" x:Name="HallucinationsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <Label Grid.Row="6" Grid.Column="4" Content="F1-Score:" FontWeight="Bold" />
+                    <TextBox Grid.Row="6" Grid.Column="6" x:Name="F1ScoreTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="6" Grid.Column="8" x:Name="F1ScorePercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
-                <Label Grid.Row="6" Grid.Column="10" Content="Under-extractions:" FontWeight="Bold" ToolTip="Boundary Error: Extracted less than the gold standard" />
-                <TextBox Grid.Row="6" Grid.Column="12" x:Name="UnderExtractionsTextBox" IsReadOnly="True" VerticalAlignment="Center" />
-                <TextBox Grid.Row="6" Grid.Column="14" x:Name="UnderExtractionsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <!-- Column 3: Detailed Error Breakdown (part 1) -->
+                    <Label Grid.Row="2" Grid.Column="10" Content="Boundary errors:" FontWeight="Bold" ToolTip="It partially extracted the medication (TP*) but didn't precisely do it" />
+                    <TextBox Grid.Row="2" Grid.Column="12" x:Name="BoundaryErrorsTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="2" Grid.Column="14" x:Name="BoundaryErrorsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
-                <Label Grid.Row="8" Grid.Column="10" Content="Over-extractions:" FontWeight="Bold" ToolTip="Boundary Error: Extracted more than the gold standard" />
-                <TextBox Grid.Row="8" Grid.Column="12" x:Name="OverExtractionsTextBox" IsReadOnly="True" VerticalAlignment="Center" />
-                <TextBox Grid.Row="8" Grid.Column="14" x:Name="OverExtractionsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <Label Grid.Row="4" Grid.Column="10" Content="- Under-extractions:" FontWeight="Bold" ToolTip="Boundary Error: Extracted less than the gold standard" />
+                    <TextBox Grid.Row="4" Grid.Column="12" x:Name="UnderExtractionsTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="4" Grid.Column="14" x:Name="UnderExtractionsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
-                <Label Grid.Row="10" Grid.Column="10" Content="Entity merging errors:" FontWeight="Bold" ToolTip="Boundary Error: Extracted multiple medications as a single combined one" />
-                <TextBox Grid.Row="10" Grid.Column="12" x:Name="EntityMergingErrorsTextBox" IsReadOnly="True" VerticalAlignment="Center" />
-                <TextBox Grid.Row="10" Grid.Column="14" x:Name="EntityMergingErrorsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <Label Grid.Row="6" Grid.Column="10" Content="- Over-extractions:" FontWeight="Bold" ToolTip="Boundary Error: Extracted more than the gold standard" />
+                    <TextBox Grid.Row="6" Grid.Column="12" x:Name="OverExtractionsTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="6" Grid.Column="14" x:Name="OverExtractionsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
+
+                    <Label Grid.Row="8" Grid.Column="10" Content="- Entity merging errors:" FontWeight="Bold" ToolTip="Boundary Error: Extracted multiple medications as a single combined one" />
+                    <TextBox Grid.Row="8" Grid.Column="12" x:Name="EntityMergingErrorsTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="8" Grid.Column="14" x:Name="EntityMergingErrorsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
+
+                    <!-- Column 4: Detailed Error Breakdown (part 2) -->
+                    <Label Grid.Row="2" Grid.Column="16" Content="Total hallucinations:" FontWeight="Bold" ToolTip="All hallucinations (morphological + gen. typos)" />
+                    <TextBox Grid.Row="2" Grid.Column="18" x:Name="HallucinationsErrorTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="2" Grid.Column="20" x:Name="HallucinationsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
+
+                    <Label Grid.Row="4" Grid.Column="16" Content="- Morph. hallucinations:" FontWeight="Bold" ToolTip="Hallucinations: Morphological hallucinations (FP without match in text)" />
+                    <TextBox Grid.Row="4" Grid.Column="18" x:Name="MorphHallucinationsErrorTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="4" Grid.Column="20" x:Name="MorphHallucinationsPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
+
+                    <Label Grid.Row="6" Grid.Column="16" Content="- Gen. typos:" FontWeight="Bold" ToolTip="Hallucinations: Generative Typos (TP* without match in text)" />
+                    <TextBox Grid.Row="6" Grid.Column="18" x:Name="GenTyposErrorTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="6" Grid.Column="20" x:Name="GenTyposPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
+
+                    <Label Grid.Row="8" Grid.Column="16" Content="Semantic Ambiguities:" FontWeight="Bold" ToolTip="Contextual Errors / Non-Pharmacological Entities (FP with match in text)" />
+                    <TextBox Grid.Row="8" Grid.Column="18" x:Name="SemanticAmbiguitiesTextBox" IsReadOnly="True" VerticalAlignment="Center" />
+                    <TextBox Grid.Row="8" Grid.Column="20" x:Name="SemanticAmbiguitiesPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
+                </Grid>
 
                 <!-- Details DataGrid -->
-                <Expander Grid.Row="12" Grid.Column="0" Grid.ColumnSpan="16" Header="Details" IsExpanded="False" Margin="0,10,0,0" VerticalContentAlignment="Stretch">
+                <Expander Grid.Row="4" Header="Details" IsExpanded="False" Margin="0,10,0,0" VerticalContentAlignment="Stretch">
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -148,7 +178,8 @@
                                 <ComboBoxItem Content="TP*" />
                                 <ComboBoxItem Content="FP" />
                                 <ComboBoxItem Content="FN" />
-                                <ComboBoxItem Content="Hallucination" Tag="{x:Static tools:ErrorType.Hallucination}" />
+                                <ComboBoxItem Content="Morph. Hallucination" Tag="{x:Static tools:ErrorType.MorphologicalHallucination}" />
+                                <ComboBoxItem Content="Gen. Typo" Tag="{x:Static tools:ErrorType.GenerativeTypo}" />
                                 <ComboBoxItem Content="Semantic Ambiguity" Tag="{x:Static tools:ErrorType.SemanticAmbiguity}" />
                                 <ComboBoxItem Content="Under-extraction" Tag="{x:Static tools:ErrorType.UnderExtraction}" />
                                 <ComboBoxItem Content="Over-extraction" Tag="{x:Static tools:ErrorType.OverExtraction}" />

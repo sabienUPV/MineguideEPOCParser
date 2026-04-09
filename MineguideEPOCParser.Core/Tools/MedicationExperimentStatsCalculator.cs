@@ -7,7 +7,15 @@ namespace MineguideEPOCParser.Core.Tools
 {
     public enum ErrorType
     {
-        Hallucination,
+        /// <summary>
+        /// a critical type of hallucination in which no medication in the original text can be inferred from it
+        /// </summary>
+        MorphologicalHallucination,
+        /// <summary>
+        /// A more benign type of hallucination in which the LLM introduced typos in the original text,
+        /// but via Levenshtein we could still map it to the medication in the original text
+        /// </summary>
+        GenerativeTypo,
         SemanticAmbiguity,
         UnderExtraction,
         OverExtraction,
@@ -32,12 +40,29 @@ namespace MineguideEPOCParser.Core.Tools
         public int TPRelaxed => TP + TPStar;
         public int FP { get; set; }
         public int FN { get; set; }
-        public int Hallucinations { get; set; }
+
+
+        public int BoundaryErrors => UnderExtractions + OverExtractions + EntityMergingErrors;
 
         public int UnderExtractions { get; set; }
         public int OverExtractions { get; set; }
-        public int SemanticAmbiguities { get; set; } // Contextual Errors / Non-Pharmacological Entities (FP with match in text)
         public int EntityMergingErrors { get; set; }
+
+        /// <summary>
+        /// Hallucinations: more general category of error in which the LLM produced something not present in the original text,
+        /// and can be subcategorized into benign and mappable Generative typos, or critical morphological hallucinations. 
+        /// </summary>
+        public int Hallucinations => MorphologicalHallucinations + GenerativeTypos;
+
+        public int MorphologicalHallucinations { get; set; }
+        public int GenerativeTypos { get; set; }
+
+        public int SemanticAmbiguities { get; set; } // Contextual Errors / Non-Pharmacological Entities (FP with match in text)
+
+        /// <summary>
+        /// Total number of errors for qualitative analysis (Boundary Errors + Hallucinations + Semantic Ambiguities).
+        /// </summary>
+        public int TotalErrorsForAnalysis => BoundaryErrors + Hallucinations + SemanticAmbiguities;
 
         public List<MedicationStatRow> Rows { get; set; } = [];
 
@@ -60,11 +85,6 @@ namespace MineguideEPOCParser.Core.Tools
         /// </para>
         /// </summary>
         public int Actual => TP + TPStar + FN;
-
-        /// <summary>
-        /// Total number of errors for qualitative analysis (Hallucinations + SemanticAmbiguity + UnderExtraction + OverExtraction + EntityMerging).
-        /// </summary>
-        public int TotalErrorsForAnalysis => Hallucinations + SemanticAmbiguities + UnderExtractions + OverExtractions + EntityMergingErrors;
 
         public double StrictPrecision => CalculatePrecision(TP, Predicted);
         public double StrictRecall => CalculateRecall(TP, Actual);
@@ -199,6 +219,16 @@ namespace MineguideEPOCParser.Core.Tools
                             error = ErrorType.OverExtraction;
                         }
                     }
+
+                    // If it's not any other error type, and the medication string (which is the LLM's output)
+                    // is different from the match in text (which is what was actually extracted from the report),
+                    // then it's a generative typo, a type of benign hallucination
+                    // (since the LLM predicted something that is not in the text, but it's a TP* which means that we could match it to a medication in the text)
+                    if (error is null && medicationStr is not null && !medicationStr.Equals(matchInTextStr, StringComparison.OrdinalIgnoreCase))
+                    {
+                        stats.GenerativeTypos++;
+                        error = ErrorType.GenerativeTypo;
+                    }
                 }
                 else if (Enum.TryParse<MedicationResult.ExperimentResultType>(resultStr, out var resultType))
                 {
@@ -209,11 +239,11 @@ namespace MineguideEPOCParser.Core.Tools
                             break;
                         case MedicationResult.ExperimentResultType.FP:
                             stats.FP++;
-                            // Check for hallucinations vs Semantic Ambiguity (Mutually exclusive)
+                            // Check for morphological hallucinations vs Semantic Ambiguity (Mutually exclusive)
                             if (!hasStartIndex || startIndex < 0 || string.IsNullOrWhiteSpace(matchInTextStr))
                             {
-                                stats.Hallucinations++;
-                                error = ErrorType.Hallucination;
+                                stats.MorphologicalHallucinations++;
+                                error = ErrorType.MorphologicalHallucination;
                             }
                             else
                             {
