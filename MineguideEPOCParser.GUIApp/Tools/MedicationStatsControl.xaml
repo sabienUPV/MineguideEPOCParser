@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:MineguideEPOCParser.GUIApp"
              xmlns:tools="clr-namespace:MineguideEPOCParser.Core.Tools;assembly=MineguideEPOCParser.Core"
+             xmlns:guiutils="clr-namespace:MineguideEPOCParser.GUIApp.Utils"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="800">
     <Grid Margin="10">
@@ -58,6 +59,12 @@
                 </StackPanel>
 
                 <Grid Grid.Row="2">
+                    <Grid.Resources>
+                        <Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+                            <Setter Property="guiutils:TextBoxBehaviors.SelectAllOnClick" Value="True" />
+                        </Style>
+                    </Grid.Resources>
+
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="10" />
