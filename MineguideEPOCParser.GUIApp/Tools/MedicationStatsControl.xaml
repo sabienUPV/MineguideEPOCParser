@@ -161,7 +161,7 @@
                     <TextBox Grid.Row="6" Grid.Column="18" x:Name="GenTyposErrorTextBox" IsReadOnly="True" VerticalAlignment="Center" />
                     <TextBox Grid.Row="6" Grid.Column="20" x:Name="GenTyposPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
 
-                    <Label Grid.Row="8" Grid.Column="16" Content="Semantic Ambiguities:" FontWeight="Bold" ToolTip="Contextual Errors / Non-Pharmacological Entities (FP with match in text)" />
+                    <Label Grid.Row="8" Grid.Column="16" Content="Semantic Ambiguities:" FontWeight="Bold" ToolTip="Semantic Ambiguity Errors / Non-Pharmacological Entities (FP with match in text)" />
                     <TextBox Grid.Row="8" Grid.Column="18" x:Name="SemanticAmbiguitiesTextBox" IsReadOnly="True" VerticalAlignment="Center" />
                     <TextBox Grid.Row="8" Grid.Column="20" x:Name="SemanticAmbiguitiesPercentageTextBox" IsReadOnly="True" VerticalAlignment="Center" Visibility="Collapsed" />
                 </Grid>

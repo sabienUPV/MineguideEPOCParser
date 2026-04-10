@@ -80,6 +80,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     _aggregateStats.GenerativeTypos += stats.GenerativeTypos;
                     _aggregateStats.UnderExtractions += stats.UnderExtractions;
                     _aggregateStats.OverExtractions += stats.OverExtractions;
+                    _aggregateStats.EntityMergingErrors += stats.EntityMergingErrors;
                     _aggregateStats.SemanticAmbiguities += stats.SemanticAmbiguities;
 
                     foreach (var row in stats.Rows)
