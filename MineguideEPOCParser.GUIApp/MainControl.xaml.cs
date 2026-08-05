@@ -19,7 +19,7 @@ namespace MineguideEPOCParser.GUIApp
             ("Medication Grouping To Mapper", () => new MedicationGroupingToMapperControl()),
             ("File Encoding Converter", () => new FileEncodingConverterControl()),
             ("Measurements Parser", () => new MeasurementsParserControl()),
-            ("Medication Manual Validator", () => new MedicationManualValidatorControl()),
+            ("Medication Validator", () => new MedicationValidatorControl()),
             ("Random Sampler Parser", () => new RandomSamplerParserControl()),
             ("Medication Experiment Stats", () => new MedicationStatsControl())
         ];

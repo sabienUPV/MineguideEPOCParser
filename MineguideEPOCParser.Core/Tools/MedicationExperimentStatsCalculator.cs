@@ -138,7 +138,7 @@ namespace MineguideEPOCParser.Core.Tools
 
     public static class MedicationExperimentStatsCalculator
     {
-        public class CalculatorConfiguration : MedicationManualValidatorParserConfigurationBase { }
+        public class CalculatorConfiguration : MedicationValidatorParserConfigurationBase { }
 
         public static async Task<MedicationExperimentStats> CalculateStatsAsync(string csvPath, CalculatorConfiguration config, CancellationToken cancellationToken = default)
         {
@@ -195,9 +195,9 @@ namespace MineguideEPOCParser.Core.Tools
                     // and can't be entity merging at the same time since it's a different case)
                     if (!string.IsNullOrEmpty(correctedMedicationStr) && !string.IsNullOrEmpty(matchInTextStr))
                     {
-                        bool correctionHasMultipleMedications = correctedMedicationStr.Contains(MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator);
+                        bool correctionHasMultipleMedications = correctedMedicationStr.Contains(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator);
                         var correctedMedications = correctionHasMultipleMedications
-                            ? correctedMedicationStr.Split(MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries).Select(m => m.Trim()).ToArray()
+                            ? correctedMedicationStr.Split(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries).Select(m => m.Trim()).ToArray()
                             : null;
 
                         if (correctedMedications != null && correctedMedications.Length > 1 // You need at least 2 elements for an entity merging error to make sense

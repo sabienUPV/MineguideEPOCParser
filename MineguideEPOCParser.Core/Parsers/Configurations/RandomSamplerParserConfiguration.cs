@@ -13,7 +13,7 @@
         // Files including reports to exclude from the sample (e.g., if you already had those in a previous sample and want to avoid duplicates in the new sample).
         public string[]? ExcludeFiles { get; set; }
         // Report number header for primary key matching with the exclude file (if applicable).
-        public string ReportNumberHeaderName { get; set; } = MedicationManualValidatorParserConfiguration.DefaultReportNumberHeaderName;
+        public string ReportNumberHeaderName { get; set; } = MedicationValidatorParserConfiguration.DefaultReportNumberHeaderName;
 
         // No additional output columns, just sampling the input
         public override (string? inputTargetHeader, string[] outputAdditionalHeaders) GetDefaultColumns() => (null, []);

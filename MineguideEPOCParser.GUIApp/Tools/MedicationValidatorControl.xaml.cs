@@ -13,15 +13,15 @@ using System.Windows.Media;
 namespace MineguideEPOCParser.GUIApp.Tools
 {
     /// <summary>
-    /// Lógica de interacción para MedicationManualValidatorControl.xaml
+    /// Lógica de interacción para MedicationValidatorControl.xaml
     /// </summary>
-    public partial class MedicationManualValidatorControl : UserControl, IDisposable
+    public partial class MedicationValidatorControl : UserControl, IDisposable
     {
         // Dependency property IsParsing
         public static readonly DependencyProperty IsParsingProperty = DependencyProperty.Register(
             nameof(IsParsing),
             typeof(bool),
-            typeof(MedicationManualValidatorControl),
+            typeof(MedicationValidatorControl),
             new PropertyMetadata(false)
         );
 
@@ -29,7 +29,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
         public static readonly DependencyProperty IsNotParsingProperty = DependencyProperty.Register(
             nameof(IsNotParsing),
             typeof(bool),
-            typeof(MedicationManualValidatorControl),
+            typeof(MedicationValidatorControl),
             new PropertyMetadata(true)
         );
 
@@ -53,18 +53,18 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
         }
 
-        public MedicationManualValidatorControl()
+        public MedicationValidatorControl()
         {
             InitializeComponent();
 
             CreateProgress();
 
             // Hook into the Loaded and Unloaded events
-            this.Loaded += MedicationManualValidatorControl_Loaded;
-            this.Unloaded += MedicationManualValidatorControl_Unloaded;
+            this.Loaded += MedicationValidatorControl_Loaded;
+            this.Unloaded += MedicationValidatorControl_Unloaded;
         }
 
-        private void MedicationManualValidatorControl_Loaded(object sender, RoutedEventArgs e)
+        private void MedicationValidatorControl_Loaded(object sender, RoutedEventArgs e)
         {
             // Find the parent window once the control is rendered in the UI tree
             Window parentWindow = Window.GetWindow(this);
@@ -75,7 +75,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
         }
 
-        private void MedicationManualValidatorControl_Unloaded(object sender, RoutedEventArgs e)
+        private void MedicationValidatorControl_Unloaded(object sender, RoutedEventArgs e)
         {
             // ALWAYS unregister to prevent memory leaks!
             Window parentWindow = Window.GetWindow(this);
@@ -612,7 +612,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
 
             // Create parser configuration
-            var configuration = new MedicationManualValidatorParserConfiguration
+            var configuration = new MedicationValidatorParserConfiguration
             {
                 CultureName = DefaultCultureName, // TODO: Allow user to select culture if needed
                 InputFile = inputFile,
@@ -624,7 +624,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             _cancellationTokenSource = new CancellationTokenSource();
 
             // Create parser instance
-            var parser = new MedicationManualValidatorParser()
+            var parser = new MedicationValidatorParser()
             {
                 Configuration = configuration,
                 Progress = Progress,
@@ -958,7 +958,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             while (true)
             {
                 input = InputBoxWindow.Show(
-                $"Extracted medication (from LLM): {medicationMatch.ExtractedMedication}\n\nEnter the corrected medication name:\n\n(Note: To enter multiple medications, separate them using the '{MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator}' character)",
+                $"Extracted medication (from LLM): {medicationMatch.ExtractedMedication}\n\nEnter the corrected medication name:\n\n(Note: To enter multiple medications, separate them using the '{MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator}' character)",
                 $"Correct Medication ({medicationMatch.ExtractedMedication})",
                 medicationMatch.CorrectedMedication ?? medicationMatch.ExtractedMedication);
                 
@@ -1000,9 +1000,9 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     }
                     // If the user said there were multiple medications in a single match, it means that the LLM failed to extract them separately,
                     // which is a partial TP* (Boundary error - Entity Merging)
-                    else if (input.Contains(MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator))
+                    else if (input.Contains(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator))
                     {
-                        var correctedMedications = input.Split(MedicationManualValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        var correctedMedications = input.Split(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                         // Check that we have at least 2 medications, and that all included medications are part of the match in the text
                         if (correctedMedications.Length > 1 && correctedMedications.All(cm => medicationMatch.MatchInText.Contains(cm, StringComparison.OrdinalIgnoreCase)))
                         {

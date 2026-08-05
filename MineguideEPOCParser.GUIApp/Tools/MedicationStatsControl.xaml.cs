@@ -67,7 +67,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 {
                     var stats = await MedicationExperimentStatsCalculator.CalculateStatsAsync(filePath, new()
                     {
-                        CultureName = MedicationManualValidatorControl.DefaultCultureName, // TODO: Allow user to select culture if needed
+                        CultureName = MedicationValidatorControl.DefaultCultureName, // TODO: Allow user to select culture if needed
                         InputFile = filePath,
                         OutputFile = string.Empty
                     });

@@ -5,12 +5,12 @@ namespace MineguideEPOCParser.Core.Parsers.Configurations
     public enum NavigationDirection { Next, Back, Stop }
     public record ValidationStepResult(NavigationDirection Direction, List<MedicationResult> Results);
 
-    public class MedicationManualValidatorParserConfiguration : MedicationManualValidatorParserConfigurationBase
+    public class MedicationValidatorParserConfiguration : MedicationValidatorParserConfigurationBase
     {
         public required Func<string, IEnumerable<MedicationResult>, CancellationToken, Task<ValidationStepResult>> ValidationFunction { get; set; }
     }
 
-    public abstract class MedicationManualValidatorParserConfigurationBase : DataParserConfiguration
+    public abstract class MedicationValidatorParserConfigurationBase : DataParserConfiguration
     {
         public const char MultipleMedicationsSeparator = '+';
 

@@ -14,11 +14,11 @@ namespace MineguideEPOCParser.Core.Parsers
     /// yields to the validator control so the user can validate the medications and add or remove medications,
     /// and then returns the resulting rows with the validated medications.
     /// </summary>
-    public class MedicationManualValidatorParser : DataParser<MedicationManualValidatorParserConfiguration>
+    public class MedicationValidatorParser : DataParser<MedicationValidatorParserConfiguration>
     {
         public class MedicationMatchClassMap : ClassMap<MedicationMatch>
         {
-            public MedicationMatchClassMap(MedicationManualValidatorParserConfiguration config)
+            public MedicationMatchClassMap(MedicationValidatorParserConfiguration config)
             {
                 // Map all MedicationMatch properties to the output columns
                 Map(m => m.ExtractedMedication).Name(config.MedicationHeaderName);
@@ -474,7 +474,7 @@ namespace MineguideEPOCParser.Core.Parsers
                     string header = Configuration.OutputAdditionalHeaderNames[i];
 
                     // There should be a 1-1 mapping between the additional header names, the medication match values, AND the additionalRowIndexes,
-                    // since the additional header names are defined as the headers corresponding to the medication match values (see MedicationManualValidatorParserConfigurationBase),
+                    // since the additional header names are defined as the headers corresponding to the medication match values (see MedicationValidatorParserConfigurationBase),
                     // and the additionalRowIndexes is based on OutputAdditionalHeaderNames (see above in ApplyTransformations).
                     // However, we add a safety check just in case to avoid exceptions and data loss in case of misconfiguration.
                     if (additionalRowIndexes.TryGetValue(header, out int index))
