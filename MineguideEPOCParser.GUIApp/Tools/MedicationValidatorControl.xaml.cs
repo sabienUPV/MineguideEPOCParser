@@ -961,8 +961,14 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 $"Extracted medication (from LLM): {medicationMatch.ExtractedMedication}\n\nEnter the corrected medication name:\n\n(Note: To enter multiple medications, separate them using the '{MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator}' character)",
                 $"Correct Medication ({medicationMatch.ExtractedMedication})",
                 medicationMatch.CorrectedMedication ?? medicationMatch.ExtractedMedication);
-                
-                if (string.IsNullOrWhiteSpace(input))
+
+                input = input?.Trim(); // Trim whitespace
+
+                // If the user cancels the input box (input will be null),
+                // or enters an empty string or whitespace,
+                // or enters the same text as the original match in text (this could also mean the user left the input unchanged),
+                // we treat it as setting it to "no correction" (e.g. removing the correction if it was previously set, or doing nothing if it wasn't).
+                if (string.IsNullOrWhiteSpace(input) || input == medicationMatch.MatchInText)
                 {
                     if (medicationMatch.CorrectedMedication is null)
                     {
@@ -977,8 +983,6 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     }
                     return; // No valid input, exit
                 }
-                
-                input = input.Trim(); // Trim whitespace
 
                 // If the medication is a True Positive (TP),
                 // we support that if the corrected medication is a subtext of the original match in text,
