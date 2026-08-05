@@ -7,7 +7,15 @@ namespace MineguideEPOCParser.Core.Validation
     {
         public required string ExtractedMedication { get; set; } // The medication from your array
         public ExperimentResultType ExperimentResult { get; set; } = ExperimentResultType.TP; // Default to True Positive
-        public string? CorrectedMedication { get; set; } // The corrected medication by the user after validating, if any
+
+        // The corrected medication by the user after validating, if any
+        public string? CorrectedMedication
+        {
+            get;
+            // Because CSV Helper treats empty fields as empty strings, we want to convert them to null
+            // so that we can easily do things like the null-coalescing operator (??) throughout the code without having to check for empty strings.
+            set => field = string.IsNullOrEmpty(value) ? null : value;
+        }
 
         // This property will be ignored in CSV Parser,
         // since for import we don't need it since we calculate it ourselves

@@ -981,7 +981,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 // we treat it as setting it to "no correction" (e.g. removing the correction if it was previously set, or doing nothing if it wasn't).
                 if (string.IsNullOrWhiteSpace(input) || input == medicationMatch.MatchInText)
                 {
-                    if (medicationMatch.CorrectedMedication is null)
+                    if (string.IsNullOrEmpty(medicationMatch.CorrectedMedication))
                     {
                         return; // No correction was previously set, so nothing to remove
                     }
