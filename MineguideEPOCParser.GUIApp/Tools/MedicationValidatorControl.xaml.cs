@@ -954,7 +954,6 @@ namespace MineguideEPOCParser.GUIApp.Tools
         {
             // Prompt user for corrected medication
             string? input;
-            bool isPartialTruePositive = false;
             while (true)
             {
                 input = InputBoxWindow.Show(
@@ -984,48 +983,51 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     continue; // Go back to the input box to allow the user to enter a new correction or cancel
                 }
 
-                // If the medication is a True Positive (TP),
-                // we support that if the corrected medication is a subtext of the original match in text,
-                // it means that it is a correction of the same match removing additional information (e.g. "salbutamol 500mg" corrected to "salbutamol").
-                // This should be considered a partial match (TP*) rather than a full match (TP),
-                // since the corrected medication doesn't match the full original text,
-                // so that strict match evaluation punishes this behavior (as FP+FN) while relaxed match evaluation still allows it (as TP).
-                //
-                // NOTE: This is the only case in which CorrectedMedication is anything more than informational metadata and affects the evaluation directly.
-                // This is because CorrectedMedication was meant for correcting misspellings by both the LLM and the person who wrote the original text,
-                // which is useful for downstream processing but doesn't usually affect the match evaluation.
-                if (medicationMatch.ExperimentResult == MedicationResult.ExperimentResultType.TP)
-                {
-                    // If the original match in text contains the correction (e.g. "salbutamol 500mg" contains "salbutamol"),
-                    // then we can consider this correction as a partial true positive (TP*) (Boundary error - Over-extraction)
-                    if (medicationMatch.MatchInText.Contains(input, StringComparison.OrdinalIgnoreCase))
-                    {
-                        isPartialTruePositive = true;
-                    }
-                    // If the user said there were multiple medications in a single match, it means that the LLM failed to extract them separately,
-                    // which is a partial TP* (Boundary error - Entity Merging)
-                    else if (input.Contains(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator))
-                    {
-                        var correctedMedications = input.Split(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                        // Check that we have at least 2 medications, and that all included medications are part of the match in the text
-                        if (correctedMedications.Length > 1 && correctedMedications.All(cm => medicationMatch.MatchInText.Contains(cm, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            isPartialTruePositive = true;
-                        }
-                        // else: This can happen if the user is normalizing an informal name that combines multiple medications
-                        // in a way that we cannot fault the LLM for not knowing or normalizing since it is not the LLM's purpose
-                        // (e.g. "triple terapia inhalatoria" means "salbutamol + budesonida + bromuro de ipratropio")
-                    }
-                }
                 break; // Valid input, exit loop
             }
             
             // Update the corrected medication
             medicationMatch.CorrectedMedication = input;
 
-            if (isPartialTruePositive)
+            // If the medication is a True Positive (TP),
+            // we support that if the corrected medication is a subtext of the original match in text,
+            // it means that it is a correction of the same match removing additional information (e.g. "salbutamol 500mg" corrected to "salbutamol").
+            // This should be considered a partial match (TP*) rather than a full match (TP),
+            // since the corrected medication doesn't match the full original text,
+            // so that strict match evaluation punishes this behavior (as FP+FN) while relaxed match evaluation still allows it (as TP).
+            //
+            // NOTE: This is the only case in which CorrectedMedication is anything more than informational metadata and affects the evaluation directly.
+            // This is because CorrectedMedication was meant for correcting misspellings by both the LLM and the person who wrote the original text,
+            // which is useful for downstream processing but doesn't usually affect the match evaluation.
+            if (medicationMatch.ExperimentResult == MedicationResult.ExperimentResultType.TP)
             {
-                medicationMatch.ExperimentResult = MedicationMatch.ExperimentResultType.TP_;
+                bool isPartialTruePositive = false;
+
+                // If the original match in text contains the correction (e.g. "salbutamol 500mg" contains "salbutamol"),
+                // then we can consider this correction as a partial true positive (TP*) (Boundary error - Over-extraction)
+                if (medicationMatch.MatchInText.Contains(input, StringComparison.OrdinalIgnoreCase))
+                {
+                    isPartialTruePositive = true;
+                }
+                // If the user said there were multiple medications in a single match, it means that the LLM failed to extract them separately,
+                // which is a partial TP* (Boundary error - Entity Merging)
+                else if (input.Contains(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator))
+                {
+                    var correctedMedications = input.Split(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    // Check that we have at least 2 medications, and that all included medications are part of the match in the text
+                    if (correctedMedications.Length > 1 && correctedMedications.All(cm => medicationMatch.MatchInText.Contains(cm, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        isPartialTruePositive = true;
+                    }
+                    // else: This can happen if the user is normalizing an informal name that combines multiple medications
+                    // in a way that we cannot fault the LLM for not knowing or normalizing since it is not the LLM's purpose
+                    // (e.g. "triple terapia inhalatoria" means "salbutamol + budesonida + bromuro de ipratropio")
+                }
+
+                if (isPartialTruePositive)
+                {
+                    medicationMatch.ExperimentResult = MedicationMatch.ExperimentResultType.TP_;
+                }
             }
         }
 
