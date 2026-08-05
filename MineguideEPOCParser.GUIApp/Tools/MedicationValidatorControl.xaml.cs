@@ -138,6 +138,16 @@ namespace MineguideEPOCParser.GUIApp.Tools
         {
             public Hyperlink? Hyperlink { get; set; } // Optional hyperlink for clickable highlights
 
+            /// <summary>
+            /// Optional property to store the experiment result before any correction is made,
+            /// so that we can revert any automatic changes done to the result based on the correction if said correction is reverted/removed by the user.
+            /// <para>
+            /// Since this is only used for UX purposes, we don't need to store it in the output file,
+            /// so it's good for it to be only in the UI class and not in the base <see cref="MedicationMatch"/> class.
+            /// </para>
+            /// </summary>
+            public ExperimentResultType? ExperimentResultBeforeCorrection { get; set; }
+
             public bool HasMatchInText => StartIndex >= 0;
             public string DisplayText => HasMatchInText ? MatchInText : ExtractedMedication;
 
@@ -574,7 +584,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             else // if (shouldToggleExperimentResult)
             {
                 // If middle click is pressed, toggle the medication match between TP and FP
-                if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FP)
+                if (match.ExperimentResult == MedicationResult.ExperimentResultType.FP)
                 {
                     MarkMedicationAsTruePositive(match); // Change to TP
                 }
@@ -833,6 +843,8 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
             foreach (var match in matches)
             {
+                // Store the original result before correction, to allow the user to revert it if they want to
+                match.ExperimentResultBeforeCorrection = match.ExperimentResult;
                 // Change the experiment result to TP*, since it's a partial match
                 match.ExperimentResult = MedicationResult.ExperimentResultType.TP_;
 
@@ -905,7 +917,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
         private void MarkMedicationAsFalsePositive(MedicationResultUI match)
         {
-            if (match.ExperimentResult == MedicationMatch.ExperimentResultType.FN)
+            if (match.ExperimentResult == MedicationResult.ExperimentResultType.FN)
             {
                 // If it is a false negative, and you are marking it as "false positive",
                 // that means it wasn't a match in the first place, so remove it from the matches
@@ -914,7 +926,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
             }
 
             // Change the experiment result to FP
-            match.ExperimentResult = MedicationMatch.ExperimentResultType.FP;
+            match.ExperimentResult = MedicationResult.ExperimentResultType.FP;
         }
 
         private void OnCorrectMedicationClicked(object? sender, RoutedEventArgs e)
@@ -963,7 +975,7 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
                 input = input?.Trim(); // Trim whitespace
 
-                // If the user cancels the input box (input will be null),
+                // If the user cancels the input box (input will be string.Empty),
                 // or enters an empty string or whitespace,
                 // or enters the same text as the original match in text (this could also mean the user left the input unchanged),
                 // we treat it as setting it to "no correction" (e.g. removing the correction if it was previously set, or doing nothing if it wasn't).
@@ -976,9 +988,12 @@ namespace MineguideEPOCParser.GUIApp.Tools
                     var result = MessageBox.Show("No correction entered. Did you mean to remove the correction?\n\nPress 'Yes' to remove the correction for this medication.", "Remove correction?", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
                     if (result == MessageBoxResult.Yes)
                     {
-                        // User wants to remove the correction
-                        medicationMatch.CorrectedMedication = null;
-                        return;
+                        // User wants to remove the correction.
+                        // Set the input explicitly to null and break the loop,
+                        // so that when it updates the correction it sets it to null,
+                        // effectively removing the correction, while still performing necessary additional checks
+                        input = null;
+                        break;
                     }
                     continue; // Go back to the input box to allow the user to enter a new correction or cancel
                 }
@@ -989,7 +1004,14 @@ namespace MineguideEPOCParser.GUIApp.Tools
             // Update the corrected medication
             medicationMatch.CorrectedMedication = input;
 
-            // If the medication is a True Positive (TP),
+            // If the medication was previously marked as a partial true positive (TP*), we should revert it back to its original result
+            if (medicationMatch.ExperimentResult == MedicationResult.ExperimentResultType.TP_ && medicationMatch.ExperimentResultBeforeCorrection.HasValue)
+            {
+                medicationMatch.ExperimentResult = medicationMatch.ExperimentResultBeforeCorrection.Value;
+                medicationMatch.ExperimentResultBeforeCorrection = null; // Clear the backup
+            }
+
+            // If a correction was set and the result is a True Positive (TP),
             // we support that if the corrected medication is a subtext of the original match in text,
             // it means that it is a correction of the same match removing additional information (e.g. "salbutamol 500mg" corrected to "salbutamol").
             // This should be considered a partial match (TP*) rather than a full match (TP),
@@ -999,21 +1021,21 @@ namespace MineguideEPOCParser.GUIApp.Tools
             // NOTE: This is the only case in which CorrectedMedication is anything more than informational metadata and affects the evaluation directly.
             // This is because CorrectedMedication was meant for correcting misspellings by both the LLM and the person who wrote the original text,
             // which is useful for downstream processing but doesn't usually affect the match evaluation.
-            if (medicationMatch.ExperimentResult == MedicationResult.ExperimentResultType.TP)
+            if (medicationMatch.CorrectedMedication is not null && medicationMatch.ExperimentResult == MedicationResult.ExperimentResultType.TP)
             {
                 bool isPartialTruePositive = false;
 
                 // If the original match in text contains the correction (e.g. "salbutamol 500mg" contains "salbutamol"),
                 // then we can consider this correction as a partial true positive (TP*) (Boundary error - Over-extraction)
-                if (medicationMatch.MatchInText.Contains(input, StringComparison.OrdinalIgnoreCase))
+                if (medicationMatch.MatchInText.Contains(medicationMatch.CorrectedMedication, StringComparison.OrdinalIgnoreCase))
                 {
                     isPartialTruePositive = true;
                 }
                 // If the user said there were multiple medications in a single match, it means that the LLM failed to extract them separately,
                 // which is a partial TP* (Boundary error - Entity Merging)
-                else if (input.Contains(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator))
+                else if (medicationMatch.CorrectedMedication.Contains(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator))
                 {
-                    var correctedMedications = input.Split(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                    var correctedMedications = medicationMatch.CorrectedMedication.Split(MedicationValidatorParserConfigurationBase.MultipleMedicationsSeparator, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                     // Check that we have at least 2 medications, and that all included medications are part of the match in the text
                     if (correctedMedications.Length > 1 && correctedMedications.All(cm => medicationMatch.MatchInText.Contains(cm, StringComparison.OrdinalIgnoreCase)))
                     {
@@ -1026,7 +1048,10 @@ namespace MineguideEPOCParser.GUIApp.Tools
 
                 if (isPartialTruePositive)
                 {
-                    medicationMatch.ExperimentResult = MedicationMatch.ExperimentResultType.TP_;
+                    // Store the original result before correction, to allow the user to revert it if they want to
+                    medicationMatch.ExperimentResultBeforeCorrection = medicationMatch.ExperimentResult;
+                    // Mark as partial true positive (TP*)
+                    medicationMatch.ExperimentResult = MedicationResult.ExperimentResultType.TP_;
                 }
             }
         }
