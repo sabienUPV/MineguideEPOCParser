@@ -972,16 +972,16 @@ namespace MineguideEPOCParser.GUIApp.Tools
                 {
                     if (medicationMatch.CorrectedMedication is null)
                     {
-                        // No correction was previously set, so nothing to remove
-                        return; // No valid input, exit
+                        return; // No correction was previously set, so nothing to remove
                     }
                     var result = MessageBox.Show("No correction entered. Did you mean to remove the correction?\n\nPress 'Yes' to remove the correction for this medication.", "Remove correction?", MessageBoxButton.YesNoCancel, MessageBoxImage.Question);
                     if (result == MessageBoxResult.Yes)
                     {
                         // User wants to remove the correction
                         medicationMatch.CorrectedMedication = null;
+                        return;
                     }
-                    return; // No valid input, exit
+                    continue; // Go back to the input box to allow the user to enter a new correction or cancel
                 }
 
                 // If the medication is a True Positive (TP),
