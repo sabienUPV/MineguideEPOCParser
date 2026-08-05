@@ -56,15 +56,32 @@
             <TextBlock Grid.Column="4" x:Name="ProgressRowsProcessedTextBlock" Text="Rows processed: 0" HorizontalAlignment="Left" />
         </Grid>
 
-        <StackPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
-            <Button x:Name="BtnLoad" Content="Load" ToolTip="Load medications to validate. (Keybind: Ctrl+L)" Margin="5" Click="LoadMedications" IsEnabled="{Binding IsNotParsing}" />
-            <Button x:Name="BtnBack" Content="Back" ToolTip="Go back to the previous report. (Keybind: B)" Margin="5" Click="OnUserRequestedBack" IsEnabled="{Binding IsParsing}" />
-            <Button x:Name="BtnTrue" Content="True" ToolTip="Mark selected text or medication as True Positive (TP) if detected by the LLM, or as False Negative (FN) if not. (Keybind: T)" Margin="5" Click="OnTrueMedicationClicked" IsEnabled="{Binding IsParsing}" />
-            <Button x:Name="BtnFalse" Content="False" ToolTip="Mark selected text or medication as False Positive (FP). (Keybind: F)" Margin="5" Click="OnFalseMedicationClicked" IsEnabled="{Binding IsParsing}" />
-            <Button x:Name="BtnCorrect" Content="Correct" ToolTip="Correct the medication name from a marked medication. Useful for correcting mispellings (both human or LLM induced) (Keybind: C)" Margin="5" Click="OnCorrectMedicationClicked" IsEnabled="{Binding IsParsing}" />
-            <Button x:Name="BtnNext" Content="Next" ToolTip="Go to the next report, or finish the validation if it's the last one. (Keybind: N)" Margin="5" Click="OnUserFinishedMedicationValidation" IsEnabled="{Binding IsParsing}" />
-            <Button x:Name="BtnStop" Content="Stop" ToolTip="Save the current progress and stop the validation to resume it later. (Keybind: Ctrl+Shift+S)" Margin="5" Click="OnStopMedicationValidation" IsEnabled="{Binding IsParsing}" />
-            <Button x:Name="BtnCancel" Content="Cancel" ToolTip="Cancel the validation without saving any changes. (Keybind: Ctrl+Alt+C)" Margin="5" Click="OnCancelMedicationValidation" IsEnabled="{Binding IsParsing}" />
-        </StackPanel>
+        <WrapPanel Grid.Row="4" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="5">
+            <!-- Group 1: Manage Process -->
+            <GroupBox Header="Manage Process" Margin="10" Padding="5">
+                <WrapPanel Orientation="Horizontal">
+                    <Button x:Name="BtnLoad" Content="Load" ToolTip="Load medications to validate. (Keybind: Ctrl+L)" Margin="5" Click="LoadMedications" IsEnabled="{Binding IsNotParsing}" />
+                    <Button x:Name="BtnStop" Content="Stop" ToolTip="Save the current progress and stop the validation to resume it later. (Keybind: Ctrl+Shift+S)" Margin="5" Click="OnStopMedicationValidation" IsEnabled="{Binding IsParsing}" />
+                    <Button x:Name="BtnCancel" Content="Cancel" ToolTip="Cancel the validation without saving any changes. (Keybind: Ctrl+Alt+C)" Margin="5" Click="OnCancelMedicationValidation" IsEnabled="{Binding IsParsing}" />
+                </WrapPanel>
+            </GroupBox>
+
+            <!-- Group 2: Navigation -->
+            <GroupBox Header="Navigation" Margin="10" Padding="5">
+                <WrapPanel Orientation="Horizontal">
+                    <Button x:Name="BtnBack" Content="Back" ToolTip="Go back to the previous report. (Keybind: B)" Margin="5" Click="OnUserRequestedBack" IsEnabled="{Binding IsParsing}" />
+                    <Button x:Name="BtnNext" Content="Next" ToolTip="Go to the next report, or finish the validation if it's the last one. (Keybind: N)" Margin="5" Click="OnUserFinishedMedicationValidation" IsEnabled="{Binding IsParsing}" />
+                </WrapPanel>
+            </GroupBox>
+
+            <!-- Group 3: Mark Medications -->
+            <GroupBox Header="Mark Medications" Margin="10" Padding="5">
+                <WrapPanel Orientation="Horizontal">
+                    <Button x:Name="BtnTrue" Content="True" ToolTip="Mark selected text or medication as True Positive (TP) if detected by the LLM, or as False Negative (FN) if not. (Keybind: T)" Margin="5" Click="OnTrueMedicationClicked" IsEnabled="{Binding IsParsing}" />
+                    <Button x:Name="BtnFalse" Content="False" ToolTip="Mark selected text or medication as False Positive (FP). (Keybind: F)" Margin="5" Click="OnFalseMedicationClicked" IsEnabled="{Binding IsParsing}" />
+                    <Button x:Name="BtnCorrect" Content="Set Correction" ToolTip="Set a corrected medication name from a marked medication. Useful for correcting mispellings (both human or LLM induced) (Keybind: C)" Margin="5" Click="OnCorrectMedicationClicked" IsEnabled="{Binding IsParsing}" />
+                </WrapPanel>
+            </GroupBox>
+        </WrapPanel>
     </Grid>
 </UserControl>
